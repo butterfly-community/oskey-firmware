@@ -1,0 +1,1 @@
+Free hardware wallet allows everyone to use the blockchain safely.
