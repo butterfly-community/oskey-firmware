@@ -11,22 +11,12 @@ int main(void)
   return 0;
 }
 
+uint32_t random32(void) {
 #ifdef CONFIG_ENTROPY_HAS_DRIVER
-
-uint32_t random32(void)
-{
-  uint32_t ret;
-
-  sys_csrand_get(&ret, sizeof(ret));
-
-  return ret;
-}
-
+    uint32_t ret;
+    sys_csrand_get(&ret, sizeof(ret));
+    return ret;
 #else
-
-uint32_t random32(void)
-{
-  return sys_rand32_get();
+    return sys_rand32_get();
+#endif
 }
-
-#endif /* CONFIG_ENTROPY_HAS_DRIVER */
