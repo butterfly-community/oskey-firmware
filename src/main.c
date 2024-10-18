@@ -19,6 +19,8 @@ int main(void)
 		printf("%02x", seed[i]);
 	}
 
+	printf("\n\n");
+
 	return 0;
 }
 
