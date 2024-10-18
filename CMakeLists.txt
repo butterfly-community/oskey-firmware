@@ -9,8 +9,26 @@ zephyr_get_compile_options_for_lang_as_string(C options)
 # ${_variableNames}) message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
 
-target_sources(app PRIVATE src/main.c)
-
 add_subdirectory(crypto)
+
+file(
+  GENERATE
+  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_options.txt"
+  CONTENT "${options}")
+
+
+string(
+  REGEX
+  REPLACE
+    "\\$<SEMICOLON>\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>[^$]+/autoconf\\.h"
+    ""
+    options
+    "${options}")
+
+separate_arguments(options_list UNIX_COMMAND "${options}")
+
+target_compile_options(crypto PRIVATE ${options_list})
+
+target_sources(app PRIVATE src/main.c)
 
 target_link_libraries(app PRIVATE crypto)
