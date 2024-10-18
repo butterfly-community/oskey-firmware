@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <zephyr/random/random.h>
-#include "crypto/bip39.h"
+#include "bip39.h"
 
 int main(void)
 {
