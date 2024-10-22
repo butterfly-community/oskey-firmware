@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(nano)
+project(ohw)
 
 zephyr_get_compile_options_for_lang_as_string(C options)
 
@@ -9,7 +9,7 @@ zephyr_get_compile_options_for_lang_as_string(C options)
 # ${_variableNames}) message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
 
-add_subdirectory(crypto)
+add_subdirectory(temp)
 
 file(
   GENERATE
@@ -27,10 +27,12 @@ string(
 
 separate_arguments(options_list UNIX_COMMAND "${options}")
 
-target_compile_options(crypto PRIVATE ${options_list})
+target_compile_options(temp PRIVATE ${options_list})
 
 target_sources(app PRIVATE src/main.c)
 
-target_link_libraries(app PRIVATE crypto)
+target_link_libraries(app PRIVATE temp)
+
+target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 rust_cargo_application()

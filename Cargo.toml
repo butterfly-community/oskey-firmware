@@ -1,16 +1,15 @@
-# Copyright (c) 2024 Linaro LTD
-# SPDX-License-Identifier: Apache-2.0
-
 [package]
-# This must be rustapp for now.
 name = "rustapp"
 version = "0.1.0"
 edition = "2021"
-description = "A sample hello world application in Rust"
-license = "Apache-2.0 or MIT"
+description = ""
+license = ""
 
 [lib]
 crate-type = ["staticlib"]
 
 [dependencies]
 zephyr = "3.7.0"
+bip39 = { git = "https://github.com/vincent-forks/rust-bip39.git", default-features = false, features = [
+  'alloc',
+] }
