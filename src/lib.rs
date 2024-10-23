@@ -22,5 +22,5 @@ pub fn rust_cs_random_vec(len: usize) -> Vec<u8> {
 
 #[no_mangle]
 extern "C" fn rust_main() {
-    printkln!("Hello Rust");
+    printkln!("Hello Rust!");
 }

@@ -1,7 +1,7 @@
 ## What is OHW?
 
   OHW is defined as a fully open-source, non-commercial hardware wallet. What differentiates us from other products is that we have decided not to manufacture or produce proprietary hardware under our own brand.
-  Our goal is to help everyone create their own hardware wallet.
+  Our goal is to help everyone create their own hardware wallet and reliably manage their blockchain assets.
 
 ## Creating Your Own Hardware Wallet
 
@@ -40,7 +40,7 @@
 |     Name     |                           ESP32-C3-DevKitM-1                           |             Raspberry Pi Pico             |                   nRF52840-MDK                   |               NXP FRDM-K64F               |
 | :----------: | :--------------------------------------------------------------------: | :---------------------------------------: | :-----------------------------------------------: | :---------------------------------------: |
 |    Image    | ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png) | ![rpi-pico](doc/image/board/pico-board.png) | ![nrf52840-mdk](doc/image/board/mdk52840-cover.png) | ![frdm_k64f](doc/image/board/frdm_k64f.jpg) |
-| Manufacturer |                               Espressif                               |           Raspberry Pi          |                Nordic Semiconductor                       |                    NXP                    |
+| Manufacturer |                               Espressif                               |               Raspberry Pi               |               Nordic Semiconductor               |                    NXP                    |
 |     Chip     |                              ESP32-C3FH4                              |                  RP2040                  |                     nRF52840                     |              MK64FN1M0VLL12              |
 | Architecture |                                 RISC-V                                 |               Arm Cortex-M0               |                  ARM Cortex-M4F                  |               ARM Cortex-M4               |
 |     RAM     |                                 400 KB                                 |                  264 KB                  |                      256 KB                      |                  256 KB                  |

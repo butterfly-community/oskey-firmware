@@ -5,23 +5,25 @@
 
 static CONFIDENTIAL char mnemonic[24 * 10] = {0};
 
-const char *mnemonic_from_data(const uint8_t *data, int strength)
+const char *mnemonic_from_data(const uint8_t *entropy, int strength)
 {
+	// 32 bit gen 3 words, 12-24 words
 	if (strength % 32 || strength < 128 || strength > 256)
 	{
 		return "";
 	}
-
+	// Bit to byte
 	int len = strength / 8;
-
-	uint8_t bits[32 + 1] = {0};
-
+	// Entropy and checksum
+	uint8_t entropy_checksum[32 + 1] = {0};
+	// Init PSA Crypto
 	psa_status_t status = psa_crypto_init();
 
 	if (status == PSA_SUCCESS)
 	{
+		// Gen entropy sha256 hash
 		size_t hash_length;
-		status = psa_hash_compute(PSA_ALG_SHA_256, data, len, bits, sizeof(bits), &hash_length);
+		status = psa_hash_compute(PSA_ALG_SHA_256, entropy, len, entropy_checksum, sizeof(entropy_checksum), &hash_length);
 	}
 
 	if (status != PSA_SUCCESS)
@@ -30,11 +32,12 @@ const char *mnemonic_from_data(const uint8_t *data, int strength)
 	}
 
 	char *output_ptr = mnemonic;
+	// Use hash start as a checksum and add to the end of the new value
+	entropy_checksum[len] = entropy_checksum[0];
+	// Gen new entropy
+	memcpy(entropy_checksum, entropy, len);
 
-	bits[len] = bits[0];
-
-	memcpy(bits, data, len);
-
+	// Mnemonic total
 	int total_words = len * 3 / 4;
 
 	int current_word = 0, bit_position = 0, word_index = 0;
@@ -45,7 +48,7 @@ const char *mnemonic_from_data(const uint8_t *data, int strength)
 		for (bit_position = 0; bit_position < 11; bit_position++)
 		{
 			word_index <<= 1;
-			word_index += (bits[(current_word * 11 + bit_position) / 8] & (1 << (7 - ((current_word * 11 + bit_position) % 8)))) > 0;
+			word_index += (entropy_checksum[(current_word * 11 + bit_position) / 8] & (1 << (7 - ((current_word * 11 + bit_position) % 8)))) > 0;
 		}
 		strcpy(output_ptr, BIP39_WORD_LIST_ENGLISH[word_index]);
 		output_ptr += strlen(BIP39_WORD_LIST_ENGLISH[word_index]);
@@ -100,6 +103,12 @@ int mnemonic_to_seed(const char *mnemonic, const char *passphrase,
 	if (status == PSA_SUCCESS)
 	{
 		status = psa_key_derivation_output_bytes(&operation, seed, 512 / 8);
+	}
+
+	if (status != PSA_SUCCESS)
+	{
+		psa_key_derivation_abort(&operation);
+		return 1;
 	}
 
 	return 0;
