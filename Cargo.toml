@@ -10,6 +10,3 @@ crate-type = ["staticlib"]
 
 [dependencies]
 zephyr = "3.7.0"
-bip39 = { git = "https://github.com/vincent-forks/rust-bip39.git", default-features = false, features = [
-  'alloc',
-] }
