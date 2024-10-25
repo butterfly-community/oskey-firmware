@@ -80,7 +80,7 @@ int mnemonic_to_seed(const char *mnemonic, const char *passphrase,
 	// Add rounds
 	if (status == PSA_SUCCESS)
 	{
-		status = psa_key_derivation_input_integer(&operation, PSA_KEY_DERIVATION_INPUT_COST, BIP39_PBKDF2_ROUNDS);
+		status = psa_key_derivation_input_integer(&operation, PSA_KEY_DERIVATION_INPUT_COST, 2048);
 	}
 	// Add salt
 	if (status == PSA_SUCCESS)

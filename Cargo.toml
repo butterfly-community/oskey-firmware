@@ -10,3 +10,6 @@ crate-type = ["staticlib"]
 
 [dependencies]
 zephyr = "3.7.0"
+bip32 = { version = "0.5.2", default-features = false, features = ["alloc", "secp256k1"] }
+hex = { version = "0.4", default-features = false, features = ['alloc'] }
+tiny-keccak = { version = "2.0", features = ["keccak"] }

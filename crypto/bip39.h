@@ -1,10 +1,6 @@
 #ifndef __BIP39_H__
 #define __BIP39_H__
 
-#define BIP39_WORD_COUNT 2048
-#define BIP39_PBKDF2_ROUNDS 2048
-
-
 #ifndef CONFIDENTIAL
 #define CONFIDENTIAL
 #endif
@@ -14,7 +10,7 @@ const char *mnemonic_from_data(const uint8_t *data, int strength);
 int mnemonic_to_seed(const char *mnemonic, const char *passphrase,
 		      uint8_t seed[512 / 8]);
 
-const char *const BIP39_WORD_LIST_ENGLISH[BIP39_WORD_COUNT] = {
+const char *const BIP39_WORD_LIST_ENGLISH[2048] = {
     "abandon",
     "ability",
     "able",
