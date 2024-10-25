@@ -68,6 +68,11 @@ int main(void)
 		printf("%02x", chain_code[i]);
 	}
 	printf("\n");
+	// BIP32 Extended Key
+	char xprv[128] = {0};
+	size_t xprv_size = sizeof(xprv);
+	generate_xprv(master_sk, chain_code, xprv, &xprv_size);
+	printf("Root Key: %s\n", xprv);
 	return 0;
 }
 

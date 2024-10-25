@@ -16,15 +16,9 @@ const char *mnemonic_from_data(const uint8_t *entropy, int strength)
 	int len = strength / 8;
 	// Entropy and checksum
 	uint8_t entropy_checksum[32 + 1] = {0};
-	// Init PSA Crypto
-	psa_status_t status = psa_crypto_init();
-
-	if (status == PSA_SUCCESS)
-	{
-		// Gen entropy sha256 hash
-		size_t hash_length;
-		status = psa_hash_compute(PSA_ALG_SHA_256, entropy, len, entropy_checksum, sizeof(entropy_checksum), &hash_length);
-	}
+	// Gen entropy sha256 hash
+	size_t hash_length;
+	psa_status_t status = status = psa_hash_compute(PSA_ALG_SHA_256, entropy, len, entropy_checksum, sizeof(entropy_checksum), &hash_length);
 
 	if (status != PSA_SUCCESS)
 	{
@@ -67,16 +61,12 @@ int mnemonic_to_seed(const char *mnemonic, const char *passphrase,
 	// Add use salt
 	memcpy(salt + 8, passphrase, strlen(passphrase));
 
-	// Init PAS Crypto
-	psa_status_t status = psa_crypto_init();
 	// Init PSA operation
 	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
 
 	// Setup add alg
-	if (status == PSA_SUCCESS)
-	{
-		status = psa_key_derivation_setup(&operation, PSA_ALG_PBKDF2_HMAC(PSA_ALG_SHA_512));
-	}
+	psa_status_t status = psa_key_derivation_setup(&operation, PSA_ALG_PBKDF2_HMAC(PSA_ALG_SHA_512));
+
 	// Add rounds
 	if (status == PSA_SUCCESS)
 	{
