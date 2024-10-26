@@ -24,3 +24,7 @@ pub fn rust_cs_random_vec(len: usize) -> Vec<u8> {
 extern "C" fn rust_main() {
     printkln!("Hello Rust!");
 }
+
+pub fn add(left: usize, right: usize) -> usize {
+    left + right
+}
