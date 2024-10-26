@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <string.h>
-#include <stddef.h>
-#include <zephyr/kernel.h>
-#include <zephyr/random/random.h>
+#include <stdbool.h>
 #include <psa/crypto.h>
-#include "crypto/bip39.h"
-#include "crypto/bip32.h"
-#include "temp/test.h"
+#include <zephyr/sys/util.h>
+#include <crypto/bip32.h>
+#include <zephyr/random/random.h>
 
 extern void rust_main(void);
 
@@ -68,11 +66,16 @@ int main(void)
 		printf("%02x", chain_code[i]);
 	}
 	printf("\n");
+
 	// BIP32 Extended Key
 	char xprv[128] = {0};
 	size_t xprv_size = sizeof(xprv);
 	generate_xprv(master_sk, chain_code, xprv, &xprv_size);
 	printf("Root Key: %s\n", xprv);
+
+	// BIP32 Derive Child Key
+	bip32_test(master_sk, chain_code);
+
 	return 0;
 }
 
