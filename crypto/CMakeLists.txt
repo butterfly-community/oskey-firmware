@@ -8,5 +8,3 @@ target_sources(
           codec/base58.c)
 target_compile_definitions(crypto PRIVATE)
 
-
-target_link_libraries(crypto PRIVATE mbedTLS)

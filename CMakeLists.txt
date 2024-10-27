@@ -33,7 +33,7 @@ target_compile_options(crypto PRIVATE ${options_list})
 
 target_sources(app PRIVATE src/main.c)
 
-target_link_libraries(crypto PRIVATE zephyr_interface)
+target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
 
 target_link_libraries(app PRIVATE crypto temp)
 

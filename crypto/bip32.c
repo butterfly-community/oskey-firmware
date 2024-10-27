@@ -92,11 +92,6 @@ bool generate_xprv(const uint8_t *master_key, const uint8_t *chain_code, char *x
 
 #define HARDENED_INDEX_START 0x80000000
 
-// K256 curve order
-static const uint8_t k256_n[32] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-				   0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48,
-				   0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41};
-
 void print_hex(const char *label, const uint8_t *data, size_t len, bool reverse)
 {
 	printf("%s: ", label);
@@ -128,35 +123,90 @@ bool hex_to_bytes(const char *hex, uint8_t *bytes, size_t len)
 	}
 	return hex2bin(hex, len * 2, bytes, len) == 0;
 }
-bool check_sk(const uint8_t *private_key)
-{
-	static const uint8_t zeros[32] = {0};
 
-	if (memcmp(private_key, zeros, 32) == 0) {
-		return false;
-	}
-	return memcmp(private_key, k256_n, 32) < 0;
+// K256 curve order
+static const uint8_t k256_n[32] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+				   0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48,
+				   0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41};
+
+int k256_check_sk(const uint8_t *num)
+{
+    int ret = 0;
+    mbedtls_mpi N, X;
+
+    mbedtls_mpi_init(&N);
+    mbedtls_mpi_init(&X);
+
+    /* Read num and k256 curve */
+    ret = mbedtls_mpi_read_binary(&X, num, 32);
+    if (ret == 0) {
+        ret = mbedtls_mpi_read_binary(&N, k256_n, 32);
+    }
+
+    /* Check 1：Verify that is smaller than the order of the k256 curve */
+    if (ret == 0 && mbedtls_mpi_cmp_mpi(&X, &N) >= 0) {
+        ret = MBEDTLS_ERR_ECP_INVALID_KEY;
+    }
+
+    /* Check 2: Verify that is not 0 */
+    if (ret == 0 && mbedtls_mpi_cmp_int(&X, 0) == 0) {
+        ret = MBEDTLS_ERR_ECP_INVALID_KEY;
+    }
+
+    mbedtls_mpi_free(&N);
+    mbedtls_mpi_free(&X);
+    printf("X %d", ret);
+    return ret;
 }
 
-void k256_add_modulo(uint8_t *result, const uint8_t *num1, const uint8_t *num2)
+
+int k256_add_modulo(uint8_t *result, const uint8_t *num1, const uint8_t *num2)
 {
-	uint16_t carry = 0;
-	uint8_t sum[32];
+    int ret = 0;
+    mbedtls_mpi IL, SK, N, R;
 
-	for (int i = 31; i >= 0; i--) {
-		uint16_t temp = num1[i] + num2[i] + carry;
-		sum[i] = temp & 0xFF;
-		carry = temp >> 8;
-	}
+    ret = k256_check_sk(num1);
+    if (ret != 0) {
+        return ret;
+    }
 
-	uint16_t borrow = 0;
-	bool need_subtract = (carry || memcmp(sum, k256_n, 32) >= 0);
+    mbedtls_mpi_init(&IL);
+    mbedtls_mpi_init(&SK);
+    mbedtls_mpi_init(&N);
+    mbedtls_mpi_init(&R);
 
-	for (int i = 31; i >= 0; i--) {
-		int16_t diff = sum[i] - (need_subtract ? k256_n[i] : 0) - borrow;
-		result[i] = diff & 0xFF;
-		borrow = (diff < 0) ? 1 : 0;
-	}
+    if (ret == 0) {
+        ret = mbedtls_mpi_read_binary(&IL, num1, 32);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_read_binary(&SK, num2, 32);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_read_binary(&N, k256_n, 32);
+    }
+
+    /* Modular addition: : R = (IL + SK) mod N */
+    if (ret == 0) {
+        ret = mbedtls_mpi_add_mpi(&R, &IL, &SK);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_mod_mpi(&R, &R, &N);
+    }
+
+    if (ret == 0) {
+        ret = mbedtls_mpi_write_binary(&R, result, 32);
+    }
+
+    if (ret == 0) {
+        ret = k256_check_sk(result);
+    }
+
+    mbedtls_mpi_free(&IL);
+    mbedtls_mpi_free(&SK);
+    mbedtls_mpi_free(&N);
+    mbedtls_mpi_free(&R);
+
+    return ret;
 }
 
 psa_status_t k256_get_public_key(const uint8_t *private_key, uint8_t *public_key)
@@ -190,7 +240,7 @@ psa_status_t bip32_k256_derive_child_key(const extended_key_t *parent, uint32_t 
 	size_t data_length;
 	uint32_t real_index = index;
 
-	if (!check_sk(parent->private_key)) {
+	if (k256_check_sk(parent->private_key) != 0) {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -248,9 +298,8 @@ psa_status_t bip32_k256_derive_child_key(const extended_key_t *parent, uint32_t 
 	}
 
 	memcpy(child->chain_code, hmac_output + 32, 32);
-	k256_add_modulo(child->private_key, hmac_output, parent->private_key);
 
-	if (!check_sk(child->private_key)) {
+	if (k256_add_modulo(child->private_key, hmac_output, parent->private_key) != 0) {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
