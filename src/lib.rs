@@ -3,6 +3,7 @@
 extern crate alloc;
 extern crate zephyr;
 
+use ohw_wallets;
 use alloc::vec::Vec;
 use zephyr::printkln;
 
@@ -22,9 +23,6 @@ pub fn rust_cs_random_vec(len: usize) -> Vec<u8> {
 
 #[no_mangle]
 extern "C" fn rust_main() {
-    printkln!("Hello Rust!");
-}
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+    let num = 10;
+    printkln!("Test Rust {num} {}!", ohw_wallets::add_one(num));
 }

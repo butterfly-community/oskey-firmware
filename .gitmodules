@@ -1,3 +1,6 @@
 [submodule "external/trezor-crypto"]
 	path = external/trezor-crypto
 	url = https://github.com/trezor/trezor-firmware
+[submodule "wallets"]
+	path = wallets
+	url = https://github.com/butterfly-communtiy/ohw-wallets.git

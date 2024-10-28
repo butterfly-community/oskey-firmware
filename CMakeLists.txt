@@ -9,15 +9,10 @@ zephyr_get_compile_options_for_lang_as_string(C options)
 # ${_variableNames}) message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
 
-add_subdirectory(temp)
-add_subdirectory(crypto)
-
 file(
   GENERATE
   OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_options.txt"
   CONTENT "${options}")
-
-
 string(
   REGEX
   REPLACE
@@ -25,18 +20,21 @@ string(
     ""
     options
     "${options}")
-
 separate_arguments(options_list UNIX_COMMAND "${options}")
+
+
+add_subdirectory(temp)
+add_subdirectory(wallets/crypto)
+
+
+target_sources(app PRIVATE src/main.c)
 
 target_compile_options(temp PRIVATE ${options_list})
 target_compile_options(crypto PRIVATE ${options_list})
 
-target_sources(app PRIVATE src/main.c)
-
 target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
-
 target_link_libraries(app PRIVATE crypto temp)
 
-target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wallets)
 
 rust_cargo_application()
