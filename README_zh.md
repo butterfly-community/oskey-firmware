@@ -1,25 +1,21 @@
 ## OHW 是什么？
 
-  ohw 定义是一个完全开源的非商业产品的硬件钱包，我们和其他产品不同的是我们决定不生产和制造自有品牌的专有的硬件。
-  目标是帮助每一个人创造属于自己的硬件钱包，可靠的使用自己的区块链资产。
+  OHW 定义是一个完全开源的非商业产品的硬件钱包，我们和其他产品不同的是我们决定不生产和制造自有品牌的专有的硬件。
+  目标是帮助每一个人创造属于自己的硬件钱包，可靠的管理自己的资产。
 
 ## 创造属于自己的硬件钱包
 
-  你的硬件钱包其实不属于你自己，就算开源做的很不错的产品，也存在非常多的隐形限制阻止你拥有自定义的固件和硬件，绝大部分用户也没有这个能力。
+  我们的使命是帮助您创造自己的硬件钱包，无论是软件还是硬件。所以我们不会推出商业的硬件钱包产品。
 
-  我们的固件完全开放，硬件本身可以使用目前市面上大多数芯片厂商的芯片和芯片的开发板。不存在任何的隐形限制。支持 10+ 芯片厂商和 200+ 款 Soc。
+  您可以随意选择自己喜欢的品牌的开发板或者类似 Arduino 和 Raspberry Pi 等开源硬件或者芯片制造商提供的开发板或者各种第三方厂商推出的开发板还可以自己做板子。
 
-  我们使用经过安全认证的加密库和芯片内置安全策略，保护使用者的资产安全。
-
-  我们使用经过成本优化的开发策略，支持的芯片最低价格为 0.3 美元。
+  OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在构建时考虑到安全性。支持的最便宜的 MCU 价格仅为 0.3 美元，并可选的支持蓝牙和 WiFi 还有屏幕。
 
 ## 如何使用固件
 
-  我们使用 Zephyr RTOS，Zephyr 是一个开发者友好的实时操作系统。
-
 ### 预编译固件
 
-  我们会为我们拥有的开发板预编译固件，请查看右侧 Release 下载或者下文查看我们拥有哪些开发板，直接使用预编译固件请查看...。
+  我们会为我们拥有的开发板预编译固件，请查看右侧 Release 下载或者下文查看我们拥有哪些开发板。
 
 ### 自编译固件
 
@@ -39,12 +35,12 @@
 
   由于开发板型号太多，这里只写了芯片的价格。请自行选择喜欢的开发板。
 
-|   名称   |                           ESP32-C3-DevKitM-1                           |             Raspberry Pi Pico             |               ESP32-S3-DevKitM-1🔥               |                   nRF52840-MDK                   |                 Disco L475 IOT01                 |               NXP FRDM-K64F               |
-| :------: | :--------------------------------------------------------------------: | :---------------------------------------: | :-----------------------------------------------: | :-----------------------------------------------: | :----------------------------------------------: | :---------------------------------------: |
-|   图片   | ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png) | ![rpi-pico](doc/image/board/pico-board.png) | ![rpi-pico](doc/image/board/esp32-s3-devkitm-1.png) | ![nrf52840-mdk](doc/image/board/mdk52840-cover.png) | ![disco-l475](doc/image/board/disco_l475_iot1.jpg) | ![frdm_k64f](doc/image/board/frdm_k64f.jpg) |
-|   厂商   |                               Espressif                               |               Raspberry Pi               |                     Espressif                     |               Nordic Semiconductor               |                STMicroelectronics                |                    NXP                    |
-|   芯片   |                              ESP32-C3FH4                              |                  RP2040                  |                     ESP32-S3                     |                     nRF52840                     |                     STM32L4                     |              MK64FN1M0VLL12              |
-|   架构   |                                 RISC-V                                 |               Arm Cortex-M0               |              Xtensa (Tensilica LX7)              |                   ARM Cortex-M4                   |                  ARM Cortex-M4                  |               ARM Cortex-M4               |
-|   RAM   |                                 400 KB                                 |                  264 KB                  |                   512 KB + 2 M                   |                      256 KB                      |                      128 KB                      |                  256 KB                  |
-|   ROM   |                              384 KB + 4 M                              |                16 KB + 2 M                |                   384 KB + 4 M                   |                        1 M                        |                       1 MB                       |                    1 M                    |
-| 芯片价格 |                                 \$0.5                                 |                   \$0.8                   |                       \$1.5                       |                        \$3                        |                        $4                        |                   \$20                   |
+|   名称   |                           ESP32-C3-DevKitM-1                           |             Raspberry Pi Pico             |                 Nucleo F401RE                 |                   nRF52840-MDK                   |               NXP FRDM-K64F               |
+| :------: | :--------------------------------------------------------------------: | :---------------------------------------: | :-------------------------------------------: | :-----------------------------------------------: | :---------------------------------------: |
+|   图片   | ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png) | ![rpi-pico](doc/image/board/pico-board.png) | ![stm32f401](doc/image/board/nucleo_f401re.jpg) | ![nrf52840-mdk](doc/image/board/mdk52840-cover.png) | ![frdm_k64f](doc/image/board/frdm_k64f.jpg) |
+|   厂商   |                               Espressif                               |               Raspberry Pi               |              STMicroelectronics              |               Nordic Semiconductor               |                    NXP                    |
+|   芯片   |                              ESP32-C3FH4                              |                  RP2040                  |                 STM32F401RET6                 |                     nRF52840                     |              MK64FN1M0VLL12              |
+|   架构   |                                 RISC-V                                 |               Arm Cortex-M0               |                 ARM Cortex-M4                 |                   ARM Cortex-M4                   |               ARM Cortex-M4               |
+|   RAM   |                                 400 KB                                 |                  264 KB                  |                     96 KB                     |                      256 KB                      |                  256 KB                  |
+|   ROM   |                              384 KB + 4 M                              |                16 KB + 2 M                |                    512 KB                    |                        1 M                        |                    1 M                    |
+| 芯片价格 |                                 \$0.5                                 |                   \$0.8                   |                      \$2                      |                        \$3                        |                   \$20                   |

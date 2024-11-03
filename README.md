@@ -1,25 +1,22 @@
 ## What is OHW?
 
-  OHW is defined as a fully open-source, non-commercial hardware wallet. What differentiates us from other products is that we have decided not to manufacture or produce proprietary hardware under our own brand.
-  Our goal is to help everyone create their own hardware wallet and reliably manage their blockchain assets.
+  OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. What distinguishes us from other products is our decision not to manufacture or produce proprietary hardware under our own brand.
+
+  Our goal is to help everyone create their own hardware wallet and reliably manage their assets.
 
 ## Creating Your Own Hardware Wallet
 
-  Your hardware wallet may not truly belong to you. Even products with good open-source practices often have many hidden restrictions preventing you from having customized firmware and hardware, and most users lack the capability to customize.
+   Our mission is to help you create your own hardware wallet, both in terms of software and hardware. Therefore, we will not launch commercial hardware wallet products.
 
-  Our firmware is completely open, and the hardware itself can utilize chips and development boards from most chip manufacturers currently available in the market. There are no hidden restrictions. We support 10+ chip manufacturers and 200+ SoCs.
+  You are free to choose any development board you prefer, whether it's open-source hardware like Arduino or Raspberry Pi, development boards from chip manufacturers, third-party vendor boards, or even design your own board.
 
-  We use security-certified cryptographic libraries and chip-embedded security policies to protect users' assets.
-
-  We employ cost-optimized development strategies, supporting chips with prices starting as low as $0.30.
+  The Open Hardware Wallet supports multiple hardware architectures and is optimized for resource-constrained devices with security built-in from the ground up. The cheapest supported MCU costs only $0.3, with optional support for Bluetooth, WiFi, and display capabilities.
 
 ## How to Use the Firmware
 
-  We use Zephyr RTOS, which is a developer-friendly real-time operating system.
-
 ### Pre-compiled Firmware
 
-  We provide pre-compiled firmware for development boards we own. Please check the Releases section on the right or see below for our available development boards. For direct use of pre-compiled firmware, please refer to...
+  We provide pre-compiled firmware for development boards we own. Please check the Releases section on the right or see below for our available development boards.
 
 ### Self-compiled Firmware
 
@@ -39,12 +36,12 @@
 
   Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
 
-|     Name     |                           ESP32-C3-DevKitM-1                           |             Raspberry Pi Pico             |               ESP32-S3-DevKitM-1🔥               |                   nRF52840-MDK                   |                 Disco L475 IOT01                 |               NXP FRDM-K64F               |
-| :----------: | :--------------------------------------------------------------------: | :---------------------------------------: | :-----------------------------------------------: | :-----------------------------------------------: | :----------------------------------------------: | :---------------------------------------: |
-|    Image    | ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png) | ![rpi-pico](doc/image/board/pico-board.png) | ![rpi-pico](doc/image/board/esp32-s3-devkitm-1.png) | ![nrf52840-mdk](doc/image/board/mdk52840-cover.png) | ![disco-l475](doc/image/board/disco_l475_iot1.jpg) | ![frdm_k64f](doc/image/board/frdm_k64f.jpg) |
-| Manufacturer |                               Espressif                               |               Raspberry Pi               |                     Espressif                     |               Nordic Semiconductor               |                STMicroelectronics                |                    NXP                    |
-|     Chip     |                              ESP32-C3FH4                              |                  RP2040                  |                     ESP32-S3                     |                     nRF52840                     |                     STM32L4                     |              MK64FN1M0VLL12              |
-| Architecture |                                 RISC-V                                 |               Arm Cortex-M0               |               Xtensa (TensilicaLX7)               |                   ARM Cortex-M4                   |                  ARM Cortex-M4                  |               ARM Cortex-M4               |
-|     RAM     |                                 400 KB                                 |                  264 KB                  |                   512 KB + 2 M                   |                      256 KB                      |                      128 KB                      |                  256 KB                  |
-|     ROM     |                              384 KB + 4 M                              |                16 KB + 2 M                |                   384 KB + 4 M                   |                        1 M                        |                       1 MB                       |                    1 M                    |
-|  MCU Price  |                                 \$0.5                                 |                   \$0.8                   |                       \$1.5                       |                        \$3                        |                        $4                        |                   \$20                   |
+|     Name     |                           ESP32-C3-DevKitM-1                           |             Raspberry Pi Pico             |   Nucleo F401RE   |                   nRF52840-MDK                   |               NXP FRDM-K64F               |
+| :----------: | :--------------------------------------------------------------------: | :---------------------------------------: | :----------------: | :-----------------------------------------------: | :---------------------------------------: |
+|    Image    | ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png) | ![rpi-pico](doc/image/board/pico-board.png) |       ![stm32f401](doc/image/board/nucleo_f401re.jpg)             | ![nrf52840-mdk](doc/image/board/mdk52840-cover.png) | ![frdm_k64f](doc/image/board/frdm_k64f.jpg) |
+| Manufacturer |                               Espressif                               |               Raspberry Pi               | STMicroelectronics |               Nordic Semiconductor               |                    NXP                    |
+|     Chip     |                              ESP32-C3FH4                              |                  RP2040                  |   STM32F401RET6   |                     nRF52840                     |              MK64FN1M0VLL12              |
+| Architecture |                                 RISC-V                                 |               Arm Cortex-M0               |   ARM Cortex-M4   |                   ARM Cortex-M4                   |               ARM Cortex-M4               |
+|     RAM     |                                 400 KB                                 |                  264 KB                  |       96 KB       |                      256 KB                      |                  256 KB                  |
+|     ROM     |                              384 KB + 4 M                              |                16 KB + 2 M                |       512 KB       |                        1 M                        |                    1 M                    |
+|  MCU Price  |                                 \$0.5                                 |                   \$0.8                   |        \$2        |                        \$3                        |                   \$20                   |
