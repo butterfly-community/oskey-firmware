@@ -24,7 +24,7 @@ separate_arguments(options_list UNIX_COMMAND "${options}")
 
 
 add_subdirectory(temp)
-add_subdirectory(wallets/crypto)
+add_subdirectory(wallets/psa)
 
 
 target_sources(app PRIVATE src/main.c)
@@ -36,5 +36,7 @@ target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
 target_link_libraries(app PRIVATE crypto temp)
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wallets)
+
+target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/temp)
 
 rust_cargo_application()

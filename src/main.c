@@ -1,75 +1,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <psa/crypto.h>
-#include <zephyr/sys/util.h>
-#include <crypto/bip32.h>
 #include <zephyr/random/random.h>
-
-extern void rust_main(void);
+#include "test.h"
 
 void cs_random(void *dst, size_t len);
 
+extern void rust_main(void);
+
 int main(void)
 {
-	// Init Crypto
-	psa_status_t status = psa_crypto_init();
-	if (status != PSA_SUCCESS) {
-		return status;
-	}
 	// Rust support test
 	rust_main();
 	// Lib support test
 	test();
-
-	// Gen random
-	uint8_t data[32] = {0};
-	cs_random(data, (size_t)32);
-
-	// Gen Entropy
-	printf("\n");
-	printf("BIP39 Entropy (hex): ");
-	for (size_t i = 0; i < sizeof(data); i++) {
-		printf("%02x", data[i]);
-	}
-	printf("\n");
-
-	// Gen mnemonic
-	const char *mnemonic = mnemonic_from_data(data, 128);
-	printf("Mnemonic: %s\n", mnemonic);
-
-	// Gen seed
-	uint8_t seed[512 / 8] = {0};
-	mnemonic_to_seed(mnemonic, "", seed);
-	printf("BIP39 Seed (hex): ");
-	for (size_t i = 0; i < sizeof(seed); i++) {
-		printf("%02x", seed[i]);
-	}
-	printf("\n");
-
-	// BIP32 Master key and chain code
-	uint8_t master_sk[32] = {0};
-	uint8_t chain_code[32] = {0};
-	printf("BIP39 Master (hex): ");
-	hd_node_from_seed(seed, sizeof(seed), master_sk, chain_code);
-	for (size_t i = 0; i < sizeof(master_sk); i++) {
-		printf("%02x", master_sk[i]);
-	}
-	printf("\n");
-	printf("BIP39 Chain Code (hex): ");
-	for (size_t i = 0; i < sizeof(chain_code); i++) {
-		printf("%02x", chain_code[i]);
-	}
-	printf("\n");
-
-	// BIP32 Extended Key
-	char xprv[128] = {0};
-	size_t xprv_size = sizeof(xprv);
-	generate_xprv(master_sk, chain_code, xprv, &xprv_size);
-	printf("Root Key: %s\n", xprv);
-
-	// BIP32 Derive Child Key
-	bip32_test(master_sk, chain_code);
 
 	return 0;
 }

@@ -10,4 +10,4 @@ crate-type = ["staticlib"]
 
 [dependencies]
 zephyr = "3.7.0"
-ohw-wallets = { path = "./wallets", features = ["builtin"]}
+ohw-wallets = { path = "./wallets", default-features = false, features = ["crypto-psa"]}
