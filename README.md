@@ -1,3 +1,5 @@
+[中文点这里](./README_zh.md)
+
 ## What is OHW?
 
   OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. What distinguishes us from other products is our decision not to manufacture or produce proprietary hardware under our own brand.
@@ -36,12 +38,12 @@
 
   Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
 
-|     Name     |                           ESP32-C3-DevKitM-1                           |             Raspberry Pi Pico             |   Nucleo F401RE   |                   nRF52840-MDK                   |               NXP FRDM-K64F               |
-| :----------: | :--------------------------------------------------------------------: | :---------------------------------------: | :----------------: | :-----------------------------------------------: | :---------------------------------------: |
-|    Image    | ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png) | ![rpi-pico](doc/image/board/pico-board.png) |       ![stm32f401](doc/image/board/nucleo_f401re.jpg)             | ![nrf52840-mdk](doc/image/board/mdk52840-cover.png) | ![frdm_k64f](doc/image/board/frdm_k64f.jpg) |
-| Manufacturer |                               Espressif                               |               Raspberry Pi               | STMicroelectronics |               Nordic Semiconductor               |                    NXP                    |
-|     Chip     |                              ESP32-C3FH4                              |                  RP2040                  |   STM32F401RET6   |                     nRF52840                     |              MK64FN1M0VLL12              |
-| Architecture |                                 RISC-V                                 |               Arm Cortex-M0               |   ARM Cortex-M4   |                   ARM Cortex-M4                   |               ARM Cortex-M4               |
-|     RAM     |                                 400 KB                                 |                  264 KB                  |       96 KB       |                      256 KB                      |                  256 KB                  |
-|     ROM     |                              384 KB + 4 M                              |                16 KB + 2 M                |       512 KB       |                        1 M                        |                    1 M                    |
-|  MCU Price  |                                 \$0.5                                 |                   \$0.8                   |        \$2        |                        \$3                        |                   \$20                   |
+|     Name     |                           ESP32-C3-DevKitM-1                           |             Raspberry Pi Pico             |                 Nucleo F401RE                 |                   nRF52840-MDK                   |               NXP FRDM-K64F               |
+| :----------: | :--------------------------------------------------------------------: | :---------------------------------------: | :-------------------------------------------: | :-----------------------------------------------: | :---------------------------------------: |
+|    Image    | ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png) | ![rpi-pico](doc/image/board/pico-board.png) | ![stm32f401](doc/image/board/nucleo_f401re.jpg) | ![nrf52840-mdk](doc/image/board/mdk52840-cover.png) | ![frdm_k64f](doc/image/board/frdm_k64f.jpg) |
+| Manufacturer |                               Espressif                               |               Raspberry Pi               |              STMicroelectronics              |               Nordic Semiconductor               |                    NXP                    |
+|     Chip     |                              ESP32-C3FH4                              |                  RP2040                  |                 STM32F401RET6                 |                     nRF52840                     |              MK64FN1M0VLL12              |
+| Architecture |                                 RISC-V                                 |               Arm Cortex-M0               |                 ARM Cortex-M4                 |                   ARM Cortex-M4                   |               ARM Cortex-M4               |
+|     RAM     |                                 400 KB                                 |                  264 KB                  |                     96 KB                     |                      256 KB                      |                  256 KB                  |
+|     ROM     |                              384 KB + 4 M                              |                16 KB + 2 M                |                    512 KB                    |                        1 M                        |                    1 M                    |
+|  MCU Price  |                                 \$0.5                                 |                   \$0.8                   |                      \$2                      |                        \$3                        |                   \$20                   |
