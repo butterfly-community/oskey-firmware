@@ -33,10 +33,11 @@ target_compile_options(temp PRIVATE ${options_list})
 target_compile_options(crypto PRIVATE ${options_list})
 
 target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
-target_link_libraries(app PRIVATE crypto temp)
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wallets)
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/temp)
 
 rust_cargo_application()
+
+target_link_libraries(app PRIVATE crypto temp)
