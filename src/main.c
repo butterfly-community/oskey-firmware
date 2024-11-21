@@ -7,11 +7,14 @@
 void cs_random(void *dst, size_t len);
 
 extern void rust_main(void);
+extern void test_wallet(void);
 
 int main(void)
 {
 	// Rust support test
 	rust_main();
+	// Wallet test
+	test_wallet();
 	// Lib support test
 	test();
 
