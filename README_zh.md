@@ -27,6 +27,10 @@
 
   [https://github.com/zephyrproject-rtos/docker-image](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
+  额外需要注意的是我们使用 Rust 这个更安全更现代的语言完成钱包功能，所以需要额外设置 Rust 编译环境。请参考以下链接。
+
+  [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
+
 ## 开发板
 
   我们拥有的开发板拥有 Tire 1 级别的支持，开发者会在这些开发板上开发测试。
