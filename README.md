@@ -30,7 +30,7 @@
 
   [https://github.com/zephyrproject-rtos/docker-image](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
-  额外需要注意的是我们使用 Rust 这个更安全更现代的语言完成钱包功能，所以需要额外设置 Rust 编译环境。请参考以下链接。
+  Note: Built with Rust for better safety. See setup guide at this.
 
   [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
 
