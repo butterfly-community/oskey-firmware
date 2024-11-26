@@ -31,6 +31,10 @@
 
   [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
 
+  [https://github.com/zephyrproject-rtos/zephyr-lang-rust](https://github.com/zephyrproject-rtos/zephyr-lang-rust)
+
+  [https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800](https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800)
+
 ## 开发板
 
   我们拥有的开发板拥有 Tire 1 级别的支持，开发者会在这些开发板上开发测试。

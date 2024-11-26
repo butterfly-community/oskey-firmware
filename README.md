@@ -32,7 +32,11 @@
 
   Note: Built with Rust for better safety. See setup guide at this.
 
-  [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
+[  https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
+
+  [https://github.com/zephyrproject-rtos/zephyr-lang-rust](https://github.com/zephyrproject-rtos/zephyr-lang-rust)
+
+  [https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800](https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800)
 
 ## Development Boards
 
