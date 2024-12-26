@@ -2,22 +2,24 @@
 #include <string.h>
 #include <stdbool.h>
 #include <zephyr/random/random.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/device.h>
+#include "port/uart.h"
 #include "test.h"
 
 void cs_random(void *dst, size_t len);
 
-extern void rust_main(void);
-extern void test_wallet(void);
-
 int main(void)
 {
-	// Rust support test
-	rust_main();
-	// Wallet test
-	test_wallet();
-	// Lib support test
-	test();
+	// test_wallet();
 
+	k_work_init(&app_uart_work, app_uart_work_handler);
+
+	app_uart_irq_register();
+
+	while (true) {
+		k_sleep(K_MSEC(100));
+	}
 	return 0;
 }
 

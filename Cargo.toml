@@ -10,6 +10,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 zephyr = " 3.7.0"
+anyhow = { version = "1.0", default-features = false }
 ohw-wallets = { path = "./wallets", default-features = false, features = [
   "crypto-psa",
 ] }
@@ -17,3 +18,10 @@ ohw-protocol = { path = "./protocol" }
 
 [build-dependencies]
 zephyr-build = "3.7.0"
+
+[profile.release]
+codegen-units = 1
+strip = true
+panic = 'abort'
+opt-level = 'z'
+lto = true
