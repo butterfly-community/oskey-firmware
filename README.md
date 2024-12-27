@@ -2,9 +2,13 @@
 
 ## What is OHW?
 
-  OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. What distinguishes us from other products is our decision not to manufacture or produce proprietary hardware under our own brand.
+  OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. We will launch hardware wallet products not for commercial purposes.
 
-  Our goal is to help everyone create their own hardware wallet and reliably manage their assets.
+  Our mission is to help you create your own hardware wallet, both in terms of software and hardware.
+
+  You are free to choose any development board you prefer, whether it's open-source hardware like Arduino or Raspberry Pi, development boards from chip manufacturers, third-party vendor boards, or even design your own board.
+
+  The Open Hardware Wallet supports multiple hardware architectures and is optimized for resource-constrained devices with security built-in. The cheapest supported MCU costs only $0.3, with optional support for Bluetooth, WiFi, and display capabilities.
 
 ## What can this product do?
 
@@ -13,14 +17,6 @@ We are building core infrastructure connecting blockchain with physical devices.
 ### Video:
 
 [![OHW](https://res.cloudinary.com/marcomontalbano/image/upload/v1733827828/video_to_markdown/images/youtube--JkhVWNCGZvg-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=JkhVWNCGZvg "OHW")
-
-## Creating Your Own Hardware Wallet
-
-   Our mission is to help you create your own hardware wallet, both in terms of software and hardware. Therefore, we will not launch commercial hardware wallet products.
-
-  You are free to choose any development board you prefer, whether it's open-source hardware like Arduino or Raspberry Pi, development boards from chip manufacturers, third-party vendor boards, or even design your own board.
-
-  The Open Hardware Wallet supports multiple hardware architectures and is optimized for resource-constrained devices with security built-in from the ground up. The cheapest supported MCU costs only $0.3, with optional support for Bluetooth, WiFi, and display capabilities.
 
 ## How to Use the Firmware
 
