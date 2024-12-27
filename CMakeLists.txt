@@ -25,7 +25,10 @@ separate_arguments(options_list UNIX_COMMAND "${options}")
 add_subdirectory(temp)
 add_subdirectory(wallets/psa)
 
-target_sources(app PRIVATE src/main.c src/port/uart.c)
+target_sources(app PRIVATE
+  src/main.c
+  src/port/uart.c
+  src/storage/storage.c)
 
 target_compile_options(temp PRIVATE ${options_list})
 target_compile_options(crypto PRIVATE ${options_list})

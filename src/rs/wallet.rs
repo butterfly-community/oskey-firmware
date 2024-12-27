@@ -1,5 +1,8 @@
 use crate::app_uart_tx_push_array;
 use crate::cs_random;
+use crate::storage_seed_check;
+use crate::storage_seed_read_buffer;
+use crate::storage_seed_write_buffer;
 use alloc::{string::String, vec::Vec};
 use anyhow::{anyhow, Result};
 use ohw_protocol::proto::DerivePublicKeyResponse;
@@ -11,8 +14,6 @@ use ohw_protocol::{
     },
     FrameParser, Message,
 };
-
-static mut GLOBAL_FAKE_STORAGE: Option<[u8; 64]> = None;
 
 pub fn rust_cs_random_vec(len: usize) -> Vec<u8> {
     let mut buffer = Vec::with_capacity(len);
@@ -30,7 +31,7 @@ pub fn event_parser(bytes: &[u8]) -> Result<()> {
 
     let req_data = ReqData::decode(payload_bytes.as_slice()).map_err(|e| anyhow!(e))?;
 
-    let _res = event_hub(req_data);
+    let _res = event_hub(req_data).unwrap();
 
     Ok(())
 }
@@ -45,12 +46,8 @@ pub fn event_hub(req: ReqData) -> Result<()> {
         req_data::Payload::InitCustomRequest(data) => {
             wallet_init_custom(data.words, data.password)?
         }
-        req_data::Payload::DerivePublicKeyRequest(data) => {
-            wallet_drive_public_key(data.path)?
-        }
-        req_data::Payload::SignRequest(data) => {
-            wallet_sign_msg(data.path, data.message, data.id)?
-        },
+        req_data::Payload::DerivePublicKeyRequest(data) => wallet_drive_public_key(data.path)?,
+        req_data::Payload::SignRequest(data) => wallet_sign_msg(data.path, data.message, data.id)?,
     };
 
     let response = ResData {
@@ -90,16 +87,24 @@ pub fn wallet_version_req() -> res_data::Payload {
 
 pub fn wallet_storage_save(data: &[u8; 64]) {
     unsafe {
-        GLOBAL_FAKE_STORAGE = Some(*data);
+        storage_seed_write_buffer(data.as_ptr(), data.len());
     }
 }
 
 pub fn wallet_storage_get() -> Option<[u8; 64]> {
-    unsafe { GLOBAL_FAKE_STORAGE }
+    let mut data = [0u8; 64];
+
+    let check = unsafe { storage_seed_read_buffer(data.as_mut_ptr(), data.len()) };
+
+    if check != 0 {
+        return None;
+    } else {
+        return Some(data);
+    }
 }
 
 pub fn wallet_storage_check() -> bool {
-    unsafe { GLOBAL_FAKE_STORAGE.is_some() }
+    unsafe { storage_seed_check() }
 }
 
 pub fn wallet_init_default(
@@ -175,7 +180,6 @@ pub fn wallet_drive_public_key(path: String) -> Result<res_data::Payload> {
 }
 
 pub fn wallet_sign_msg(path: String, msg: Vec<u8>, id: i32) -> Result<res_data::Payload> {
-
     let seed = wallet_storage_get().ok_or(anyhow!("Wallet not initialized"))?;
 
     let ex_priv_key = ohw_wallets::wallets::ExtendedPrivKey::derive(&seed, path.parse()?)?;
@@ -185,7 +189,7 @@ pub fn wallet_sign_msg(path: String, msg: Vec<u8>, id: i32) -> Result<res_data::
     let data = SignResponse {
         id,
         signature: sign.into(),
-        sk: Some(ex_priv_key.secret_key.into())
+        sk: Some(ex_priv_key.secret_key.into()),
     };
 
     let payload = res_data::Payload::SignResponse(data);

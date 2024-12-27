@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/device.h>
 #include "uart.h"

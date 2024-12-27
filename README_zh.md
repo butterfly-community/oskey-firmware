@@ -3,6 +3,15 @@
   OHW 定义是一个完全开源的非商业产品的硬件钱包，我们和其他产品不同的是我们决定不生产和制造自有品牌的专有的硬件。
   目标是帮助每一个人创造属于自己的硬件钱包，可靠的管理自己的资产。
 
+
+## OHW 可以做什么?
+
+我们构建了区块链和芯片的连接器，这不仅仅是一个硬件钱包。
+
+#### 演示视频:
+
+[![OHW](https://res.cloudinary.com/marcomontalbano/image/upload/v1733827828/video_to_markdown/images/youtube--JkhVWNCGZvg-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=JkhVWNCGZvg "OHW")
+
 ## 创造属于自己的硬件钱包
 
   我们的使命是帮助您创造自己的硬件钱包，无论是软件还是硬件。所以我们不会推出商业的硬件钱包产品。

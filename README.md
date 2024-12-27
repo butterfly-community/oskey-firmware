@@ -6,6 +6,14 @@
 
   Our goal is to help everyone create their own hardware wallet and reliably manage their assets.
 
+## What can this product do?
+
+We are building core infrastructure connecting blockchain with physical devices. Not just a hardware wallet.
+
+### Video:
+
+[![OHW](https://res.cloudinary.com/marcomontalbano/image/upload/v1733827828/video_to_markdown/images/youtube--JkhVWNCGZvg-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=JkhVWNCGZvg "OHW")
+
 ## Creating Your Own Hardware Wallet
 
    Our mission is to help you create your own hardware wallet, both in terms of software and hardware. Therefore, we will not launch commercial hardware wallet products.

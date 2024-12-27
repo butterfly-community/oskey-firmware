@@ -10,6 +10,9 @@ use zephyr::printkln;
 extern "C" {
     pub(crate) fn cs_random(dst: *mut u8, len: usize);
     pub(crate) fn app_uart_tx_push_array(data: *const u8, len: usize);
+    pub(crate) fn storage_seed_check() -> bool;
+    pub(crate) fn storage_seed_write_buffer(data: *const u8, len: usize)  -> i32;
+    pub(crate) fn storage_seed_read_buffer(data: *const u8, len: usize)  -> i32;
 }
 
 
