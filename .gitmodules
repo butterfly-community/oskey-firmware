@@ -1,6 +1,3 @@
 [submodule "wallets"]
 	path = wallets
 	url = https://github.com/butterfly-communtiy/ohw-wallets.git
-[submodule "protocol"]
-	path = protocol
-	url = https://github.com/butterfly-communtiy/ohw-protocol.git
