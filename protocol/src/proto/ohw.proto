@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package ohw;
+
+message ReqData {
+  oneof payload {
+    Unknown unknown = 2;
+    VersionRequest version_request = 10;
+    InitWalletCustomRequest init_custom_request = 30;
+    InitWalletRequest init_request = 40;
+    DerivePublicKeyRequest derive_public_key_request = 50;
+    SignRequest sign_request = 60;
+  }
+}
+
+message ResData {
+  oneof payload {
+    Unknown unknown = 2;
+    VersionResponse version_response = 11;
+    InitWalletResponse init_wallet_response = 31;
+    DerivePublicKeyResponse derive_public_key_response = 51;
+    SignResponse sign_response = 61;
+  }
+}
+
+message Unknown {}
+
+message VersionRequest {}
+
+message VersionResponse {
+  string version = 1;
+  Features features = 2;
+}
+
+message Features {
+  bool initialized = 10;
+  bool has_hardware_random = 20;
+}
+
+
+message InitWalletCustomRequest {
+  string words = 2;
+  string password = 3;
+}
+
+message InitWalletRequest {
+  uint32 length = 1;
+  string password = 2;
+  optional bytes seed = 3;
+}
+
+message InitWalletResponse {
+  optional string mnemonic = 1;
+}
+
+message DerivePublicKeyRequest {
+  string path = 1;
+}
+
+message DerivePublicKeyResponse {
+  string path = 1;
+  bytes public_key = 2;
+}
+
+message SignRequest {
+  int32 id = 1;
+  string path = 2;
+  bytes message = 3;
+}
+
+message SignResponse {
+  int32 id = 1;
+  bytes signature = 3;
+  optional bytes sk = 4;
+}
