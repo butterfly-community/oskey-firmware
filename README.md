@@ -2,13 +2,15 @@
 
 ## What is OHW?
 
-  OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. We will launch hardware wallet products not for commercial purposes.
+OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. Our mission is to help you create your own hardware wallet, both in terms of software and hardware.
 
-  Our mission is to help you create your own hardware wallet, both in terms of software and hardware.
+Unlike commercial hardware products where open-source is used to drive sales of their commercial products, our open-source focus is on building infrastructure.
 
-  You are free to choose any development board you prefer, whether it's open-source hardware like Arduino or Raspberry Pi, development boards from chip manufacturers, third-party vendor boards, or even design your own board.
+We don't restrict users to specific chip manufacturers or models. Users have the freedom to choose from over 200 chips from more than 10 manufacturers, and can work with over 3000 development boards made by chip manufacturers or third parties. For example, popular open hardware platforms like Arduino or Raspberry Pi.
 
-  The Open Hardware Wallet supports multiple hardware architectures and is optimized for resource-constrained devices with security built-in. The cheapest supported MCU costs only $0.3, with optional support for Bluetooth, WiFi, and display capabilities.
+Users can also create their own development boards based on our reference designs, which we will soon release.
+
+The Open Hardware Wallet supports multiple hardware architectures and is optimized for resource-constrained devices with security built-in. The cheapest supported MCU costs only $0.3, with optional support for Bluetooth, WiFi, and display capabilities.
 
 ## What can this product do?
 
