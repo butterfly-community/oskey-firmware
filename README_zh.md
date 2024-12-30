@@ -12,6 +12,32 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
 我们构建了区块链和芯片的连接器，这不仅仅是一个硬件钱包。
 
+### 功能:
+
+#### ✅ 芯片内助记词生成和导入
+
+[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/mnemonic.rs).
+
+#### ✅ HD (Hierarchical Deterministic) 分层确定性钱包.
+
+[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/wallets.rs).
+
+#### ✅ secp256k1.
+
+公私钥, 签名和 [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/alg/crypto.rs).
+
+#### 🚧 WebBrowser 支持
+
+目前可以支持初始化、获取地址、签名通过串口在浏览器上操作，需要帮助进行下一步开发。
+
+#### 🚧 WebUsb WiFi Bluetooth 支持.
+
+需要帮助
+
+#### 🚧 屏幕支持.
+
+需要帮助
+
 #### 演示视频:
 
 [![OHW](https://res.cloudinary.com/marcomontalbano/image/upload/v1733827828/video_to_markdown/images/youtube--JkhVWNCGZvg-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=JkhVWNCGZvg "OHW")

@@ -16,7 +16,33 @@ The Open Hardware Wallet supports multiple hardware architectures and is optimiz
 
 We are building core infrastructure connecting blockchain with physical devices. Not just a hardware wallet.
 
-### Video:
+### Feature:
+
+#### ✅ Mnemonic Generation and Import on chip.
+
+[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) All [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/mnemonic.rs) completed successfully.
+
+#### ✅ HD (Hierarchical Deterministic) Wallet and Path Derivation on chip.
+
+[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) All [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/wallets.rs) completed successfully.
+
+#### ✅ secp256k1.
+
+pubkey, signature and [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/alg/crypto.rs).
+
+#### 🚧 WebBrowser Support
+
+Currently supports initialization, generation address and signing via WebSerial in browser environments, need help with next phase of development.
+
+#### 🚧 WebUsb WiFi Bluetooth Support.
+
+Need help.
+
+#### 🚧 Display Support.
+
+Need help.
+
+### Demo Video:
 
 [![OHW](https://res.cloudinary.com/marcomontalbano/image/upload/v1733827828/video_to_markdown/images/youtube--JkhVWNCGZvg-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=JkhVWNCGZvg "OHW")
 
