@@ -46,13 +46,13 @@ We are building core infrastructure connecting blockchain with physical devices.
 
 ## Development Boards
 
-  The development boards we own have Tier 1 level support, and developers will develop and test on these boards.
+We carefully selected 5 development boards representing 3 different architectures from 5 different chip manufacturers as our officially supported boards. This demonstrates our vendor-independent capability. Our developers actively develop and test on these boards.
 
-  Besides our owned boards, we also support 300+ other development boards. Please check the support list [Supported Boards and Shields](https://docs.zephyrproject.org/latest/boards/index.html).
+We also provide direct support for over 300 development boards without any modifications needed. For a complete list, please check our [Supported Boards and Shields](https://docs.zephyrproject.org/latest/boards/index.html) documentation.
 
-  Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
+Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
 
-|     Name     |                           ESP32-C3-DevKitM-1                           |             Raspberry Pi Pico             |                 Nucleo F401RE                 |                   nRF52840-MDK                   |               NXP FRDM-K64F               |
+|     Name     |                        ESP32-C3-DevKitM-1 🔥🔥                        |           Raspberry Pi Pico 🔥           |                 Nucleo F401RE                 |                   nRF52840-MDK                   |               NXP FRDM-K64F               |
 | :----------: | :--------------------------------------------------------------------: | :---------------------------------------: | :-------------------------------------------: | :-----------------------------------------------: | :---------------------------------------: |
 |    Image    | ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png) | ![rpi-pico](doc/image/board/pico-board.png) | ![stm32f401](doc/image/board/nucleo_f401re.jpg) | ![nrf52840-mdk](doc/image/board/mdk52840-cover.png) | ![frdm_k64f](doc/image/board/frdm_k64f.jpg) |
 | Manufacturer |                               Espressif                               |               Raspberry Pi               |              STMicroelectronics              |               Nordic Semiconductor               |                    NXP                    |

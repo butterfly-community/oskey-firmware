@@ -47,7 +47,7 @@ pub fn event_hub(req: ReqData) -> Result<()> {
             wallet_init_custom(data.words, data.password)?
         }
         req_data::Payload::DerivePublicKeyRequest(data) => wallet_drive_public_key(data.path)?,
-        req_data::Payload::SignRequest(data) => wallet_sign_msg(data.path, data.message, data.id)?,
+        req_data::Payload::SignRequest(data) => wallet_sign_msg(data.path, data.pre_hash, data.id)?,
     };
 
     let response = ResData {
@@ -179,17 +179,20 @@ pub fn wallet_drive_public_key(path: String) -> Result<res_data::Payload> {
     return Ok(payload);
 }
 
-pub fn wallet_sign_msg(path: String, msg: Vec<u8>, id: i32) -> Result<res_data::Payload> {
+pub fn wallet_sign_msg(path: String, pre_hash: Vec<u8>, id: i32) -> Result<res_data::Payload> {
     let seed = wallet_storage_get().ok_or(anyhow!("Wallet not initialized"))?;
 
     let ex_priv_key = ohw_wallets::wallets::ExtendedPrivKey::derive(&seed, path.parse()?)?;
 
-    let sign = ex_priv_key.sign(msg.as_slice())?;
+    let sign = ex_priv_key.sign(pre_hash.as_slice())?;
 
     let data = SignResponse {
         id,
-        signature: sign.into(),
-        sk: Some(ex_priv_key.secret_key.into()),
+        message: "".into(),
+        public_key: sign.public_key.into(),
+        pre_hash: sign.pre_hash.into(),
+        signature: sign.signature.into(),
+        recovery_id: sign.recovery_id.try_into()?
     };
 
     let payload = res_data::Payload::SignResponse(data);
