@@ -40,7 +40,7 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
 #### 演示视频:
 
-[![OHW](https://res.cloudinary.com/marcomontalbano/image/upload/v1733827828/video_to_markdown/images/youtube--JkhVWNCGZvg-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=JkhVWNCGZvg "OHW")
+[![Open Hardware Wallet - Task 2](https://res.cloudinary.com/marcomontalbano/image/upload/v1735636806/video_to_markdown/images/youtube--q8UIM43psh4-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=q8UIM43psh4 "Open Hardware Wallet - Task 2")
 
 ## 如何使用固件
 
@@ -54,9 +54,11 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
   [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
-  也可以选择尝试使用 Docker 简化这个过程。
+
+  Docker 需要更多设置以写入固件到真实硬件，仅开发者和高级用户选择。
 
   [https://github.com/zephyrproject-rtos/docker-image](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
+
 
   额外需要注意的是我们使用 Rust 这个更安全更现代的语言完成钱包功能，所以需要额外设置 Rust 编译环境。请参考以下链接。
 

@@ -44,7 +44,7 @@ Need help.
 
 ### Demo Video:
 
-[![OHW](https://res.cloudinary.com/marcomontalbano/image/upload/v1733827828/video_to_markdown/images/youtube--JkhVWNCGZvg-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=JkhVWNCGZvg "OHW")
+[![Open Hardware Wallet - Task 2](https://res.cloudinary.com/marcomontalbano/image/upload/v1735636806/video_to_markdown/images/youtube--q8UIM43psh4-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=q8UIM43psh4 "Open Hardware Wallet - Task 2")
 
 ## How to Use the Firmware
 
@@ -58,9 +58,9 @@ Need help.
 
   [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
-  Alternatively, you can try using Docker to simplify this process.
+  Docker requires extra configuration for hardware access - recommended for advanced users only.
 
-  [https://github.com/zephyrproject-rtos/docker-image](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
+  [https://github.com/zephyrproject-rtos/docker-image](https://github.com/zephyrproject-rtos/docker-image)
 
   Note: Built with Rust for better safety. See setup guide at this.
 
