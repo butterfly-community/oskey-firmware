@@ -192,7 +192,7 @@ pub fn wallet_sign_msg(path: String, pre_hash: Vec<u8>, id: i32) -> Result<res_d
         public_key: sign.public_key.into(),
         pre_hash: sign.pre_hash.into(),
         signature: sign.signature.into(),
-        recovery_id: sign.recovery_id.try_into()?
+        recovery_id: sign.recovery_id.map(|x| x as u32),
     };
 
     let payload = res_data::Payload::SignResponse(data);
