@@ -56,11 +56,17 @@ Need help.
 
   If your development board is not included in pre-compiled firmware, please check the following links to set up the development environment and compile firmware for your board.
 
+#### Getting Started
+
   [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
-  **If you have completed the steps in the link above, try compiling the example with this command.**
+ `esp32c3_devkitm` is our recommended development board. For other boards, please check the [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html).
 
-  `west build -p always -b esp32c3_devkitm samples/hello_world`
+If you have completed the steps in the link above, try compiling the example with this command.
+
+```bash
+west build -p always -b esp32c3_devkitm samples/hello_world
+```
 
  **This project also requires additional Rust configuration. please refer here.**
 
@@ -70,37 +76,38 @@ Need help.
 
   **Also refer to** **[Dockerfile](./Dockerfile)**
 
+#### Compile ohw
 
-### Compile ohw
+1. Clone source code
 
-* Clone source code
+   ```bash
+   git clone --recursive https://github.com/butterfly-communtiy/ohw-elf-firmware.git
+   ```
+2. Set environment variables
 
-  ```bash
-  git clone --recursive https://github.com/butterfly-communtiy/ohw-elf-firmware.git
-  ```
+   > Please refer to [here](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts) for the Windows environment.
+   >
 
-* Set environment variables (* Required)
+   ```bash
+   # Mac or Linux environment
+   source ~/zephyrproject/zephyr/zephyr-env.sh
+   ```
+3. Compile ohw source code
 
-  > Please refer to [here](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts) for the Windows environment.
+   ```bash
+   west build -p always -b esp32c3_devkitm
+   ```
+4. Flash
 
-  ```bash
-  # Mac or Linux environment
-  export ZEPHYR_BASE= ~/zephyrproject/zephyr
-  # Or
-  source ~/zephyrproject/zephyr/zephyr-env.sh
-  ```
-
-* Compile ohw source code
-
-  ```bash
-  west build -p always -b esp32c3_devkitm
-  ```
+   ```bash
+   west flash
+   ```
 
 ### Development Boards
 
 We carefully selected 5 development boards representing 3 different architectures from 5 different chip manufacturers as our officially supported boards. This demonstrates our vendor-independent capability. Our developers actively develop and test on these boards.
 
-We also provide direct support for over 300 development boards without any modifications needed. For a complete list, please check our [Supported Boards and Shields](https://docs.zephyrproject.org/latest/boards/index.html) documentation.
+We also provide direct support for over 300 development boards without any modifications needed. For a complete list, please check our [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html) documentation.
 
 Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
 

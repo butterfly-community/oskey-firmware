@@ -52,11 +52,17 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
   如果开发板不在预编译固件中，请查看以下链接设置开发环境，为开发板编译固件。
 
+#### 环境配置
+
   [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
- **如果您已经按照上面的链接配置完成，请尝试用这个命令编译示例，请确保没有错误。**
+  以下 `esp32c3_devkitm` 为我们推荐的开发板，其他开发板请查看支持列表 [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html)。
 
-  `west build -p always -b esp32c3_devkitm samples/hello_world`
+  如果您已经按照上面的链接配置完成，请尝试用这个命令编译示例，请确保没有错误。
+
+```bash
+  west build -p always -b esp32c3_devkitm samples/hello_world
+```
 
   **这个项目还需要额外的 Rust 支持，请参考以下链接配置。**
 
@@ -66,36 +72,38 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
   **还可以参考** **[Dockerfile](./Dockerfile)**
 
-### 编译 ohw
+#### 编译 ohw
 
-* Clone 源码
+1. Clone 源码
 
-  ```bash
-  git clone --recursive https://github.com/butterfly-communtiy/ohw-elf-firmware.git
-  ```
+   ```bash
+   git clone --recursive https://github.com/butterfly-communtiy/ohw-elf-firmware.git
+   ```
+2. 设置环境变量
 
-* 设置环境变量（* 必须执行）
+   > Windows 环境请查看 [这里](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts)
+   >
 
-  > Windows 环境请查看[这里](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts)
+   ```bash
+   # Mac 或者 Linux环境
+   source ~/zephyrproject/zephyr/zephyr-env.sh
+   ```
+3. 编译 ohw 源码
 
-  ```bash
-  # Mac 或者 Linux环境
-  export ZEPHYR_BASE= ~/zephyrproject/zephyr
-  # 或者
-  source ~/zephyrproject/zephyr/zephyr-env.sh
-  ```
+   ```bash
+   west build -p always -b esp32c3_devkitm
+   ```
+4. 写入固件
 
-* 编译 ohw 源码
-
-  ```bash
-  west build -p always -b esp32c3_devkitm
-  ```
+   ```bash
+   west flash
+   ```
 
 ### 开发板
 
 我们特意选择了来自不同的 5 个芯片制造商的 3 种架构的开发板作为官方支持，以展示我们不受供应商锁定的能力。开发者会在这些开发板上开发测试。
 
-除了我们拥有的开发板，也直接支持其他 300+ 款开发板，请查看支持列表 [Supported Boards and Shields](https://docs.zephyrproject.org/latest/boards/index.html)。
+除了我们拥有的开发板，也直接支持其他 300+ 款开发板，请查看支持列表 [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html)。
 
 由于开发板型号太多，这里只写了芯片的价格。请自行选择喜欢的开发板。
 
