@@ -1,3 +1,4 @@
+use alloc::vec;
 use ohw_protocol::Message;
 use zephyr::printkln;
 
@@ -76,5 +77,10 @@ extern "C" fn test_wallet() {
     }
 
     printkln!("\n9. Test Wallet Sign");
-    wallet_sign_msg("m/44'/60'/0'/0/0".into(), [0u8, 32].to_vec(), 0).unwrap();
+
+    let data = vec![0u8; 32];
+
+    wallet_sign_msg("m/44'/60'/0'/0/0".into(), data, 0).unwrap();
+
+    printkln!("\nWallet sign success");
 }
