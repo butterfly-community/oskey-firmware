@@ -25,6 +25,7 @@ jobs:
             /bin/bash -c '
               boards=("esp32c3_devkitm:zephyr.bin,zephyr.elf" \
                       "rpi_pico:zephyr.bin,zephyr.elf,zephyr.uf2" \
+                      "nucleo_f401re:zephyr.bin,zephyr.elf" \
                       "nrf52840_mdk:zephyr.bin,zephyr.elf" \
                       "frdm_k64f:zephyr.bin,zephyr.elf")
 
