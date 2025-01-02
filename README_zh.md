@@ -46,7 +46,7 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
 ### 预编译固件
 
-  我们会为我们拥有的开发板预编译固件，请查看右侧 Release 下载或者下文查看我们拥有哪些开发板。
+  我们会为我们拥有的开发板预编译固件，请查看右侧 [Release](https://github.com/butterfly-communtiy/ohw-elf-firmware/releases) 下载或者下文查看我们拥有哪些开发板。
 
 ### 自编译固件
 
@@ -54,21 +54,19 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
   [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
+ **如果您已经按照上面的链接配置完成，请尝试用这个命令编译示例，请确保没有错误。**
 
-  Docker 需要更多设置以写入固件到真实硬件，仅开发者和高级用户选择。
+  `west build -p always -b esp32c3_devkitm samples/basic/blinky`
 
-  [https://github.com/zephyrproject-rtos/docker-image](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
+  **这个项目还需要额外的 Rust 支持，请参考以下链接配置。**
 
-
-  额外需要注意的是我们使用 Rust 这个更安全更现代的语言完成钱包功能，所以需要额外设置 Rust 编译环境。请参考以下链接。
-
-  [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
-
-  [https://github.com/zephyrproject-rtos/zephyr-lang-rust](https://github.com/zephyrproject-rtos/zephyr-lang-rust)
+[  https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
 
   [https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800](https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800)
 
-## 开发板
+  **还可以参考** **[Dockerfile](./Dockerfile)**
+
+### 开发板
 
 我们特意选择了来自不同的 5 个芯片制造商的 3 种架构的开发板作为官方支持，以展示我们不受供应商锁定的能力。开发者会在这些开发板上开发测试。
 

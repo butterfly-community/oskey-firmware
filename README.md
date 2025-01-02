@@ -50,7 +50,7 @@ Need help.
 
 ### Pre-compiled Firmware
 
-  We provide pre-compiled firmware for development boards we own. Please check the Releases section on the right or see below for our available development boards.
+  We provide pre-compiled firmware for development boards we own. Please check the [Releases](https://github.com/butterfly-communtiy/ohw-elf-firmware/releases) section on the right or see below for our available development boards.
 
 ### Self-compiled Firmware
 
@@ -58,19 +58,19 @@ Need help.
 
   [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
-  Docker requires extra configuration for hardware access - recommended for advanced users only.
+  **If you have completed the steps in the link above, try compiling the example with this command.**
 
-  [https://github.com/zephyrproject-rtos/docker-image](https://github.com/zephyrproject-rtos/docker-image)
+  `west build -p always -b esp32c3_devkitm samples/basic/blinky`
 
-  Note: Built with Rust for better safety. See setup guide at this.
+ **This project also requires additional Rust configuration. please refer here.**
 
 [  https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
 
-  [https://github.com/zephyrproject-rtos/zephyr-lang-rust](https://github.com/zephyrproject-rtos/zephyr-lang-rust)
-
   [https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800](https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800)
 
-## Development Boards
+  **Also refer to** **[Dockerfile](./Dockerfile)**
+
+### Development Boards
 
 We carefully selected 5 development boards representing 3 different architectures from 5 different chip manufacturers as our officially supported boards. This demonstrates our vendor-independent capability. Our developers actively develop and test on these boards.
 
