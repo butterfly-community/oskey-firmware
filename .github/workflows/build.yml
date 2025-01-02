@@ -1,0 +1,58 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Build using Dockerfile
+        run: docker build -t ohw-builder .
+
+      - name: Build all boards
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workdir/ohw \
+            ohw-builder \
+            /bin/bash -c '
+              boards=("esp32c3_devkitm:zephyr.bin,zephyr.elf" \
+                      "rpi_pico:zephyr.bin,zephyr.elf,zephyr.uf2" \
+                      "nrf52840_mdk:zephyr.bin,zephyr.elf" \
+                      "frdm_k64f:zephyr.bin,zephyr.elf")
+
+              for board_info in "${boards[@]}"; do
+                board_name=$(echo $board_info | cut -d: -f1)
+                files=($(echo $board_info | cut -d: -f2 | tr "," " "))
+
+                echo "Building for $board_name..."
+                west build -p always -b $board_name
+
+                mkdir -p output/$board_name
+                for file in "${files[@]}"; do
+                  if [ -f build/zephyr/$file ]; then
+                    cp build/zephyr/$file output/$board_name/${board_name}.${file#zephyr.}
+                  fi
+                done
+
+                # Clean build directory for next board
+                rm -rf build
+              done'
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: output/**/*
+          tag_name: ${{ github.ref_name }}
+          name: OHW ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
