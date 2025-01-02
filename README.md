@@ -75,7 +75,10 @@ Need help.
 
 * Set environment variables (* Required)
 
+  > Please refer to [here](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts) for the Windows environment.
+
   ```bash
+  # Mac or Linux environment
   export ZEPHYR_BASE= ~/zephyrproject/zephyr
   # Or
   source ~/zephyrproject/zephyr-env.sh

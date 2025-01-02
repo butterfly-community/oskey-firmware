@@ -70,7 +70,10 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
 * 设置环境变量（* 必须执行）
 
+  > Windows 环境请查看[这里](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts)
+
   ```bash
+  # Mac 或者 Linux环境
   export ZEPHYR_BASE= ~/zephyrproject/zephyr
   # 或者
   source ~/zephyrproject/zephyr-env.sh
