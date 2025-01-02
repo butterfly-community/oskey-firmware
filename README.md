@@ -73,6 +73,12 @@ Need help.
 
 ### Compile ohw
 
+* Clone source code
+
+  ```bash
+  git clone --recursive https://github.com/butterfly-communtiy/ohw-elf-firmware.git
+  ```
+
 * Set environment variables (* Required)
 
   > Please refer to [here](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts) for the Windows environment.
@@ -81,10 +87,10 @@ Need help.
   # Mac or Linux environment
   export ZEPHYR_BASE= ~/zephyrproject/zephyr
   # Or
-  source ~/zephyrproject/zephyr-env.sh
+  source ~/zephyrproject/zephyr/zephyr-env.sh
   ```
 
-* Compile ohw source
+* Compile ohw source code
 
   ```bash
   west build -p always -b esp32c3_devkitm
