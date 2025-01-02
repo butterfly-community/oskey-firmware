@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 jobs:
   build:
@@ -23,15 +23,17 @@ jobs:
             -v ${{ github.workspace }}:/workdir/ohw \
             ohw-builder \
             /bin/bash -c '
-              boards=("esp32c3_devkitm:zephyr.bin,zephyr.elf" \
-                      "rpi_pico:zephyr.bin,zephyr.elf,zephyr.uf2" \
-                      "nucleo_f401re:zephyr.bin,zephyr.elf" \
-                      "nrf52840_mdk:zephyr.bin,zephyr.elf" \
-                      "frdm_k64f:zephyr.bin,zephyr.elf")
+              boards=("esp32c3_devkitm:esp32c3_devkitm:zephyr.bin,zephyr.elf" \
+                      "rpi_pico:rpi_pico:zephyr.bin,zephyr.elf,zephyr.uf2" \
+                      "nucleo_f401re:nucleo_f401re:zephyr.bin,zephyr.elf" \
+                      "nrf52840_mdk:nrf52840_mdk:zephyr.bin,zephyr.elf" \
+                      "frdm_k64f:frdm_k64f:zephyr.bin,zephyr.elf" \
+                      "esp32c3_luatos_core/esp32c3/usb:esp32c3_core:zephyr.bin,zephyr.elf")
 
               for board_info in "${boards[@]}"; do
                 board_name=$(echo $board_info | cut -d: -f1)
-                files=($(echo $board_info | cut -d: -f2 | tr "," " "))
+                custom_name=$(echo $board_info | cut -d: -f2)
+                files=($(echo $board_info | cut -d: -f3 | tr "," " "))
 
                 echo "Building for $board_name..."
                 west build -p always -b $board_name
@@ -39,7 +41,7 @@ jobs:
                 mkdir -p output/$board_name
                 for file in "${files[@]}"; do
                   if [ -f build/zephyr/$file ]; then
-                    cp build/zephyr/$file output/$board_name/${board_name}.${file#zephyr.}
+                    cp build/zephyr/$file output/$board_name/${custom_name}.${file#zephyr.}
                   fi
                 done
 
