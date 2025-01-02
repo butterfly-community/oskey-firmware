@@ -68,6 +68,12 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
 ### 编译 ohw
 
+* Clone 源码
+
+  ```bash
+  git clone --recursive https://github.com/butterfly-communtiy/ohw-elf-firmware.git
+  ```
+
 * 设置环境变量（* 必须执行）
 
   > Windows 环境请查看[这里](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts)
@@ -76,10 +82,10 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
   # Mac 或者 Linux环境
   export ZEPHYR_BASE= ~/zephyrproject/zephyr
   # 或者
-  source ~/zephyrproject/zephyr-env.sh
+  source ~/zephyrproject/zephyr/zephyr-env.sh
   ```
 
-* 编译 ohw
+* 编译 ohw 源码
 
   ```bash
   west build -p always -b esp32c3_devkitm
