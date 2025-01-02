@@ -66,6 +66,22 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
   **还可以参考** **[Dockerfile](./Dockerfile)**
 
+### 编译 ohw
+
+* 设置环境变量（* 必须执行）
+
+  ```bash
+  export ZEPHYR_BASE= ~/zephyrproject/zephyr
+  # 或者
+  source ~/zephyrproject/zephyr-env.sh
+  ```
+
+* 编译 ohw
+
+  ```bash
+  west build -p always -b esp32c3_devkitm
+  ```
+
 ### 开发板
 
 我们特意选择了来自不同的 5 个芯片制造商的 3 种架构的开发板作为官方支持，以展示我们不受供应商锁定的能力。开发者会在这些开发板上开发测试。

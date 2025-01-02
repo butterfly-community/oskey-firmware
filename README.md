@@ -70,6 +70,23 @@ Need help.
 
   **Also refer to** **[Dockerfile](./Dockerfile)**
 
+
+### Compile ohw
+
+* Set environment variables (* Required)
+
+  ```bash
+  export ZEPHYR_BASE= ~/zephyrproject/zephyr
+  # Or
+  source ~/zephyrproject/zephyr-env.sh
+  ```
+
+* Compile ohw source
+
+  ```bash
+  west build -p always -b esp32c3_devkitm
+  ```
+
 ### Development Boards
 
 We carefully selected 5 development boards representing 3 different architectures from 5 different chip manufacturers as our officially supported boards. This demonstrates our vendor-independent capability. Our developers actively develop and test on these boards.
