@@ -60,7 +60,7 @@ Need help.
 
   **If you have completed the steps in the link above, try compiling the example with this command.**
 
-  `west build -p always -b esp32c3_devkitm samples/basic/blinky`
+  `west build -p always -b esp32c3_devkitm samples/hello_world`
 
  **This project also requires additional Rust configuration. please refer here.**
 
