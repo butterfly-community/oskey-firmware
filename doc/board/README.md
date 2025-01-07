@@ -30,7 +30,7 @@
 
 ---
 
-2. 打开 [ohw-elf](https://github.com/butterfly-communtiy/ohw-elf-firmware) 的测试页  [https://ohw-app.vercel.app](https://ohw-app.vercel.app)，点击 [Flash Firmware](https://espressif.github.io/esptool-js) 进入固件写入页面。点击 Connect。
+2. 打开 [ohw-elf](https://github.com/butterfly-communtiy/ohw-elf-firmware) 的测试页  [https://ohw-app.vercel.app](https://ohw-app.vercel.app)，点击 [Flash Firmware](https://espressif.github.io/esptool-js) 进入固件写入页面。按住硬件钱包的 **Boot** 按钮连接电脑，点击 **Connect**。
 
 <br />
 
@@ -46,7 +46,7 @@
 
 ---
 
-4. 选择开发板连接后，首先更改 Flash Address 为 0x0，选择文件为刚才下载的文件。然后点击 Program 写入固件。
+4. 选择开发板连接后，首先更改 Flash Address 为 **0x0**，选择文件为刚才下载的文件。然后点击 **Program** 写入固件。
 
 <br />
 
@@ -54,7 +54,23 @@
 
 ---
 
-5. 等待写入完成，写入完成后点击 **Disconnect** 并关闭这个标签页，回到 [硬件钱包测试页](https://ohw-app.vercel.app)。另外需要您重新插拔一下硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件。
+5. 等待写入完成，写入完成后点击 **Disconnect** 并关闭这个标签页，回到 [硬件钱包测试页](https://ohw-app.vercel.app)。另外需要您**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件。
+
+<br />
+
+### 重置硬件钱包
+
+我们推荐的开发板具有数据存储功能，初始化后不可以再更改助记词，如果初始化后需要重置硬件钱包，请按照以下步骤操作，请注意重置后需要写入新的固件。
+
+---
+
+1. 打开 [ohw-elf](https://github.com/butterfly-communtiy/ohw-elf-firmware) 的测试页  [https://ohw-app.vercel.app](https://ohw-app.vercel.app)，点击 [Flash Firmware](https://espressif.github.io/esptool-js) 进入固件写入页面。点击 **Connect**。连接成功后点击 **Erase Flash**。
+
+<br />
+
+![esp32-c3](../image/start/start-6.png)
+
+2. 清除固件后请按照上文**下载固件**步骤写入新的固件。
 
 <br />
 
@@ -72,7 +88,7 @@
 
 ### 注意
 
-  目前硬件钱包在开发阶段，而且开发板的芯片未经过锁定不具备安全功能。为了避免安全风险，所有数据会在**断电后清除**，请您注意。
+  目前硬件钱包在开发阶段，而且开发板的芯片未经过锁定不具备安全功能。为了避免安全风险，**所有数据未经过安全保护**，请您注意。
 
 ### 升级
 

@@ -78,7 +78,7 @@ pub fn wallet_version_req() -> res_data::Payload {
     };
 
     let version = VersionResponse {
-        version: "0.0.1".into(),
+        version: "0.0.2".into(),
         features: features.into(),
     };
     let payload = res_data::Payload::VersionResponse(version);
