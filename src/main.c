@@ -5,6 +5,7 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/device.h>
 #include "port/uart.h"
+#include "storage/storage.h"
 #include "test.h"
 
 void cs_random(void *dst, size_t len);
@@ -12,6 +13,8 @@ void cs_random(void *dst, size_t len);
 int main(void)
 {
 	// test_wallet();
+
+	storage_init();
 
 	k_work_init(&app_uart_work, app_uart_work_handler);
 
