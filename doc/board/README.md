@@ -1,4 +1,4 @@
-## 使用指南
+## 固件快速写入指南
 
 如果您已经购买或者申请到了我们的官方开发板，正在思考如何使用和体验，不用担心，我们已经为您准备了完整的使用说明。
 
@@ -10,13 +10,19 @@
 
 ![esp32-c3](../image/board/esp32-c3-core-usb.png)
 
-## 数字货币硬件钱包
+## 硬件钱包
 
 [ohw-elf](https://github.com/butterfly-communtiy/ohw-elf-firmware) 是一个完全开源的非商业化的硬件钱包项目。
 
 我们鼓励您按照 [主页](https://github.com/butterfly-communtiy/ohw-elf-firmware) 说明搭建本地开发环境并写入固件。请您首先尝试主页说明，这可以让您更快的参与到实际开发建设中。
 
 如果您是非开发者或者搭建开发环境中出现问题，我们也有快速写入方式供您体验。请注意仔细阅读，尤其是加粗部分提示。
+
+### 演示视频
+
+这里有一个演示视频，是下方文字图片的视频版本。
+
+[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
 
 ### 下载固件
 
@@ -54,7 +60,7 @@
 
 ---
 
-5. 等待写入完成，写入完成后点击 **Disconnect** 并关闭这个标签页，回到 [硬件钱包测试页](https://ohw-app.vercel.app)。另外需要您**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件。
+5. 等待写入完成，写入完成后点击 **Disconnect** 并关闭这个标签页，回到 [硬件钱包测试页](https://ohw-app.vercel.app)。🔴⚠️另外需要您**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
 
 <br />
 
@@ -78,13 +84,13 @@
 
 ---
 
-1. 点击页面上的 Connect 按钮，并选择硬件钱包连接。
+1. 点击页面上的 Connect 按钮，并选择硬件钱包连接。**[点击此处查看快速使用文档](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/start)**
 
 <br />
 
 ![esp32-c3](../image/start/start-5.png)
 
-  连接硬件钱包后，您现在可以体验目前支持的功能，目前已有的功能包括 **助记词生成导入、公私钥生成（以太坊格式地址）、签名。**
+连接后即可开始使用 ohw 硬件钱包，我们还为您准备了一份详细的 **[快速使用文档](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/start)**。
 
 ### 注意
 

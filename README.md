@@ -2,7 +2,7 @@
 
 ## What is OHW?
 
-OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. Our mission is to help you create your own hardware wallet, both in terms of software and hardware.
+OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. Our mission is to help you create your own hardware wallet.
 
 Unlike commercial hardware products where open-source is used to drive sales of their commercial products, our open-source focus is on building infrastructure.
 
@@ -15,6 +15,12 @@ The Open Hardware Wallet supports multiple hardware architectures and is optimiz
 ## What can this product do?
 
 We are building core infrastructure connecting blockchain with physical devices. Not just a hardware wallet.
+
+### **Guide**
+
+**[Firmware Flashing Guide](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board)**
+
+**[Quick Start Guide](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/start)**
 
 ### Feature:
 
@@ -44,7 +50,7 @@ Need help.
 
 ### Demo Video:
 
-[![Open Hardware Wallet - Task 2](https://res.cloudinary.com/marcomontalbano/image/upload/v1735636806/video_to_markdown/images/youtube--q8UIM43psh4-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=q8UIM43psh4 "Open Hardware Wallet - Task 2")
+[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
 
 ## How to Use the Firmware
 
@@ -124,3 +130,9 @@ Due to the wide variety of development board models available, only the chip pri
 |     RAM     |                                                           400 KB                                                           |                                                     264 KB                                                     |                                           96 KB                                           |                                              256 KB                                              |                                         256 KB                                         |
 |     ROM     |                                                        384 KB + 4 M                                                        |                                                   16 KB + 2 M                                                   |                                           512 KB                                           |                                               1 M                                               |                                           1 M                                           |
 |  MCU Price  |                                                            \$0.5                                                            |                                                      \$0.8                                                      |                                            \$2                                            |                                               \$3                                               |                                          \$20                                          |
+
+By default, the chip on the development board is not security-locked and has no security features enabled.
+
+Each chip model has its own specific locking protocol that varies by manufacturer. Please refer to your chip's technical documentation.
+
+We cannot assist with chip locking at this time. **Please note that this matter requires special attention**.
