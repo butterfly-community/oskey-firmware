@@ -65,6 +65,21 @@ int storage_seed_read_buffer(uint8_t *data, int len)
 	return 0;
 }
 
+int storage_erase()
+{
+	// int res = nvs_clear(&fs);
+	// if (res < 0) {
+	// 	return res;
+	// }
+	// return 0;
+
+	int res = nvs_delete(&fs, 2);
+	if (res < 0) {
+		return res;
+	}
+	return 0;
+}
+
 #else
 
 uint8_t storage_fake_buffer[65] = {0};
@@ -101,4 +116,11 @@ int storage_seed_read_buffer(uint8_t *data, int len)
 	memcpy(data, &storage_fake_buffer[1], len);
 	return 0;
 }
+
+int storage_erase()
+{
+	storage_fake_buffer[0] = 0;
+	return 0;
+}
+
 #endif

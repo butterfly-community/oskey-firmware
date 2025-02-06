@@ -7,6 +7,7 @@
 #include "bluetooth.h"
 #include "storage.h"
 #include "boot.h"
+#include "display/screen.h"
 
 void cs_random(void *dst, size_t len);
 
@@ -15,6 +16,8 @@ int main(void)
 	printk("build time: " __DATE__ " " __TIME__ "\n");
 
 	storage_init();
+
+	storage_erase();
 
 	k_work_init(&app_uart_work, app_uart_work_handler);
 
@@ -29,6 +32,8 @@ int main(void)
 	bt_start();
 
 	confirm_mcuboot_img();
+
+	test_lvgl();
 
 	while (true) {
 		k_msleep(100);

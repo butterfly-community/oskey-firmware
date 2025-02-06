@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "bindings.h"
 
 static uint8_t rx_buf[256];
 static uint32_t rx_len = 0;

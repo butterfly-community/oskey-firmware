@@ -8,20 +8,22 @@ license = ""
 [lib]
 crate-type = ["staticlib"]
 
-# If use cortex-m0 and other target not support atomic, use this patch
 [patch.crates-io]
-bytes = { git = "https://github.com/atlas-aero/rt-bytes", branch = "cfg_target_has_atomic_v1.6.0" }
 
 [dependencies]
 zephyr = "3.7.0"
+bytes = { version = "1.10", default-features = false, features = ["extra-platforms"] }
 anyhow = { version = "1.0", default-features = false }
 ohw-wallets = { path = "./wallets", default-features = false, features = [
   "crypto-psa",
 ] }
+heapless = { version = "0.8", default-features = false }
 ohw-protocol = { path = "./protocol" }
+portable-atomic = { version = "1.3", default-features = false, features = ["require-cas"] }
 
 [build-dependencies]
 zephyr-build = "3.7.0"
+cbindgen = "0.28.0"
 
 [profile.release]
 codegen-units = 1
