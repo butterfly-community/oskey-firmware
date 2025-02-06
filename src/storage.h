@@ -1,10 +1,7 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
-#include <stdbool.h>
+#include "wrapper.h"
 
 int storage_init();
 bool storage_seed_check();

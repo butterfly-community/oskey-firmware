@@ -64,6 +64,7 @@ int storage_seed_read_buffer(uint8_t *data, int len)
 	}
 	return 0;
 }
+
 #else
 
 uint8_t storage_fake_buffer[65] = {0};

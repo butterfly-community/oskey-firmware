@@ -4,9 +4,19 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/device.h>
 #include <zephyr/kernel.h>
+#include "wrapper.h"
 
-#define FIFO_SIZE   32
+#define FIFO_SIZE 32
+
+#if DT_NODE_HAS_STATUS(DT_ALIAS(app_uart), okay)
+
+#define DEV_CONSOLE DEVICE_DT_GET(DT_ALIAS(app_uart))
+
+#else
+
 #define DEV_CONSOLE DEVICE_DT_GET(DT_CHOSEN(zephyr_console))
+
+#endif
 
 struct k_work app_uart_work;
 

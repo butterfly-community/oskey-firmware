@@ -66,12 +66,12 @@ Need help.
 
   [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
- `eesp32c3_luatos_core` is our recommended development board. For other boards, please check the [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html).
+`esp32c3_devkitm` is our recommended development board. For other boards, please check the [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html).
 
 If you have completed the steps in the link above, try compiling the example with this command.
 
 ```bash
-west build -p always -b esp32c3_luatos_core/esp32c3/usb samples/hello_world
+west build -p always -b esp32c3_devkitm samples/hello_world
 ```
 
  **This project also requires additional Rust configuration. please refer here.**
@@ -101,7 +101,7 @@ west build -p always -b esp32c3_luatos_core/esp32c3/usb samples/hello_world
 3. Compile ohw source code
 
    ```bash
-   west build -p always -b esp32c3_luatos_core/esp32c3/usb
+   west build -p always -b esp32c3_devkitm
    ```
 4. Flash
 
@@ -121,15 +121,15 @@ Due to the wide variety of development board models available, only the chip pri
 
 <br />
 
-|     Name     | [ESP32&nbsp;C3](https://docs.zephyrproject.org/latest/boards/luatos/esp32c3_luatos_core/doc/index.html)&nbsp;(Recommended)🔥🔥 | [Raspberry&nbsp;Pi&nbsp;Pico](https://docs.zephyrproject.org/latest/boards/raspberrypi/rpi_pico/doc/index.html) 🔥 | [Nucleo F401RE](https://docs.zephyrproject.org/latest/boards/st/nucleo_f401re/doc/index.html) | [nRF52840-MDK](https://docs.zephyrproject.org/latest/boards/makerdiary/nrf52840_mdk/doc/index.html) | [NXP FRDM-K64F](https://docs.zephyrproject.org/latest/boards/nxp/frdm_k64f/doc/index.html) |
-| :----------: | :-------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------: |
-|    Image    |                                  ![esp32-c3-devkitm](doc/image/board/esp32-c3-core-usb.png)                                  |                                    ![rpi-pico](doc/image/board/pico-board.png)                                    |                       ![stm32f401](doc/image/board/nucleo_f401re.jpg)                       |                        ![nrf52840-mdk](doc/image/board/mdk52840-cover.png)                        |                        ![frdm_k64f](doc/image/board/frdm_k64f.jpg)                        |
-| Manufacturer |                                                          Espressif                                                          |                                                  Raspberry Pi                                                  |                                     STMicroelectronics                                     |                                       Nordic Semiconductor                                       |                                           NXP                                           |
+|     Name     | [ESP32&nbsp;C3](https://docs.zephyrproject.org/latest/boards/espressif/esp32c3_devkitm/doc/index.html)&nbsp;(Recommended)🔥🔥 | [Raspberry&nbsp;Pi&nbsp;Pico](https://docs.zephyrproject.org/latest/boards/raspberrypi/rpi_pico/doc/index.html) 🔥 | [Nucleo F401RE](https://docs.zephyrproject.org/latest/boards/st/nucleo_f401re/doc/index.html) | [nRF52840-MDK](https://docs.zephyrproject.org/latest/boards/makerdiary/nrf52840_mdk/doc/index.html) | [NXP FRDM-K64F](https://docs.zephyrproject.org/latest/boards/nxp/frdm_k64f/doc/index.html) |
+| :----------: | :------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------: |
+|    Image    |                           ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png)                           |                                    ![rpi-pico](doc/image/board/pico-board.png)                                    |                       ![stm32f401](doc/image/board/nucleo_f401re.jpg)                       |                        ![nrf52840-mdk](doc/image/board/mdk52840-cover.png)                        |                        ![frdm_k64f](doc/image/board/frdm_k64f.jpg)                        |
+| Manufacturer |                                                         Espressif                                                         |                                                  Raspberry Pi                                                  |                                     STMicroelectronics                                     |                                       Nordic Semiconductor                                       |                                           NXP                                           |
 |     Chip     |                                                         ESP32C3FH4                                                         |                                                     RP2040                                                     |                                       STM32F401RET6                                       |                                             nRF52840                                             |                                     MK64FN1M0VLL12                                     |
 | Architecture |                                                           RISC-V                                                           |                                                  Arm Cortex-M0                                                  |                                       ARM Cortex-M4                                       |                                          ARM Cortex-M4                                          |                                      ARM Cortex-M4                                      |
 |     RAM     |                                                           400 KB                                                           |                                                     264 KB                                                     |                                           96 KB                                           |                                              256 KB                                              |                                         256 KB                                         |
 |     ROM     |                                                        384 KB + 4 M                                                        |                                                   16 KB + 2 M                                                   |                                           512 KB                                           |                                               1 M                                               |                                           1 M                                           |
-|  MCU Price  |                                                            \$0.5                                                            |                                                      \$0.8                                                      |                                            \$2                                            |                                               \$3                                               |                                          \$20                                          |
+|  MCU Price  |                                                           \$0.5                                                           |                                                      \$0.8                                                      |                                            \$2                                            |                                               \$3                                               |                                          \$20                                          |
 
 By default, the chip on the development board is not security-locked and has no security features enabled.
 

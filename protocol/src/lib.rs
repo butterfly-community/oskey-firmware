@@ -50,12 +50,12 @@ mod test {
     use super::*;
     use anyhow::{anyhow, Ok, Result};
     use prost::Message;
-    use proto::{res_data::Payload, ResData, VersionResponse};
+    use proto::{res_data::Payload, Features, ResData, VersionResponse};
 
     fn get_test_payload_bytes() -> Vec<u8> {
         let payload = Payload::VersionResponse(VersionResponse {
             version: "1.0.0".into(),
-            features: { Features::default() },
+            features: { Features::default() }.into(),
         });
 
         let response = ResData {
@@ -66,6 +66,7 @@ mod test {
 
         return bytes;
     }
+
 
     #[test]
     fn test_version() -> Result<()> {

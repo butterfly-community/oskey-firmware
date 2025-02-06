@@ -13,7 +13,7 @@ crate-type = ["staticlib"]
 bytes = { git = "https://github.com/atlas-aero/rt-bytes", branch = "cfg_target_has_atomic_v1.6.0" }
 
 [dependencies]
-zephyr = " 3.7.0"
+zephyr = "3.7.0"
 anyhow = { version = "1.0", default-features = false }
 ohw-wallets = { path = "./wallets", default-features = false, features = [
   "crypto-psa",

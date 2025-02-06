@@ -1,0 +1,9 @@
+west build -b  nrf52840dk/nrf52840 ~/Develop/platform/zephyr-project/bootloader/mcuboot/boot/zephyr --force -d build/mcuboot
+
+west flash --hex-file build/mcuboot/zephyr.hex
+
+west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd)
+
+west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LOG=y && west flash
+
+west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LOG=y && west flash --esp-device=/dev/ttyACM0 && west espressif monitor

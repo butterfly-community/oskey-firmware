@@ -1,0 +1,11 @@
+
+/ {
+	aliases {
+		app-uart = &uart0;
+	};
+	chosen {
+		zephyr,console = &usb_serial;
+		zephyr,shell-uart = &usb_serial;
+	};
+};
+

@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <zephyr/sys/printk.h>
 
 extern void event_bytes_handle(uint8_t *bytes, size_t len);
 

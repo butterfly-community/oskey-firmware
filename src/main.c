@@ -1,18 +1,18 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
 #include <zephyr/random/random.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/settings/settings.h>
 #include <zephyr/device.h>
-#include "port/uart.h"
-#include "storage/storage.h"
-#include "test.h"
+#include "wrapper.h"
+#include "uart.h"
+#include "bluetooth.h"
+#include "storage.h"
+#include "boot.h"
 
 void cs_random(void *dst, size_t len);
 
 int main(void)
 {
-	// test_wallet();
+	printk("build time: " __DATE__ " " __TIME__ "\n");
 
 	storage_init();
 
@@ -20,8 +20,18 @@ int main(void)
 
 	app_uart_irq_register();
 
+	bt_init();
+
+	if (IS_ENABLED(CONFIG_SETTINGS)) {
+		settings_load();
+	}
+
+	bt_start();
+
+	confirm_mcuboot_img();
+
 	while (true) {
-		k_sleep(K_MSEC(100));
+		k_msleep(100);
 	}
 	return 0;
 }
