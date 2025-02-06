@@ -187,10 +187,11 @@ int bt_start()
 	bt_conn_auth_cb_register(&auth_cb_display);
 	bt_conn_auth_info_cb_register(&auth_cb_info);
 
-	// If not display
-	// CONFIG_BT_FIXED_PASSKEY=y
-	// bt_passkey_set(123456);
-
+// If not display
+// CONFIG_BT_FIXED_PASSKEY=y
+#ifdef CONFIG_DISPLAY
+	bt_passkey_set(123456);
+#endif
 	start_adv();
 
 	// TODO: Add nus send

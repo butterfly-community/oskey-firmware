@@ -13,6 +13,8 @@ void cs_random(void *dst, size_t len);
 
 int main(void)
 {
+	k_msleep(1000);
+
 	printk("build time: " __DATE__ " " __TIME__ "\n");
 
 	storage_init();

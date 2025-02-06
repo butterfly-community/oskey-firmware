@@ -20,10 +20,10 @@ int test_lvgl()
 
 	lv_obj_set_style_bg_color(lv_screen_active(), lv_color_black(), LV_PART_MAIN);
 
-	if (IS_ENABLED(CONFIG_LV_Z_DEMO_BENCHMARK)) {
-		lv_demo_benchmark();
-		return;
-	}
+#ifdef CONFIG_LV_Z_DEMO_BENCHMARK
+	lv_demo_benchmark();
+	return 0;
+#endif
 
 	return 0;
 }
@@ -56,11 +56,12 @@ void app_display_loop()
 	while (1) {
 		uint32_t sleep_ms = lv_timer_handler();
 
-		uint32_t real_sleep = sleep_ms >= UINT32_MAX ? 100 : sleep_ms;
+		uint32_t real_sleep =
+			(sleep_ms == UINT32_MAX) ? 100 : ((sleep_ms > 0) ? sleep_ms : 10);
 
 		unsigned int pin;
 
-		if (msg_check_sleep > 200 && k_msgq_get(&display_msgq, &pin, K_NO_WAIT) == 0 ) {
+		if (msg_check_sleep > 200 && k_msgq_get(&display_msgq, &pin, K_NO_WAIT) == 0) {
 			printf("PIN: %d\n", pin);
 			app_display_bt_pin(pin);
 			msg_check_sleep = 0;

@@ -1,0 +1,26 @@
+/ {
+	aliases {
+		app-uart = &uart0;
+	};
+	chosen {
+		zephyr,console = &uart1;
+		zephyr,shell-uart = &uart1;
+		zephyr,uart-mcumgr = &uart1;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+	uart {
+		status = "okay";
+		compatible = "zephyr,native-tty-uart";
+		current-speed = <115200>;
+		serial-port = "/dev/ttyUSB0";
+	};
+
+	sdl_dc {
+		compatible = "zephyr,sdl-dc";
+		height = < 172 >;
+		width = < 320 >;
+	};
+};
+
+

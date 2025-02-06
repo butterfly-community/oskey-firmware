@@ -7,3 +7,29 @@ west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd)
 west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LOG=y && west flash
 
 west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LOG=y && west flash --esp-device=/dev/ttyACM0 && west espressif monitor
+
+
+config RUST_SUPPORTED
+        bool
+        default y if ((CPU_CORTEX_M || \
+                                (RISCV && !RISCV_ISA_RV32E && !RISCV_ISA_RV128I) || SOC_SERIES_ESP32S3) && \
+                                !TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
+        help
+          Selected for platforms that have support for Rust.
+
+elseif(CONFIG_SOC_ESP32S3)
+  set(RUST_TARGET "xtensa-esp32s3-none-elf" PARENT_SCOPE)
+
+
+cargo +esp build -Z build-std=core,alloc
+
+
+espsecure.py sign_data --version 2 --keyfile BOOTLOADER_SIGNING_KEY.pem -o boot_sign.bin ./build/mcuboot_esp32c3.bin
+
+--encrypt if flash
+
+imgtool sign -k /home/life/Develop/platform/zephyr-project/bootloader/mcuboot/root-ec-p256.pem --pad --pad-sig --align 32 --max-align 32 -v 0 -H 32 -S 0x1c0000 ./build/zephyr/zephyr.bin ./build/sign.bin
+
+esptool.py -p /dev/ttyUSB0 -b 800000 --no-stub --after no_reset --chip esp32c3 write_flash_encrypted --flash_mode dio --flash_size 4MB --flash_freq 40m 0x0 boot_sign.bin --force --encrypt
+
+esptool.py -p /dev/ttyUSB0 -b 400000 --no-stub   --after no_reset --chip esp32c3 write_flash --flash_mode dio --flash_size 4MB --flash_freq 40m 0x20000 ./build/sign.bin --force --encrypt

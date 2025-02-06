@@ -19,37 +19,64 @@
 		write-only;
 		#address-cells = <1>;
 		#size-cells = <0>;
+		// st7789v: st7789v@0 {
+			//         compatible = "sitronix,st7789v";
+			//         mipi-max-frequency = <80000000>;
+			//         reg = <0>;
+			//         width = <320>;
+			//         height = <172>;
+			//         x-offset = <0>;    // 0x2a
+			//         y-offset = <34>;   // 0x2b
+			//         vcom = <0x35>;     // 0xbb
+			//         gctrl = <0x35>;    // 0xb7
+			//         vrhs = <0x13>;     // 0xc3
+			//         vdvs = <0x20>;     // 0xc4
+			//         mdac = <0xa0>;     // 0x36 horizontal 0x00 0xc0 0x70 0xa0
+			//         gamma = <0x01>;    // no gamma
+			//         colmod = <0x66>;   // 0x3a，0x05 0x55
+			//         lcm = <0x2c>;
+			//         porch-param = [ 0c 0c 00 33 33  ];   // 0xb2
+			//         cmd2en-param = [ 5a 69 02 01  ];     // 0xdf
+			//         pwctrl1-param = [ a4 a1  ];          // 0xd0
+			//         pvgam-param = [ F0 00 04 04 04 05 29 33 3E 38 12 12 28 30  ]; // 0xe0
+			//         nvgam-param = [ F0 07 0A 0D 0B 07 28 33 3e 36 14 14 29 32  ]; // 0xe1
+			//         ram-param = [ 00 F0  ];
+			//         rgb-param = [ CD 08 14  ];
+			//         mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
+		// };
 
+		// zjy
 		st7789v: st7789v@0 {
 			compatible = "sitronix,st7789v";
 			mipi-max-frequency = <80000000>;
 			reg = <0>;
 			width = <320>;
-			height = <172>;
+			height = <240>;
 			x-offset = <0>;    // 0x2a
-			y-offset = <34>;   // 0x2b
-			vcom = <0x35>;     // 0xbb
-			gctrl = <0x35>;    // 0xb7
-			vrhs = <0x13>;     // 0xc3
+			y-offset = <0>;    // 0x2b
+			// dxwy
+			// vcom = <0x29>;
+			// vrhs = <0x19>;
+			vcom = <0x32>;     // 0xbb
+			gctrl = <0x35>;
+			vrhs = <0x15>;     // 0xc3
 			vdvs = <0x20>;     // 0xc4
-			mdac = <0xa0>;     // 0x36 horizontal 0x00 0xc0 0x70 0xa0
+			mdac = <0x60>;     // 0x36 horizontal 0x00 0xc0 0x70 0xa0 0x60
 			gamma = <0x01>;    // no gamma
 			colmod = <0x66>;   // 0x3a，0x05 0x55
 			lcm = <0x2c>;
-			porch-param = [ 0c 0c 00 33 33 ];   // 0xb2
-			cmd2en-param = [ 5a 69 02 01 ];     // 0xdf
-			pwctrl1-param = [ a4 a1 ];          // 0xd0
-			pvgam-param = [ F0 00 04 04 04 05 29 33 3E 38 12 12 28 30 ]; // 0xe0
-			nvgam-param = [ F0 07 0A 0D 0B 07 28 33 3e 36 14 14 29 32 ]; // 0xe1
-			ram-param = [ 00 F0 ];
-			rgb-param = [ CD 08 14 ];
+			porch-param = [ 0c 0c 00 33 33  ];   // 0xb2
+			cmd2en-param = [ 5a 69 02 01  ];     // 0xdf
+			pwctrl1-param = [ a4 a1  ];          // 0xd0
+			pvgam-param = [ d0 08 0e 09 09 05 31 33 48 17 14 15 31 34  ]; // 0xe0
+			nvgam-param = [ d0 08 0e 09 09 15 31 33 48 17 14 15 31 34  ]; // 0xe1
+			ram-param = [ 00 F0  ];
+			rgb-param = [ CD 08 14  ];
 			mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
 		};
-
 	};
 };
 
 &dma {
 	status = "okay";
 };
-

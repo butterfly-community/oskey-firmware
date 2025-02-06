@@ -1,21 +1,33 @@
 #include "storage.h"
 
-#ifdef CONFIG_NVS
-
 #include <zephyr/kernel.h>
 #include <zephyr/fs/nvs.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/device.h>
 
-#define STORAGE_NODE DT_NODE_BY_FIXED_PARTITION_LABEL(storage)
-#define FLASH_NODE   DT_MTD_FROM_FIXED_PARTITION(STORAGE_NODE)
+#ifdef CONFIG_SOC_SERIES_ESP32C3
+
+#include <esp_efuse.h>
+#include <esp_efuse_table.h>
+
+#endif
+
+#define NVS_PARTITION_NODE DT_NODE_BY_FIXED_PARTITION_LABEL(storage)
+#define NVS_FLASH_NODE     DT_MTD_FROM_FIXED_PARTITION(NVS_PARTITION_NODE)
+
+#define NVS_FLASH_ERASE_SIZE DT_PROP(DT_GPARENT(NVS_PARTITION_NODE), erase_block_size)
+#define NVS_PARTITION_OFFSET DT_REG_ADDR(NVS_PARTITION_NODE)
+#define NVS_PARTITION_SIZE   DT_REG_SIZE(NVS_PARTITION_NODE)
+#define NVS_SECTOR_COUNT     (NVS_PARTITION_SIZE / NVS_FLASH_ERASE_SIZE)
 
 static struct nvs_fs fs = {
-	.flash_device = DEVICE_DT_GET(FLASH_NODE),
-	.offset = DT_REG_ADDR(STORAGE_NODE),
-	.sector_size = 4096,
-	.sector_count = DT_REG_SIZE(STORAGE_NODE) / 4096,
+	.flash_device = DEVICE_DT_GET(NVS_FLASH_NODE),
+	.offset = NVS_PARTITION_OFFSET,
+	.sector_size = NVS_FLASH_ERASE_SIZE,
+	.sector_count = NVS_SECTOR_COUNT,
 };
+
+bool ohw_official = false;
 
 int storage_init()
 {
@@ -28,6 +40,24 @@ int storage_init()
 	if (res < 0) {
 		return res;
 	}
+
+	printk("NVS Configuration:\n");
+	printk("  Flash device: %p (%s)\n", fs.flash_device, fs.flash_device->name);
+	printk("  Offset: 0x%lx (%ld)\n", fs.offset, fs.offset);
+	printk("  Sector size: %d bytes\n", fs.sector_size);
+	printk("  Sector count: %d\n", fs.sector_count);
+	printk("  Total size: %d bytes\n", fs.sector_size * fs.sector_count);
+
+#ifdef CONFIG_SOC_SERIES_ESP32C3
+
+	uint8_t ohw_data[32] = {0};
+	esp_err_t err = esp_efuse_read_block(EFUSE_BLK6, ohw_data, 0, 256);
+
+	if (err == ESP_OK && ohw_data[31] == 0xFF) {
+		ohw_official = true;
+	}
+
+#endif
 	return res;
 }
 
@@ -79,48 +109,3 @@ int storage_erase()
 	}
 	return 0;
 }
-
-#else
-
-uint8_t storage_fake_buffer[65] = {0};
-
-int storage_init()
-{
-	return 0;
-}
-
-bool storage_seed_check()
-{
-	return (storage_fake_buffer[0] == 1);
-}
-
-int storage_seed_write_buffer(const uint8_t *data, int len)
-{
-	if (len > 64) {
-		return -1;
-	}
-
-	storage_fake_buffer[0] = 1;
-	memcpy(&storage_fake_buffer[1], data, len);
-	return 0;
-}
-
-int storage_seed_read_buffer(uint8_t *data, int len)
-{
-	if (!storage_seed_check()) {
-		return -1;
-	}
-	if (len > 64) {
-		return -2;
-	}
-	memcpy(data, &storage_fake_buffer[1], len);
-	return 0;
-}
-
-int storage_erase()
-{
-	storage_fake_buffer[0] = 0;
-	return 0;
-}
-
-#endif
