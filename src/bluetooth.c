@@ -13,6 +13,7 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/services/nus.h>
 #include <zephyr/mgmt/mcumgr/transport/smp_bt.h>
+#include "display/screen.h"
 
 #define STR_LEN(str) (sizeof(str) - 1)
 
@@ -101,6 +102,9 @@ static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	int ret = k_msgq_put(&display_msgq, &passkey, K_NO_WAIT);
+	printf("Push PIN: %d, ret: %d\n", passkey, ret);
 
 	printk("Passkey for %s: %06u\n", addr, passkey);
 }

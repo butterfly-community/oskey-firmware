@@ -35,9 +35,8 @@ int main(void)
 
 	test_lvgl();
 
-	while (true) {
-		k_msleep(100);
-	}
+	app_display_loop();
+
 	return 0;
 }
 
