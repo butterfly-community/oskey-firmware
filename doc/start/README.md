@@ -1,116 +1,108 @@
-# 如何使用
+# How to Use
 
-本文假设您已经完成[主页](https://github.com/butterfly-communtiy/ohw-elf-firmware)的开发教程或者按照[固件快速写入指南](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board)已经把最新版本固件写入开发板。
+First, click to open the OHW official test page [https://ohw-app.vercel.app](https://ohw-app.vercel.app/).
 
-首先点击打开 ohw 官方测试页[ https://ohw-app.vercel.app](https://ohw-app.vercel.app/) ，[点击此处打开](https://ohw-app.vercel.app)。
+## Checking the Version
 
-### 演示视频
+Click the Connect button in the upper left corner, which should change from gray "Connect" to green **Connected**. If it doesn't change, other tabs or apps may have opened the connection; please ensure they are closed.
 
-这里有一个演示视频，是下方文字图片的视频版本。
+The OHW Status bar should display the firmware version number in green, for example **OK Version: 0.0.2**. If it shows "Not Found ohw firmware, Please [check the manual](https://github.com/butterfly-communtiy/ohw-elf-firmware)!", please make sure you have followed the instructions to write the firmware.
 
-[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
-
-## 检查版本
-
-点击左上角 Connect 按钮应该从灰色的 Connect 变为绿色的 **Connected**，如果未变更则有其他标签页或者 App 打开了连接，请确认关闭。
-
-OHW Status 栏应显示绿色的固件版本号，例为 **OK Version: 0.0.2**。如果显示 Not Found ohw firmware, Please [check the manual](https://github.com/butterfly-communtiy/ohw-elf-firmware)! 请确认按照说明写入固件。
-
-如果您已经完成[固件快速写入指南](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board)，仍然出现该提示，🔴⚠️请按照指南描述**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
+If you have completed the [Firmware Quick Flashing Guide](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board) and still see this prompt, 🔴⚠️please **reconnect** the hardware wallet or press the **RST** button on the hardware wallet to restart the wallet firmware as described in the guide⚠️🔴.
 
 ![ohw](../image/start/start-7.png)
 
-## 助记词
+## Mnemonic Phrase
 
-ohw 支持导入或者生成助记词。
+OHW supports importing or generating mnemonic phrases.
 
 ![ohw](../image/start/start-8.png)
 
-### 生成助记词
+### Generating a Mnemonic Phrase
 
-点击 Generate 默认会生成 24 个单词的助记词，请抄写在纸上，请勿复制截图拍照等。
-
-<br/>
-
-### 导入助记词
-
-空格分隔已有的助记词，点击导入，请注意当前版本只支持**英语**的助记词。
+Click Generate to create a default 24-word mnemonic phrase. Please write it down on paper and do not copy, screenshot, or photograph it.
 
 <br/>
 
-### 注意
+### Importing a Mnemonic Phrase
 
-生成助记词只会显示一次，请注意抄写。刷新页面会**永久**消失，无法恢复。
+Enter your existing mnemonic phrase with words separated by spaces, then click import. Please note that the current version only supports mnemonic phrases in **English**.
 
 <br/>
 
-## 生成地址
+### Important Notes
 
-默认从以太坊路径的第一个地址生成，即 **m/44'/60'/0'/0/0**，您可以选择其他路径。点击 **Get Address** 获取地址。
+The generated mnemonic phrase will only be displayed once, so please take care to write it down. Refreshing the page will cause it to **permanently** disappear, with no way to recover it.
+
+<br/>
+
+## Generating an Address
+
+By default, the first address from the Ethereum path is generated, specifically **m/44'/60'/0'/0/0**. You can choose other paths. Click **Get Address** to obtain the address.
 
 ![ohw](../image/start/start-9.png)
 
-## 签名
+## Signing
 
-此处可对输入的文本进行签名，点击 **Sign Message**，不同的芯片性能不同 1-10 秒种后 **Signature** 显示对应地址的签名。
+You can sign input text here. Click **Sign Message**, and after 1-10 seconds (depending on the chip performance), the **Signature** corresponding to the address will be displayed.
 
 ![ohw](../image/start/start-10.png)
 
-## 直接连接
+## Direct Connection
 
-以 OpenBuild 为例，讲解如何使用 Web3 登陆以及和 App 交互。[点击此处](https://openbuild.xyz/)打开 OpenBuild。
+Using OpenBuild as an example, this section explains how to use Web3 login and interact with apps. [Click here](https://openbuild.xyz/) to open OpenBuild.
 
-### 建立连接
+### Establishing a Connection
 
-点击 OpenBuild 网站右上角进入登陆页，点击 **Wallet** 登陆。在弹出的窗口中选择 **WalletConnect**。此时可以识别二维码内容复制或者点击下方 **OPEN** 按钮。点击下图**标记处**复制连接。
+Click on the upper right corner of the OpenBuild website to enter the login page, then click **Wallet** to log in. In the popup window, select **WalletConnect**. At this point, you can either scan the QR code or click the **OPEN** button below. Click on the **marked area** in the image below to copy the connection.
 
 ![ohw](../image/start/start-11.png)
 
 <br/>
 
-接下来将获取到链接添加到 ohw 测试页的 **WalletConnect** 栏，并点击 **Add。**
+Next, add the obtained link to the **WalletConnect** field on the OHW test page, and click **Add.**
 
 ![ohw](../image/start/start-12.png)
 
 <br/>
 
-此时弹出连接确认提示，点击确认即可建立与 OpenBuild 网站的链接。
+A connection confirmation prompt will appear. Click confirm to establish the connection with the OpenBuild website.
 
 ![ohw](../image/start/start-13.png)
 
 <br/>
 
-### 交互
+### Interaction
 
-接下来 OpenBuild 请求对一个随机数**签名**，已验证对当前地址的所有权。
+Next, OpenBuild will request a **signature** of a random number to verify ownership of the current address.
 
 ![ohw](../image/start/start-14.png)
 
 <br/>
 
-确认后等待 5-10 秒，即可登陆 OpenBuild。此时已连接 OpenBuild，您可以继续操作。
+After confirming, wait 5-10 seconds to log in to OpenBuild. At this point, you are connected to OpenBuild and can continue operations.
 
 ![ohw](../image/start/start-15.png)
 
-## 客户端连接
+## Client Connection
 
-ohw 的客户端还在开发中，暂时可以选择使用 onekey，onekey 是另一家知名的钱包厂商，ohw 可以接入提供完整体验。[点击前往 onekey 官网](https://onekey.so/)。
+The OHW client is still under development. For now, you can choose to use OneKey, which is another well-known wallet manufacturer. OHW can integrate with it to provide a complete experience. [Click to visit the OneKey official website](https://onekey.so/).
 
-### 建立连接
+### Establishing a Connection
 
-拥有全平台客户端，此处以浏览器插件钱包为例讲解如何接入以及进行交易。浏览器安装钱包插件后点击扩展，打开此页，选择**连接钱包**。
+OneKey has clients for all platforms. This section uses the browser extension wallet as an example to explain how to connect and conduct transactions. After installing the wallet extension in your browser, click on the extension, open this page, and select **Connect Wallet**.
 
 ![ohw](../image/start/start-16.png)
 
 <br/>
 
-依次点击 **EVM** -> **WalletConnect**，点击此处或者识别二维码获取链接。
+Click **EVM** -> **WalletConnect** in sequence, then click here or scan the QR code to get the link.
 
 ![ohw](../image/start/start-17.png)
 
 <br/>
 
-回到 ohw 测试页**添加**链接，并**确认**连接。
+Return to the OHW test page to **add** the link and **confirm** the connection.
 
 ![ohw](../image/start/start-18.png)
 
@@ -118,33 +110,38 @@ ohw 的客户端还在开发中，暂时可以选择使用 onekey，onekey 是�
 
 <br/>
 
-此时已经建立链接，浏览器插件应**显示持有的资产**列表。
+At this point, the connection has been established, and the browser extension should **display the list of assets** held.
 
 ![ohw](../image/start/start-20.png)
 
 <br/>
 
-### 发起交易
+### Initiating a Transaction
 
-以在 Ethereum Sepolia Testnet 转账为例，点击**确认**。
+Using a transfer on Ethereum Sepolia Testnet as an example, click **confirm**.
 
 ![ohw](../image/start/start-21.png)
 
 <br/>
 
-ohw 测试页收到签名请求，**确认**。
+The OHW test page receives a signature request, **confirm** it.
 
 ![ohw](../image/start/start-22.png)
 
 <br/>
 
-回到插件钱包，交易成功。
+Return to the extension wallet, and the transaction is successful.
 
 ![ohw](../image/start/start-23.png)
 
-## 特别提醒
+## Special Reminder
 
-直接连接或者客户端连接使用的 WalletConnect 服务在中国境内连接不稳定，如果出现断联请重新连接。
+The WalletConnect service used for direct connection or client connection may be unstable within China. If disconnection occurs, please reconnect.
 
-**ohw 和 onekey 没有合作关系**。
+**There is no partnership between OHW and OneKey**.
 
+### Demonstration Video
+
+Here is a demonstration video, which is the video version of the text and images below.
+
+[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
