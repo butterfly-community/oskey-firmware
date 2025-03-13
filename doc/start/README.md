@@ -1,3 +1,7 @@
+| WeChat                          | Telegram                    |
+| ------------------------------- | --------------------------- |
+| ![ohw](../image/start/wechat.png) | ![ohw](../image/start/tg.png)
+
 # How to Use
 
 First, click to open the OHW official test page [https://ohw-app.vercel.app](https://ohw-app.vercel.app/).
@@ -145,3 +149,5 @@ The WalletConnect service used for direct connection or client connection may be
 Here is a demonstration video, which is the video version of the text and images below.
 
 [![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
+
+## WeChat
