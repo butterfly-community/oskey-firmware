@@ -189,7 +189,7 @@ int bt_start()
 
 // If not display
 // CONFIG_BT_FIXED_PASSKEY=y
-#ifdef CONFIG_DISPLAY
+#ifdef CONFIG_BT_FIXED_PASSKEY
 	bt_passkey_set(123456);
 #endif
 	start_adv();

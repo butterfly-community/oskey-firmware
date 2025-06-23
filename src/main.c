@@ -19,7 +19,7 @@ int main(void)
 
 	storage_init();
 
-	storage_erase();
+	// storage_erase();
 
 	k_work_init(&app_uart_work, app_uart_work_handler);
 

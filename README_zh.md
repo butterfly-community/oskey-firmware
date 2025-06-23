@@ -1,48 +1,38 @@
-## OHW 是什么？
+## OSKey 是什么？
 
-OHW 定义是一个完全开源的非商业产品的硬件钱包。我们的使命是帮助您创造自己的硬件钱包。
+OSkey (Open Source Key) 是一个完全开源的非商业产品的硬件钱包项目。我们的首要使命是帮助您创建并使用自己的无需信任的硬件钱包，并最终成为您在数字世界管理身份的关键设施。
 
-与使用开源来推动其商业产品销售的商业硬件产品不同，我们的开源重点是构建基础设施。我们不限制特定的芯片制造商或型号。用户可以自由选择来自 10 多家制造商的 200 多种芯片，并可以使用芯片制造商或第三方制造的 3000 多种开发板，比如可以选择 Arduino 或 Raspberry Pi 等产品。
+与使用开源来推动其商业产品销售的商业硬件产品不同，我们的开源重点是构建开源基础设施，打造一个去信任的开源软硬件系统。
+
+我们不限制特定的芯片制造商或型号。用户可以自由选择来自 10 多家制造商的 200 多种芯片，并可以使用芯片制造商或第三方制造的 3000 多种开发板，比如可以选择 Arduino 或 Raspberry Pi 等产品。
 
 用户还可以根据我们即将发布的参考设计创建自己的开发板。
 
-OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在最开始设计时就考虑安全性。支持的最便宜的 MCU 价格仅为 0.3 美元，其他还有可选的支持蓝牙和 WiFi 还有屏幕。
+OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并在最开始设计时就考虑安全性。支持的最便宜的 MCU 价格仅为 0.3 美元，其他还有可选的支持蓝牙和 WiFi 还有屏幕。
 
-## OHW 可以做什么?
+## OSkey 可以做什么?
 
-我们构建了区块链和芯片的连接器，这不仅仅是一个硬件钱包。
+我们构建了数字世界和真实世界的桥梁，这不仅仅是一个硬件钱包。
 
 ### **快速指南**
 
-**[快速固件写入指南](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board)**
+**[快速固件写入指南](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/board)**
 
-**[快速使用指南](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/start)**
+**[快速使用指南](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/start)**
 
 ### 功能:
 
 #### ✅ 芯片内助记词生成和导入
 
-[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/mnemonic.rs).
+[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/mnemonic.rs).
 
 #### ✅ HD (Hierarchical Deterministic) 分层确定性钱包.
 
-[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/wallets.rs).
+[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/wallets.rs).
 
 #### ✅ secp256k1.
 
-公私钥, 签名和 [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/alg/crypto.rs).
-
-#### 🚧 WebBrowser 支持
-
-目前可以支持初始化、获取地址、签名通过串口在浏览器上操作，需要帮助进行下一步开发。
-
-#### 🚧 WebUsb WiFi Bluetooth 支持.
-
-需要帮助
-
-#### 🚧 屏幕支持.
-
-需要帮助
+公私钥, 签名和 [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/alg/crypto.rs).
 
 #### 演示视频:
 
@@ -52,7 +42,7 @@ OHW 支持多种硬件架构，针对资源受限设备进行了优化，并在�
 
 ### 预编译固件
 
-  我们会为我们拥有的开发板预编译固件，请查看右侧 [Release](https://github.com/butterfly-communtiy/ohw-elf-firmware/releases) 下载或者下文查看我们拥有哪些开发板。
+  我们会为我们拥有的开发板预编译固件，请查看右侧 [Release](https://github.com/butterfly-communtiy/oskey-elf-firmware/releases) 下载或者下文查看我们拥有哪些开发板。
 
 ### 自编译固件
 
@@ -78,12 +68,12 @@ west build -p always -b esp32c3_devkitm samples/hello_world
 
   **还可以参考** **[Dockerfile](./Dockerfile)**
 
-#### 编译 ohw
+#### 编译 OSKey
 
 1. Clone 源码
 
    ```bash
-   git clone --recursive https://github.com/butterfly-communtiy/ohw-elf-firmware.git
+   git clone --recursive https://github.com/butterfly-communtiy/oskey-elf-firmware.git
    ```
 2. 设置环境变量
 
@@ -94,7 +84,7 @@ west build -p always -b esp32c3_devkitm samples/hello_world
    # Mac 或者 Linux环境
    source ~/zephyrproject/zephyr/zephyr-env.sh
    ```
-3. 编译 ohw 源码
+3. 编译 OSKey 源码
 
    ```bash
    west build -p always -b esp32c3_devkitm
@@ -113,7 +103,7 @@ west build -p always -b esp32c3_devkitm samples/hello_world
 
 由于开发板型号太多，这里只写了芯片的价格。请自行选择喜欢的开发板。
 
-**如果您已经拥有我们推荐的开发板，这里有一个[快速使用指南](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board)。**
+**如果您已经拥有我们推荐的开发板，这里有一个[快速使用指南](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/board)。**
 
 <br />
 

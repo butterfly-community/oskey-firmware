@@ -2,9 +2,9 @@
 
 ## What is OSKey?
 
-OSKey (Open Source Key) is a fully open-source, non-commercial hardware wallet project. Our focus is on building open-source infrastructure and creating a trustless open-source software and hardware system.
+OSKey (Open Source Key) is a fully open-source, non-commercial hardware wallet project. Our first mission is to help you create your own trustless hardware wallet and finally, it will be the key to verifying your identity in the digital world.
 
-Unlike commercial hardware products where open-source is used to drive sales of their commercial products, our open-source focus is on building infrastructure.
+Unlike commercial hardware products, where open-source is used to drive sales of their commercial products, our focus is on building open-source infrastructure and creating a trustless open-source software and hardware system.
 
 We don't restrict users to specific chip manufacturers or models. Users have the freedom to choose from over 200 chips from more than 10 manufacturers, and can work with over 3000 development boards made by chip manufacturers or third parties. For example, popular open hardware platforms like Arduino or Raspberry Pi.
 
@@ -14,7 +14,7 @@ The Open Hardware Wallet supports multiple hardware architectures and is optimiz
 
 ## What can this product do?
 
-We are building core infrastructure connecting blockchain with physical devices. Not just a hardware wallet.
+We are building core infrastructure connecting digital world with real world. Not just a hardware wallet.
 
 ### **Guide**
 
