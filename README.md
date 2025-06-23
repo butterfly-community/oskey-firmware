@@ -1,8 +1,8 @@
 [中文点这里](./README_zh.md)
 
-## What is OSKsy?
+## What is OSKey?
 
-OSKsy (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. Our mission is to help you create your own hardware wallet.
+OSKey (Open Source Key) is a fully open-source, non-commercial hardware wallet project. Our focus is on building open-source infrastructure and creating a trustless open-source software and hardware system.
 
 Unlike commercial hardware products where open-source is used to drive sales of their commercial products, our open-source focus is on building infrastructure.
 
