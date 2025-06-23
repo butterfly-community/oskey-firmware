@@ -1,8 +1,8 @@
 [中文点这里](./README_zh.md)
 
-## What is OHW?
+## What is OSKsy?
 
-OHW (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. Our mission is to help you create your own hardware wallet.
+OSKsy (Open Hardware Wallet) is a fully open-source, non-commercial hardware wallet project. Our mission is to help you create your own hardware wallet.
 
 Unlike commercial hardware products where open-source is used to drive sales of their commercial products, our open-source focus is on building infrastructure.
 
@@ -18,35 +18,24 @@ We are building core infrastructure connecting blockchain with physical devices.
 
 ### **Guide**
 
-**[Firmware Flashing Guide](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board)**
+**[Firmware Flashing Guide](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/board)**
 
-**[Quick Start Guide](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/start)**
+**[Quick Start Guide](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/start)**
 
 ### Feature:
 
 #### ✅ Mnemonic Generation and Import on chip.
 
-[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) All [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/mnemonic.rs) completed successfully.
+[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) All [unit tests](https://github.com/butterfly-communtiy/-lib-wallets/blob/main/src/mnemonic.rs) completed successfully.
 
 #### ✅ HD (Hierarchical Deterministic) Wallet and Path Derivation on chip.
 
-[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) All [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/wallets.rs) completed successfully.
+[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) All [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/wallets.rs) completed successfully.
 
 #### ✅ secp256k1.
 
-pubkey, signature and [unit tests](https://github.com/butterfly-communtiy/ohw-lib-wallets/blob/main/src/alg/crypto.rs).
+pubkey, signature and [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/alg/crypto.rs).
 
-#### 🚧 WebBrowser Support
-
-Currently supports initialization, generation address and signing via WebSerial in browser environments, need help with next phase of development.
-
-#### 🚧 WebUsb WiFi Bluetooth Support.
-
-Need help.
-
-#### 🚧 Display Support.
-
-Need help.
 
 ### Demo Video:
 
@@ -56,7 +45,7 @@ Need help.
 
 ### Pre-compiled Firmware
 
-  We provide pre-compiled firmware for development boards we own. Please check the [Releases](https://github.com/butterfly-communtiy/ohw-elf-firmware/releases) section on the right or see below for our available development boards.
+  We provide pre-compiled firmware for development boards we own. Please check the [Releases](https://github.com/butterfly-communtiy/oskey-elf-firmware/releases) section on the right or see below for our available development boards.
 
 ### Self-compiled Firmware
 
@@ -82,12 +71,12 @@ west build -p always -b esp32c3_devkitm samples/hello_world
 
   **Also refer to** **[Dockerfile](./Dockerfile)**
 
-#### Compile ohw
+#### Compile OSKey
 
 1. Clone source code
 
    ```bash
-   git clone --recursive https://github.com/butterfly-communtiy/ohw-elf-firmware.git
+   git clone --recursive https://github.com/butterfly-communtiy/oskey-elf-firmware.git
    ```
 2. Set environment variables
 
@@ -98,7 +87,7 @@ west build -p always -b esp32c3_devkitm samples/hello_world
    # Mac or Linux environment
    source ~/zephyrproject/zephyr/zephyr-env.sh
    ```
-3. Compile ohw source code
+3. Compile OSKey source code
 
    ```bash
    west build -p always -b esp32c3_devkitm
@@ -117,7 +106,7 @@ We also provide direct support for over 300 development boards without any modif
 
 Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
 
-**If you have a recommended development board, here's a [quick guide to get started](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board).**
+**If you have a recommended development board, here's a [quick guide to get started](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/board).**
 
 <br />
 
