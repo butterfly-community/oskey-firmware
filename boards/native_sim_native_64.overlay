@@ -16,6 +16,10 @@
 		serial-port = "/dev/ttyUSB0";
 	};
 
+	uart_1 {
+		status = "okay";
+	};
+
 	sdl_dc {
 		compatible = "zephyr,sdl-dc";
 		height = < 172 >;

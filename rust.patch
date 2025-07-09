@@ -1,0 +1,12 @@
+diff --git a/dt-rust.yaml b/dt-rust.yaml
+index c1390c7..02e7bb4 100644
+--- a/dt-rust.yaml
++++ b/dt-rust.yaml
+@@ -37,6 +37,7 @@
+         - "nordic,nrf51-flash-controller"
+         - "raspberrypi,pico-flash-controller"
+         - "zephyr,sim-flash"
++        - "espressif,esp32-flash-controller"
+       level: 0
+   actions:
+     - !Instance
