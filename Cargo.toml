@@ -8,8 +8,6 @@ license = ""
 [lib]
 crate-type = ["staticlib"]
 
-[patch.crates-io]
-
 [dependencies]
 zephyr = "^0.1.0"
 bytes = { version = "1.10", default-features = false, features = ["extra-platforms"] }
@@ -23,7 +21,7 @@ portable-atomic = { version = "1.3", default-features = false, features = ["requ
 
 [build-dependencies]
 zephyr-build = "^0.1.0"
-cbindgen = "0.28.0"
+cbindgen = "0.29.0"
 
 [profile.release]
 codegen-units = 1

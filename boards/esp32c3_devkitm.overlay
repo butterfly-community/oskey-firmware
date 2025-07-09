@@ -54,9 +54,6 @@
 			height = <240>;
 			x-offset = <0>;    // 0x2a
 			y-offset = <0>;    // 0x2b
-			// dxwy
-			// vcom = <0x29>;
-			// vrhs = <0x19>;
 			vcom = <0x32>;     // 0xbb
 			gctrl = <0x35>;
 			vrhs = <0x15>;     // 0xc3
