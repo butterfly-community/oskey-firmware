@@ -13,7 +13,7 @@
 		status = "okay";
 		compatible = "zephyr,native-tty-uart";
 		current-speed = <115200>;
-		serial-port = "/dev/ttyUSB0";
+		serial-port = "/dev/ttyOSKey";
 	};
 
 	uart_1 {
@@ -22,7 +22,7 @@
 
 	sdl_dc {
 		compatible = "zephyr,sdl-dc";
-		height = < 172 >;
+		height = < 480 >;
 		width = < 320 >;
 	};
 };

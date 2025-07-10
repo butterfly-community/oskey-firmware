@@ -4,9 +4,12 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <lvgl.h>
-#include <lv_demos.h>
 #include "wrapper.h"
 #include "screen.h"
+
+#ifdef CONFIG_LV_Z_DEMO_BENCHMARK
+#include <lv_demos.h>
+#endif
 
 const struct device *display_dev;
 

@@ -9,17 +9,9 @@ west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LO
 west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LOG=y && west flash --esp-device=/dev/ttyACM0 && west espressif monitor
 
 
-config RUST_SUPPORTED
-        bool
-        default y if ((CPU_CORTEX_M || \
-                                (RISCV && !RISCV_ISA_RV32E && !RISCV_ISA_RV128I) || SOC_SERIES_ESP32S3) && \
-                                !TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
-        help
-          Selected for platforms that have support for Rust.
+west build -b native_sim/native/64 -p always -- -DEXTRA_CONF_FILE=boards/conf/enable_dev.conf
 
-elseif(CONFIG_SOC_ESP32S3)
-  set(RUST_TARGET "xtensa-esp32s3-none-elf" PARENT_SCOPE)
-
+west build -b native_sim/native/64 -p always  -- -DEXTRA_CONF_FILE=boards/conf/enable_dev.conf -DEXTRA_CONF_FILE=boards/conf/enable_lvgl.conf -D CONFIG_LV_Z_DEMO_BENCHMARK=y -D CONFIG_LV_USE_SYSMON=y -D CONFIG_LV_Z_MEM_POOL_SIZE=81920
 
 cargo +esp build -Z build-std=core,alloc
 

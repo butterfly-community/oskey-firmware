@@ -7,18 +7,23 @@ set(PROJECT_ROOT_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "Project root directory"
 
 set(LVGL_DIR ${ZEPHYR_LVGL_MODULE_DIR})
 
-target_include_directories(app PRIVATE
-    ${LVGL_DIR}/demos/
-)
-
+if(CONFIG_LV_USE_DEMO_BENCHMARK)
+    target_include_directories(app PRIVATE
+        ${LVGL_DIR}/demos/benchmark
+    )
+endif()
 
 target_sources_ifdef(CONFIG_LV_USE_DEMO_BENCHMARK app PRIVATE
-    ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_avatar.c
+   ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_avatar.c
     ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_lvgl_logo_argb.c
     ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_lvgl_logo_rgb.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_12_compr_az.c.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_16_compr_az.c.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_28_compr_az.c.c
+    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_12_aligned.c
+    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_14_aligned.c
+    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_16_aligned.c
+    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_18_aligned.c
+    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_20_aligned.c
+    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_24_aligned.c
+    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_26_aligned.c
     ${LVGL_DIR}/demos/benchmark/lv_demo_benchmark.c
 )
 
@@ -66,6 +71,7 @@ target_sources(app PRIVATE
   src/display/screen.c)
 
 target_compile_options(temp PRIVATE ${options_list})
+
 target_compile_options(crypto PRIVATE ${options_list})
 
 target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
