@@ -1,13 +1,5 @@
-#include <zephyr/dt-bindings/mipi_dbi/mipi_dbi.h>
-
 / {
-
-	aliases {
-		app-uart = &uart0;
-	};
 	chosen {
-		zephyr,console = &usb_serial;
-		zephyr,shell-uart = &usb_serial;
 		zephyr,display = &st7789v;
 	};
 
@@ -51,8 +43,4 @@
 			mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
 		};
 	};
-};
-
-&dma {
-	status = "okay";
 };

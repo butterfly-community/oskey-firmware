@@ -7,6 +7,7 @@
 #include "bluetooth.h"
 #include "storage.h"
 #include "boot.h"
+#include "wifi.h"
 #include "display/screen.h"
 
 void cs_random(void *dst, size_t len);
@@ -32,6 +33,8 @@ int main(void)
 	}
 
 	bt_start();
+
+	wifi_start();
 
 	confirm_mcuboot_img();
 
