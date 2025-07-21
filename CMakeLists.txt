@@ -69,7 +69,8 @@ target_sources(app PRIVATE
   src/storage.c
   src/boot.c
   src/wifi.c
-  src/display/screen.c)
+  src/display/screen.c
+)
 
 target_compile_options(temp PRIVATE ${options_list})
 

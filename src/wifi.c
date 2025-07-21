@@ -16,18 +16,11 @@ LOG_MODULE_REGISTER(MAIN);
 	 NET_EVENT_WIFI_AP_ENABLE_RESULT | NET_EVENT_WIFI_AP_DISABLE_RESULT |                      \
 	 NET_EVENT_WIFI_AP_STA_CONNECTED | NET_EVENT_WIFI_AP_STA_DISCONNECTED)
 
-#define WIFI_AP_SSID       "OSKey-AP"
-#define WIFI_AP_PSK        ""
-#define WIFI_AP_IP_ADDRESS "192.168.4.1"
-#define WIFI_AP_NETMASK    "255.255.255.0"
-
 #define WIFI_SSID "WiFi"
-#define WIFI_PSK  "TEST*"
+#define WIFI_PSK  "TEST*TEST"
 
-static struct net_if *ap_iface;
 static struct net_if *sta_iface;
 
-static struct wifi_connect_req_params ap_config;
 static struct wifi_connect_req_params sta_config;
 
 static struct net_mgmt_event_callback cb;
@@ -70,6 +63,16 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		break;
 	}
 }
+
+#ifdef CONFIG_WIFI_USAGE_MODE_STA_AP
+
+static struct net_if *ap_iface;
+static struct wifi_connect_req_params ap_config;
+
+#define WIFI_AP_SSID       "OSKey-AP"
+#define WIFI_AP_PSK        ""
+#define WIFI_AP_IP_ADDRESS "192.168.4.1"
+#define WIFI_AP_NETMASK    "255.255.255.0"
 
 static void enable_dhcpv4_server(void)
 {
@@ -139,6 +142,8 @@ static int enable_ap_mode(void)
 	return ret;
 }
 
+#endif
+
 static int connect_to_wifi(void)
 {
 	if (!sta_iface) {
@@ -165,18 +170,20 @@ static int connect_to_wifi(void)
 	return ret;
 }
 
-int wifi_start(void)
+int wifi_start()
 {
 	k_sleep(K_SECONDS(5));
 
 	net_mgmt_init_event_callback(&cb, wifi_event_handler, NET_EVENT_WIFI_MASK);
 	net_mgmt_add_event_callback(&cb);
 
-	ap_iface = net_if_get_wifi_sap();
-
 	sta_iface = net_if_get_wifi_sta();
 
+#ifdef CONFIG_WIFI_USAGE_MODE_STA_AP
+	ap_iface = net_if_get_wifi_sap();
 	enable_ap_mode();
+#endif
+
 	connect_to_wifi();
 
 	return 0;
