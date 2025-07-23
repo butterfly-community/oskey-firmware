@@ -1,6 +1,6 @@
 | WeChat                          | Telegram                    |
 | ------------------------------- | --------------------------- |
-| ![ohw](../image/start/wechat.png) | ![ohw](../image/start/tg.png)
+| ![ohw](../image/start/wechat.jpg) | ![ohw](../image/start/tg.png)
 
 # How to Use
 
