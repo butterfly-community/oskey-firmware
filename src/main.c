@@ -8,6 +8,7 @@
 #include "storage.h"
 #include "boot.h"
 #include "wifi.h"
+#include "mqtt.h"
 #include "display/screen.h"
 
 void cs_random(void *dst, size_t len);
@@ -36,9 +37,13 @@ int main(void)
 
 	wifi_start();
 
-	confirm_mcuboot_img();
+	k_msleep(10000);
+
+	mqtt_start();
 
 	test_lvgl();
+
+	confirm_mcuboot_img();
 
 	app_display_loop();
 

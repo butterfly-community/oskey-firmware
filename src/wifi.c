@@ -31,6 +31,7 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 	switch (mgmt_event) {
 	case NET_EVENT_WIFI_CONNECT_RESULT: {
 		LOG_INF("Connected to %s", WIFI_SSID);
+		net_dhcpv4_start(iface);
 		break;
 	}
 	case NET_EVENT_WIFI_DISCONNECT_RESULT: {

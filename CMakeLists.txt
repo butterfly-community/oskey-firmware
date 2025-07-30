@@ -70,6 +70,7 @@ target_sources(app PRIVATE
   src/boot.c
   src/wifi.c
   src/display/screen.c
+  src/mqtt.c
 )
 
 target_compile_options(temp PRIVATE ${options_list})

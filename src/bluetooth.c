@@ -220,7 +220,7 @@ int bt_init()
 
 int bt_start()
 {
-	printk("Bluetooth not support!");
+	printk("Bluetooth not support!\n");
 	return 0;
 }
 
