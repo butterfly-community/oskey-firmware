@@ -13,12 +13,12 @@
 #define I2S_RX_NODE DT_NODELABEL(i2s_rx)
 #endif
 
-#define FREQUENCY   44100
-#define BIT_WIDTH   16
+#define FREQUENCY          44100
+#define BIT_WIDTH          16
 #define BYTES_PER_SAMPLE   sizeof(int16_t)
 #define NUMBER_OF_CHANNELS 1
 /* Such block length provides an echo with the delay of 100 ms. */
-#define PER_BLOCK  ((FREQUENCY / 10) * NUMBER_OF_CHANNELS)
+#define PER_BLOCK          ((FREQUENCY / 10) * NUMBER_OF_CHANNELS)
 #define INITIAL_BLOCKS     2
 #define TIMEOUT            1000
 
@@ -76,7 +76,7 @@ int i2s_start(void)
 		return 0;
 	}
 
-  printk("Streams started\n");
+	printk("Streams started\n");
 
 	for (;;) {
 		if (!trigger_command(i2s_dev_rx, I2S_TRIGGER_START)) {
@@ -97,7 +97,7 @@ int i2s_start(void)
 			return 0;
 		}
 
-    printk("Data read successfully, block size: %u bytes\n", block_size);
+		printk("Data read successfully, block size: %u bytes\n", block_size);
 	}
 }
 
