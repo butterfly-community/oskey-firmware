@@ -71,6 +71,7 @@ target_sources(app PRIVATE
   src/wifi.c
   src/display/screen.c
   src/mqtt.c
+  src/gpio.c
 )
 
 target_compile_options(temp PRIVATE ${options_list})
