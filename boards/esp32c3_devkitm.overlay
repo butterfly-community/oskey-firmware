@@ -53,6 +53,10 @@
 	};
 };
 
+i2s_rxtx: &i2s {
+	status = "okay";
+};
+
 &dma {
 	status = "okay";
 };

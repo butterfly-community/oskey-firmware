@@ -72,6 +72,7 @@ target_sources(app PRIVATE
   src/net/mqtt.c
   src/display/screen.c
   src/gpio.c
+  src/audio/i2s.c
 )
 
 target_compile_options(temp PRIVATE ${options_list})
