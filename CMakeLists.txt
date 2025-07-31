@@ -68,9 +68,9 @@ target_sources(app PRIVATE
   src/bluetooth.c
   src/storage.c
   src/boot.c
-  src/wifi.c
+  src/net/wifi.c
+  src/net/mqtt.c
   src/display/screen.c
-  src/mqtt.c
   src/gpio.c
 )
 

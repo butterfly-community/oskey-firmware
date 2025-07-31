@@ -7,8 +7,8 @@
 #include "bluetooth.h"
 #include "storage.h"
 #include "boot.h"
-#include "wifi.h"
-#include "mqtt.h"
+#include "net/wifi.h"
+#include "net/mqtt.h"
 #include "display/screen.h"
 
 void cs_random(void *dst, size_t len);
