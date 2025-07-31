@@ -1,6 +1,6 @@
 #include "mqtt.h"
 
-#ifdef CONFIG_MQTT_LIB && CONFIG_WIFI
+#ifdef CONFIG_MQTT_LIB &&CONFIG_WIFI
 
 #include <zephyr/logging/log.h>
 
@@ -11,8 +11,6 @@
 
 #include <string.h>
 #include <errno.h>
-
-
 
 LOG_MODULE_REGISTER(MAIN);
 
@@ -47,11 +45,6 @@ static void prepare_fds(struct mqtt_client *client)
 
 	fds[0].events = POLLIN;
 	nfds = 1;
-}
-
-static void clear_fds(void)
-{
-	nfds = 0;
 }
 
 static int wait(int timeout)
@@ -117,6 +110,9 @@ void mqtt_evt_handler(struct mqtt_client *const client, const struct mqtt_evt *e
 
 		connected = false;
 		clear_fds();
+
+		// clear_fds
+		nfds = 0;
 
 		break;
 
@@ -205,7 +201,7 @@ static char *get_mqtt_payload(enum mqtt_qos qos)
 
 static char *get_mqtt_topic(void)
 {
-	return "Test";
+	return "Topic";
 }
 
 int app_mqtt_subscribe(struct mqtt_client *client)
@@ -230,7 +226,8 @@ static int publish(struct mqtt_client *client, enum mqtt_qos qos)
 {
 	struct mqtt_publish_param param = {0};
 
-	/* Always true for MQTT 3.1.1.
+	/** 
+	 * Always true for MQTT 3.1.1.
 	 * True only on first publish message for MQTT 5.0 if broker allows aliases.
 	 */
 	if (include_topic) {
@@ -270,6 +267,7 @@ static void broker_init(void)
 	uint8_t broker_ip[NET_IPV4_ADDR_LEN];
 
 	rc = getaddrinfo(SERVER_ADDR, SERVER_PORT_STR, &hints, &result);
+
 	if (rc != 0) {
 		LOG_ERR("Failed to resolve broker hostname [%s]", gai_strerror(rc));
 	}
@@ -281,8 +279,11 @@ static void broker_init(void)
 	broker4->sin_addr.s_addr = ((struct sockaddr_in *)result->ai_addr)->sin_addr.s_addr;
 	broker4->sin_family = AF_INET;
 	broker4->sin_port = ((struct sockaddr_in *)result->ai_addr)->sin_port;
+
 	freeaddrinfo(result);
+
 	inet_ntop(AF_INET, &broker4->sin_addr.s_addr, broker_ip, sizeof(broker_ip));
+	LOG_INF("Broker address: %s:%s", broker_ip, SERVER_PORT_STR);
 }
 
 static void client_init(struct mqtt_client *client)
@@ -303,15 +304,12 @@ static void client_init(struct mqtt_client *client)
 #else
 	client->protocol_version = MQTT_VERSION_3_1_1;
 #endif
-
 	client->rx_buf = rx_buffer;
 	client->rx_buf_size = sizeof(rx_buffer);
 	client->tx_buf = tx_buffer;
 	client->tx_buf_size = sizeof(tx_buffer);
-
 	client->transport.type = MQTT_TRANSPORT_NON_SECURE;
 }
-
 
 /* In this routine we block until the connected variable is 1 */
 static int try_to_connect(struct mqtt_client *client)
@@ -323,6 +321,7 @@ static int try_to_connect(struct mqtt_client *client)
 		client_init(client);
 
 		rc = mqtt_connect(client);
+
 		if (rc != 0) {
 			PRINT_RESULT("mqtt_connect", rc);
 			k_sleep(K_MSEC(APP_SLEEP_MSECS));
@@ -363,6 +362,7 @@ static int process_mqtt_and_sleep(struct mqtt_client *client, int timeout)
 		}
 
 		rc = mqtt_live(client);
+		
 		if (rc != 0 && rc != -EAGAIN) {
 			PRINT_RESULT("mqtt_live", rc);
 			return rc;
