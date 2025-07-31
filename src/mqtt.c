@@ -1,6 +1,6 @@
 #include "mqtt.h"
 
-#ifdef CONFIG_MQTT_LIB &&CONFIG_WIFI
+#ifdef CONFIG_MQTT_LIB
 
 #include <zephyr/logging/log.h>
 
@@ -87,7 +87,6 @@ void mqtt_evt_handler(struct mqtt_client *const client, const struct mqtt_evt *e
 			LOG_ERR("MQTT connect failed %d", evt->result);
 			break;
 		}
-
 		connected = true;
 		LOG_INF("MQTT client connected!");
 
@@ -96,7 +95,6 @@ void mqtt_evt_handler(struct mqtt_client *const client, const struct mqtt_evt *e
 		    evt->param.connack.prop.topic_alias_maximum > 0) {
 			LOG_INF("Topic aliases allowed by the broker, max %u.",
 				evt->param.connack.prop.topic_alias_maximum);
-
 			aliases_enabled = true;
 		} else {
 			LOG_INF("Topic aliases disallowed by the broker.");
@@ -107,10 +105,7 @@ void mqtt_evt_handler(struct mqtt_client *const client, const struct mqtt_evt *e
 
 	case MQTT_EVT_DISCONNECT:
 		LOG_INF("MQTT client disconnected %d", evt->result);
-
 		connected = false;
-		clear_fds();
-
 		// clear_fds
 		nfds = 0;
 
@@ -226,7 +221,7 @@ static int publish(struct mqtt_client *client, enum mqtt_qos qos)
 {
 	struct mqtt_publish_param param = {0};
 
-	/** 
+	/**
 	 * Always true for MQTT 3.1.1.
 	 * True only on first publish message for MQTT 5.0 if broker allows aliases.
 	 */
@@ -362,7 +357,7 @@ static int process_mqtt_and_sleep(struct mqtt_client *client, int timeout)
 		}
 
 		rc = mqtt_live(client);
-		
+
 		if (rc != 0 && rc != -EAGAIN) {
 			PRINT_RESULT("mqtt_live", rc);
 			return rc;
@@ -411,9 +406,9 @@ static int publisher(void)
 	rc = app_mqtt_subscribe(&client_ctx);
 	PRINT_RESULT("mqtt_subscribe", rc);
 
-	// rc = process_mqtt_and_sleep(&client_ctx, APP_SLEEP_MSECS);
-	// rc = publish(&client_ctx, MQTT_QOS_0_AT_MOST_ONCE);
-	// PRINT_RESULT("mqtt_publish", rc);
+	rc = process_mqtt_and_sleep(&client_ctx, APP_SLEEP_MSECS);
+	rc = publish(&client_ctx, MQTT_QOS_0_AT_MOST_ONCE);
+	PRINT_RESULT("mqtt_publish", rc);
 
 	while (connected) {
 		rc = process_mqtt_and_sleep(&client_ctx, 1000);

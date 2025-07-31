@@ -1,6 +1,8 @@
 #ifndef MQTT_H
 #define MQTT_H
 
+#include "wrapper.h"
+
 #define SERVER_ADDR            "bemfa.com"
 #define SERVER_PORT            9501
 #define SERVER_PORT_STR        "9501"
