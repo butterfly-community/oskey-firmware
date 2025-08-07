@@ -10,9 +10,9 @@ First, click to open the OHW official test page [https://ohw-app.vercel.app](htt
 
 Click the Connect button in the upper left corner, which should change from gray "Connect" to green **Connected**. If it doesn't change, other tabs or apps may have opened the connection; please ensure they are closed.
 
-The OHW Status bar should display the firmware version number in green, for example **OK Version: 0.0.2**. If it shows "Not Found ohw firmware, Please [check the manual](https://github.com/butterfly-communtiy/ohw-elf-firmware)!", please make sure you have followed the instructions to write the firmware.
+The OHW Status bar should display the firmware version number in green, for example **OK Version: 0.0.2**. If it shows "Not Found ohw firmware, Please [check the manual](https://github.com/butterfly-community/ohw-elf-firmware)!", please make sure you have followed the instructions to write the firmware.
 
-If you have completed the [Firmware Quick Flashing Guide](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board) and still see this prompt, 🔴⚠️please **reconnect** the hardware wallet or press the **RST** button on the hardware wallet to restart the wallet firmware as described in the guide⚠️🔴.
+If you have completed the [Firmware Quick Flashing Guide](https://github.com/butterfly-community/ohw-elf-firmware/tree/master/doc/board) and still see this prompt, 🔴⚠️please **reconnect** the hardware wallet or press the **RST** button on the hardware wallet to restart the wallet firmware as described in the guide⚠️🔴.
 
 ![ohw](../image/start/start-7.png)
 

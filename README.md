@@ -18,23 +18,23 @@ We are building core infrastructure connecting digital world with real world. No
 
 ### **Guide**
 
-**[Firmware Flashing Guide](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/board)**
+**[Firmware Flashing Guide](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/board)**
 
-**[Quick Start Guide](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/start)**
+**[Quick Start Guide](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/start)**
 
 ### Feature:
 
 #### ✅ Mnemonic Generation and Import on chip.
 
-[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) All [unit tests](https://github.com/butterfly-communtiy/-lib-wallets/blob/main/src/mnemonic.rs) completed successfully.
+[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) All [unit tests](https://github.com/butterfly-community/-lib-wallets/blob/main/src/mnemonic.rs) completed successfully.
 
 #### ✅ HD (Hierarchical Deterministic) Wallet and Path Derivation on chip.
 
-[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) All [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/wallets.rs) completed successfully.
+[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) All [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/wallets.rs) completed successfully.
 
 #### ✅ secp256k1.
 
-pubkey, signature and [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/alg/crypto.rs).
+pubkey, signature and [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/alg/crypto.rs).
 
 
 ### Demo Video:
@@ -45,7 +45,7 @@ pubkey, signature and [unit tests](https://github.com/butterfly-communtiy/oskey-
 
 ### Pre-compiled Firmware
 
-  We provide pre-compiled firmware for development boards we own. Please check the [Releases](https://github.com/butterfly-communtiy/oskey-elf-firmware/releases) section on the right or see below for our available development boards.
+  We provide pre-compiled firmware for development boards we own. Please check the [Releases](https://github.com/butterfly-community/oskey-elf-firmware/releases) section on the right or see below for our available development boards.
 
 ### Self-compiled Firmware
 
@@ -76,7 +76,7 @@ west build -p always -b esp32c3_devkitm samples/hello_world
 1. Clone source code
 
    ```bash
-   git clone --recursive https://github.com/butterfly-communtiy/oskey-elf-firmware.git
+   git clone --recursive https://github.com/butterfly-community/oskey-elf-firmware.git
    ```
 2. Set environment variables
 
@@ -106,7 +106,7 @@ We also provide direct support for over 300 development boards without any modif
 
 Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
 
-**If you have a recommended development board, here's a [quick guide to get started](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/board).**
+**If you have a recommended development board, here's a [quick guide to get started](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/board).**
 
 <br />
 

@@ -1,6 +1,6 @@
 # 如何使用
 
-本文假设您已经完成[主页](https://github.com/butterfly-communtiy/ohw-elf-firmware)的开发教程或者按照[固件快速写入指南](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board)已经把最新版本固件写入开发板。
+本文假设您已经完成[主页](https://github.com/butterfly-community/ohw-elf-firmware)的开发教程或者按照[固件快速写入指南](https://github.com/butterfly-community/ohw-elf-firmware/tree/master/doc/board)已经把最新版本固件写入开发板。
 
 首先点击打开 ohw 官方测试页[ https://ohw-app.vercel.app](https://ohw-app.vercel.app/) ，[点击此处打开](https://ohw-app.vercel.app)。
 
@@ -14,9 +14,9 @@
 
 点击左上角 Connect 按钮应该从灰色的 Connect 变为绿色的 **Connected**，如果未变更则有其他标签页或者 App 打开了连接，请确认关闭。
 
-OHW Status 栏应显示绿色的固件版本号，例为 **OK Version: 0.0.2**。如果显示 Not Found ohw firmware, Please [check the manual](https://github.com/butterfly-communtiy/ohw-elf-firmware)! 请确认按照说明写入固件。
+OHW Status 栏应显示绿色的固件版本号，例为 **OK Version: 0.0.2**。如果显示 Not Found ohw firmware, Please [check the manual](https://github.com/butterfly-community/ohw-elf-firmware)! 请确认按照说明写入固件。
 
-如果您已经完成[固件快速写入指南](https://github.com/butterfly-communtiy/ohw-elf-firmware/tree/master/doc/board)，仍然出现该提示，🔴⚠️请按照指南描述**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
+如果您已经完成[固件快速写入指南](https://github.com/butterfly-community/ohw-elf-firmware/tree/master/doc/board)，仍然出现该提示，🔴⚠️请按照指南描述**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
 
 ![ohw](../image/start/start-7.png)
 

@@ -16,23 +16,23 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 ### **快速指南**
 
-**[快速固件写入指南](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/board)**
+**[快速固件写入指南](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/board)**
 
-**[快速使用指南](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/start)**
+**[快速使用指南](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/start)**
 
 ### 功能:
 
 #### ✅ 芯片内助记词生成和导入
 
-[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/mnemonic.rs).
+[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/mnemonic.rs).
 
 #### ✅ HD (Hierarchical Deterministic) 分层确定性钱包.
 
-[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/wallets.rs).
+[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/wallets.rs).
 
 #### ✅ secp256k1.
 
-公私钥, 签名和 [unit tests](https://github.com/butterfly-communtiy/oskey-lib-wallets/blob/main/src/alg/crypto.rs).
+公私钥, 签名和 [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/alg/crypto.rs).
 
 #### 演示视频:
 
@@ -42,7 +42,7 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 ### 预编译固件
 
-  我们会为我们拥有的开发板预编译固件，请查看右侧 [Release](https://github.com/butterfly-communtiy/oskey-elf-firmware/releases) 下载或者下文查看我们拥有哪些开发板。
+  我们会为我们拥有的开发板预编译固件，请查看右侧 [Release](https://github.com/butterfly-community/oskey-elf-firmware/releases) 下载或者下文查看我们拥有哪些开发板。
 
 ### 自编译固件
 
@@ -73,7 +73,7 @@ west build -p always -b esp32c3_devkitm samples/hello_world
 1. Clone 源码
 
    ```bash
-   git clone --recursive https://github.com/butterfly-communtiy/oskey-elf-firmware.git
+   git clone --recursive https://github.com/butterfly-community/oskey-elf-firmware.git
    ```
 2. 设置环境变量
 
@@ -103,7 +103,7 @@ west build -p always -b esp32c3_devkitm samples/hello_world
 
 由于开发板型号太多，这里只写了芯片的价格。请自行选择喜欢的开发板。
 
-**如果您已经拥有我们推荐的开发板，这里有一个[快速使用指南](https://github.com/butterfly-communtiy/oskey-elf-firmware/tree/master/doc/board)。**
+**如果您已经拥有我们推荐的开发板，这里有一个[快速使用指南](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/board)。**
 
 <br />
 
