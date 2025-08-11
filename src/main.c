@@ -17,7 +17,7 @@ int main(void)
 {
 	k_msleep(1000);
 
-	printk("build time: " __DATE__ " " __TIME__ "\n");
+	printk("Build time: " __DATE__ " " __TIME__ "\n");
 
 	storage_init();
 

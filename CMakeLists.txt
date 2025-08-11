@@ -14,7 +14,7 @@ if(CONFIG_LV_USE_DEMO_BENCHMARK)
 endif()
 
 target_sources_ifdef(CONFIG_LV_USE_DEMO_BENCHMARK app PRIVATE
-   ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_avatar.c
+    ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_avatar.c
     ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_lvgl_logo_argb.c
     ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_lvgl_logo_rgb.c
     ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_12_aligned.c
@@ -40,24 +40,9 @@ target_sources_ifdef(CONFIG_LV_USE_DEMO_WIDGETS app PRIVATE
 # FILE(GLOB app_sources src/*.c)
 # target_sources(app PRIVATE ${app_sources})
 
-zephyr_get_compile_options_for_lang_as_string(C options)
+zephyr_get_compile_options_for_lang(C options_list)
 
-# get_cmake_property(_variableNames VARIABLES) foreach (_variableName
-# ${_variableNames}) message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
-
-file(
-  GENERATE
-  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_options.txt"
-  CONTENT "${options}")
-string(
-  REGEX
-  REPLACE
-    "\\$<SEMICOLON>\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>[^$]+/autoconf\\.h"
-    ""
-    options
-    "${options}")
-separate_arguments(options_list UNIX_COMMAND "${options}")
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_options.txt" CONTENT "${options_list}")
 
 add_subdirectory(temp)
 add_subdirectory(wallets/psa)
@@ -75,9 +60,9 @@ target_sources(app PRIVATE
   src/audio/i2s.c
 )
 
-target_compile_options(temp PRIVATE ${options_list})
+target_compile_options(temp PRIVATE)
 
-target_compile_options(crypto PRIVATE ${options_list})
+target_compile_options(crypto PRIVATE)
 
 target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
 
