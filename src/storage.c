@@ -97,15 +97,22 @@ int storage_seed_read_buffer(uint8_t *data, int len)
 
 int storage_erase()
 {
-	// int res = nvs_clear(&fs);
-	// if (res < 0) {
-	// 	return res;
-	// }
-	// return 0;
+	int res = nvs_clear(&fs);
 
-	int res = nvs_delete(&fs, 2);
 	if (res < 0) {
 		return res;
 	}
+
+	return 0;
+}
+
+int storage_delete(uint16_t id)
+{
+	int res = nvs_delete(&fs, id);
+
+	if (res < 0) {
+		return res;
+	}
+
 	return 0;
 }
