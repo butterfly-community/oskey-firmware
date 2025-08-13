@@ -58,6 +58,7 @@ target_sources(app PRIVATE
   src/display/lvgl.c
   src/gpio.c
   src/audio/i2s.c
+  src/usb/webusb.c
 )
 
 target_compile_options(temp PRIVATE)
