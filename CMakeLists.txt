@@ -55,7 +55,7 @@ target_sources(app PRIVATE
   src/boot.c
   src/net/wifi.c
   src/net/mqtt.c
-  src/display/screen.c
+  src/display/lvgl.c
   src/gpio.c
   src/audio/i2s.c
 )

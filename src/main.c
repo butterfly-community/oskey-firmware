@@ -9,7 +9,7 @@
 #include "boot.h"
 #include "net/wifi.h"
 #include "net/mqtt.h"
-#include "display/screen.h"
+#include "display/lvgl.h"
 
 void cs_random(void *dst, size_t len);
 

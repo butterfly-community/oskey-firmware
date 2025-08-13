@@ -5,7 +5,7 @@
 #include <zephyr/device.h>
 #include <lvgl.h>
 #include "wrapper.h"
-#include "screen.h"
+#include "lvgl.h"
 
 #ifdef CONFIG_LV_Z_DEMO_BENCHMARK
 #include <lv_demos.h>
