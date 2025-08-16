@@ -59,6 +59,7 @@ target_sources(app PRIVATE
   src/gpio.c
   src/audio/i2s.c
   src/usb/webusb.c
+  src/input/touch.c
 )
 
 target_compile_options(temp PRIVATE)
