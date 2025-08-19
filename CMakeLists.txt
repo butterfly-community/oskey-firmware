@@ -9,7 +9,7 @@ set(LVGL_DIR ${ZEPHYR_LVGL_MODULE_DIR})
 
 if(CONFIG_LV_USE_DEMO_BENCHMARK)
     target_include_directories(app PRIVATE
-        ${LVGL_DIR}/demos/benchmark
+        ${LVGL_DIR}/demos/
     )
 endif()
 
