@@ -1,12 +1,46 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 75ece41..4a0df8a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -53,6 +53,8 @@ function(_rust_map_target)
+     set(RUST_TARGET "x86_64-unknown-none" PARENT_SCOPE)
+   elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64"))
+     set(RUST_TARGET "aarch64-unknown-none" PARENT_SCOPE)
++  elseif(CONFIG_SOC_ESP32S3)
++    set(RUST_TARGET "xtensa-esp32s3-none-elf" PARENT_SCOPE)
+   else()
+     message(FATAL_ERROR "Rust: Add support for other target")
+   endif()
+@@ -173,7 +175,7 @@ ${config_paths}
+       WRAPPER_FILE="${WRAPPER_FILE}"
+       DT_AUGMENTS="${DT_AUGMENTS}"
+       BINARY_DIR_INCLUDE_GENERATED="${BINARY_DIR_INCLUDE_GENERATED}"
+-      cargo build
++      cargo +esp build -Z build-std=core,alloc
+       ${rust_build_type_arg}
+ 
+       # Override the features according to the shield given. For a general case,
+diff --git a/Kconfig b/Kconfig
+index 0b2d057..867539c 100644
+--- a/Kconfig
++++ b/Kconfig
+@@ -9,6 +9,7 @@ config RUST_SUPPORTED
+ 	bool
+ 	default y if ((CPU_CORTEX_M || \
+ 				(RISCV && !RISCV_ISA_RV32E && !RISCV_ISA_RV128I) || \
++				SOC_SERIES_ESP32S3 || \
+ 				(ARCH_POSIX && 64BIT)) && \
+ 				!TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
+ 	help
 diff --git a/dt-rust.yaml b/dt-rust.yaml
-index c1390c7..02e7bb4 100644
+index c1390c7..667769d 100644
 --- a/dt-rust.yaml
 +++ b/dt-rust.yaml
-@@ -37,6 +37,7 @@
+@@ -33,6 +33,7 @@
+   rules:
+     - !Compatible
+       names:
++        - "espressif,esp32-flash-controller"
+         - "nordic,nrf52-flash-controller"
          - "nordic,nrf51-flash-controller"
          - "raspberrypi,pico-flash-controller"
-         - "zephyr,sim-flash"
-+        - "espressif,esp32-flash-controller"
-       level: 0
-   actions:
-     - !Instance

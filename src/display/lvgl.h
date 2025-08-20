@@ -3,9 +3,7 @@
 
 #include <zephyr/kernel.h>
 
-K_MSGQ_DEFINE(display_msgq, sizeof(unsigned int), 4, sizeof(uint32_t));
-
-int test_lvgl();
+int app_init_display();
 
 void app_display_loop();
 

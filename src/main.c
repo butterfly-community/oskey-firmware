@@ -37,11 +37,12 @@ int main(void)
 
 	wifi_start();
 
-	k_msleep(10000);
+	if (IS_ENABLED(CONFIG_MQTT)) {
+		k_msleep(10000);
+		mqtt_start();
+	}
 
-	mqtt_start();
-
-	test_lvgl();
+	app_init_display();
 
 	confirm_mcuboot_img();
 

@@ -25,3 +25,6 @@ imgtool sign -k /home/life/Develop/platform/zephyr-project/bootloader/mcuboot/ro
 esptool.py -p /dev/ttyUSB0 -b 800000 --no-stub --after no_reset --chip esp32c3 write_flash_encrypted --flash_mode dio --flash_size 4MB --flash_freq 40m 0x0 boot_sign.bin --force --encrypt
 
 esptool.py -p /dev/ttyUSB0 -b 400000 --no-stub   --after no_reset --chip esp32c3 write_flash --flash_mode dio --flash_size 4MB --flash_freq 40m 0x20000 ./build/sign.bin --force --encrypt
+
+
+west build -p always -b  native_sim/native/64 --  -DEXTRA_CONF_FILE="boards/conf/enable_lvgl.conf;boards/conf/enable_lvgl_benchmark.conf" 
