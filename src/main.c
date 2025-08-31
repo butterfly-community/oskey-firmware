@@ -11,7 +11,7 @@
 #include "net/mqtt.h"
 #include "display/lvgl.h"
 
-void cs_random(void *dst, size_t len);
+bool app_cs_random(void *dst, size_t len);
 
 int main(void)
 {
@@ -51,12 +51,18 @@ int main(void)
 	return 0;
 }
 
-void cs_random(void *dst, size_t len)
+bool app_cs_random(void *dst, size_t len) 
 {
 	sys_csrand_get(dst, len);
+	return true;
 }
 
 void rust_panic_wrap(void)
 {
 	k_panic();
+}
+
+void app_version_get(void *ver, size_t len)
+{
+	snprintf(ver, len, "0.0.3");
 }

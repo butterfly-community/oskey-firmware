@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(ohw)
+project(oskey)
 
 set(PROJECT_ROOT_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "Project root directory")
 
@@ -45,7 +45,7 @@ zephyr_get_compile_options_for_lang(C options_list)
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_options.txt" CONTENT "${options_list}")
 
 add_subdirectory(temp)
-add_subdirectory(wallets/psa)
+add_subdirectory(lib/core/wallet/psa)
 
 target_sources(app PRIVATE
   src/main.c
@@ -68,7 +68,7 @@ target_compile_options(crypto PRIVATE)
 
 target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
 
-target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wallets)
+target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/core/wallet)
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/temp)
 

@@ -1,3 +1,3 @@
-[submodule "wallets"]
-	path = wallets
-	url = https://github.com/butterfly-community/ohw-wallets.git
+[submodule "lib/core"]
+	path = lib/core
+	url = https://github.com/butterfly-community/oskey-lib-core.git

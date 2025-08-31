@@ -71,16 +71,16 @@ bool storage_seed_check()
 	return true;
 }
 
-int storage_seed_write_buffer(const uint8_t *data, int len)
+bool storage_seed_write(const uint8_t *data, int len, int phrase_len)
 {
 	int res = nvs_write(&fs, 2, data, len);
 	if (res < 0) {
-		return res;
+		return false;
 	}
-	return 0;
+	return true;
 }
 
-int storage_seed_read_buffer(uint8_t *data, int len)
+int storage_seed_read(uint8_t *data, int len)
 {
 	if (!storage_seed_check()) {
 		return -1;
