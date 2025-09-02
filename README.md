@@ -18,9 +18,9 @@ We are building core infrastructure connecting digital world with real world. No
 
 ### **Guide**
 
-**[Firmware Flashing Guide](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/board)**
+**[Firmware Flashing Guide](https://github.com/butterfly-community/oskey-irmware/tree/master/doc/board)**
 
-**[Quick Start Guide](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/start)**
+**[Quick Start Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/start)**
 
 ### Feature:
 
@@ -32,11 +32,6 @@ We are building core infrastructure connecting digital world with real world. No
 
 [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) All [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/wallets.rs) completed successfully.
 
-#### ✅ secp256k1.
-
-pubkey, signature and [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/alg/crypto.rs).
-
-
 ### Demo Video:
 
 [![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
@@ -45,7 +40,7 @@ pubkey, signature and [unit tests](https://github.com/butterfly-community/oskey-
 
 ### Pre-compiled Firmware
 
-  We provide pre-compiled firmware for development boards we own. Please check the [Releases](https://github.com/butterfly-community/oskey-elf-firmware/releases) section on the right or see below for our available development boards.
+  We provide pre-compiled firmware for development boards we own. Please check the [Releases](https://github.com/butterfly-community/oskey-firmware/releases) section on the right or see below for our available development boards.
 
 ### Self-compiled Firmware
 
@@ -76,7 +71,7 @@ west build -p always -b esp32c3_devkitm samples/hello_world
 1. Clone source code
 
    ```bash
-   git clone --recursive https://github.com/butterfly-community/oskey-elf-firmware.git
+   git clone --recursive https://github.com/butterfly-community/oskey-firmware.git
    ```
 2. Set environment variables
 
@@ -106,7 +101,7 @@ We also provide direct support for over 300 development boards without any modif
 
 Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
 
-**If you have a recommended development board, here's a [quick guide to get started](https://github.com/butterfly-community/oskey-elf-firmware/tree/master/doc/board).**
+**If you have a recommended development board, here's a [quick guide to get started](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/board).**
 
 <br />
 
