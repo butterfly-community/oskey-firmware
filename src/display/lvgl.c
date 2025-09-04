@@ -6,6 +6,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/sys/reboot.h>
 #include <lvgl.h>
+#include <lvgl_private.h>
 #include "wrapper.h"
 #include "lvgl.h"
 #include "storage.h"
@@ -497,6 +498,14 @@ void app_display_logo()
 static lv_obj_t *cont = NULL;
 static int title_height = 0;
 
+void hide_error_label(lv_timer_t *timer)
+
+{
+	lv_obj_t *label = (lv_obj_t *)timer->user_data;
+	lv_obj_del(label);
+	lv_timer_del(timer);
+}
+
 static void keyboard_event_cb(lv_event_t *e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
@@ -531,7 +540,16 @@ static void keyboard_event_cb(lv_event_t *e)
 			if (run) {
 				app_display_index();
 			} else {
-				printf("Import mnemonic fail!\n");
+				lv_obj_t *error_label = lv_label_create(lv_scr_act());
+
+				lv_label_set_text(error_label, "Verification failed!");
+				lv_obj_set_style_text_color(error_label,
+							    lv_palette_main(LV_PALETTE_RED), 0);
+				lv_obj_align(error_label, LV_ALIGN_BOTTOM_MID, 0, -20);
+				lv_timer_t *timer =
+					lv_timer_create(hide_error_label, 2000, error_label);
+
+				lv_timer_set_repeat_count(timer, 1);
 			}
 		}
 	}
