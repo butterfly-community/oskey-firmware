@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <zephyr/device.h>
 #include <zephyr/sys/printk.h>
+#include "bindings.h"
 
 #endif
 

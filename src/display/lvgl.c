@@ -4,9 +4,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/sys/reboot.h>
 #include <lvgl.h>
 #include "wrapper.h"
 #include "lvgl.h"
+#include "storage.h"
 
 #ifdef CONFIG_LV_Z_DEMO_BENCHMARK
 #include <lv_demos.h>
@@ -42,27 +44,589 @@ int app_init_display()
 	return 0;
 }
 
-int app_display_hello()
+void app_display_hello()
 {
 	char str[12] = "Hello World\0";
-	lv_obj_t *pin_label;
 
-	lv_obj_set_style_bg_color(lv_screen_active(), lv_color_black(), LV_PART_MAIN);
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
 
-	pin_label = lv_label_create(lv_screen_active());
-	lv_label_set_text(pin_label, str);
-	lv_obj_align(pin_label, LV_ALIGN_CENTER, 0, 0);
-	lv_obj_set_style_text_color(pin_label, lv_color_white(), LV_PART_MAIN);
+	lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
 
-	return 0;
+	lv_obj_t *label = lv_label_create(screen);
+	lv_label_set_text(label, str);
+	lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+	lv_obj_set_style_text_color(label, lv_color_white(), LV_PART_MAIN);
+
+	return;
+}
+
+static void app_display_init_cb(lv_event_t *e)
+{
+	int check = (intptr_t)lv_event_get_user_data(e);
+	if (check == 1) {
+		app_display_init_show_select_length();
+	}
+
+	if (check == 2) {
+		app_display_import_mnemonic();
+	}
+}
+
+static void app_display_index_cb()
+{
+	app_display_tools();
+}
+
+void app_display_index()
+{
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	lv_obj_t *title = lv_label_create(screen);
+	lv_label_set_text(title, "Welcome");
+	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_text_color(title, lv_color_white(), 0);
+	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
+	lv_obj_set_style_pad_all(title, 8, 0);
+	lv_obj_set_size(title, screen_width, LV_SIZE_CONTENT);
+	lv_obj_set_pos(title, 0, 0);
+	lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+
+	lv_obj_set_style_border_side(title, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(title, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_border_width(title, 2, 0);
+	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
+	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
+
+	lv_obj_update_layout(title);
+	lv_coord_t title_height = lv_obj_get_height(title);
+
+	lv_obj_t *cont = lv_obj_create(screen);
+	lv_obj_set_size(cont, screen_width, screen_height - title_height);
+	lv_obj_set_pos(cont, 0, title_height);
+	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_style_border_width(cont, 0, 0);
+	lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+	lv_obj_set_style_radius(cont, 0, 0);
+	lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_set_style_pad_row(cont, 20, 0);
+
+	lv_obj_t *hint_label = lv_label_create(cont);
+	lv_label_set_text(hint_label, "OSKey (Open Source Key) is a fully open-source, "
+				      "non-commercial hardware wallet project. ");
+	lv_obj_set_style_text_font(hint_label, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_color(hint_label, lv_palette_main(LV_PALETTE_GREY), 0);
+	lv_obj_set_style_text_align(hint_label, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_set_width(hint_label, screen_width - 40);
+	lv_label_set_long_mode(hint_label, LV_LABEL_LONG_WRAP);
+
+	lv_obj_t *setting_btn = lv_btn_create(screen);
+	lv_obj_align(setting_btn, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
+	lv_obj_set_style_bg_color(setting_btn, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_bg_opa(setting_btn, LV_OPA_COVER, 0);
+	lv_obj_set_style_radius(setting_btn, 8, 0);
+
+	lv_obj_t *btn_label = lv_label_create(setting_btn);
+	lv_label_set_text(btn_label, "Tools");
+	lv_obj_set_style_text_color(btn_label, lv_color_white(), 0);
+	lv_obj_set_style_text_font(btn_label, &lv_font_montserrat_16, 0);
+	lv_obj_center(btn_label);
+	lv_obj_add_event_cb(setting_btn, app_display_index_cb, LV_EVENT_CLICKED, NULL);
+}
+
+void app_display_init()
+{
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	lv_obj_t *title = lv_label_create(screen);
+	lv_label_set_text(title, "Init");
+	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_text_color(title, lv_color_white(), 0);
+	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
+	lv_obj_set_style_pad_all(title, 8, 0);
+	lv_obj_set_size(title, screen_width, LV_SIZE_CONTENT);
+	lv_obj_set_pos(title, 0, 0);
+	lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+
+	lv_obj_set_style_border_side(title, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(title, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_border_width(title, 2, 0);
+	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
+	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
+
+	lv_obj_update_layout(title);
+	lv_coord_t title_height = lv_obj_get_height(title);
+
+	lv_obj_t *cont = lv_obj_create(screen);
+	lv_obj_set_size(cont, screen_width, screen_height - title_height);
+	lv_obj_set_pos(cont, 0, title_height);
+	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_style_border_width(cont, 0, 0);
+	lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+	lv_obj_set_style_radius(cont, 0, 0);
+	lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_set_style_pad_row(cont, 20, 0);
+
+	lv_obj_t *btn_generate = lv_btn_create(cont);
+	lv_obj_t *label_generate = lv_label_create(btn_generate);
+	lv_label_set_text(label_generate, "Generate");
+	lv_obj_set_style_text_font(label_generate, &lv_font_montserrat_18, 0);
+	lv_obj_center(label_generate);
+	lv_obj_add_event_cb(btn_generate, app_display_init_cb, LV_EVENT_CLICKED, (void *)1);
+
+	lv_obj_t *btn_import = lv_btn_create(cont);
+	lv_obj_t *label_import = lv_label_create(btn_import);
+	lv_label_set_text(label_import, "Import");
+	lv_obj_set_style_text_font(label_import, &lv_font_montserrat_18, 0);
+	lv_obj_center(label_import);
+	lv_obj_add_event_cb(btn_import, app_display_init_cb, LV_EVENT_CLICKED, (void *)2);
+}
+
+static void app_display_tools_cb(lv_event_t *e)
+{
+	int check = (intptr_t)lv_event_get_user_data(e);
+	if (check == 1) {
+		storage_erase();
+		sys_reboot(SYS_REBOOT_COLD);
+	}
+
+	if (check == 2) {
+		sys_reboot(SYS_REBOOT_COLD);
+	}
+}
+
+void app_display_tools()
+{
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	lv_obj_t *title = lv_label_create(screen);
+	lv_label_set_text(title, "Tools");
+	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_text_color(title, lv_color_white(), 0);
+	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
+	lv_obj_set_style_pad_all(title, 8, 0);
+	lv_obj_set_size(title, screen_width, LV_SIZE_CONTENT);
+	lv_obj_set_pos(title, 0, 0);
+	lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+
+	lv_obj_set_style_border_side(title, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(title, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_border_width(title, 2, 0);
+	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
+	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
+
+	lv_obj_update_layout(title);
+	lv_coord_t title_height = lv_obj_get_height(title);
+
+	lv_obj_t *cont = lv_obj_create(screen);
+	lv_obj_set_size(cont, screen_width, screen_height - title_height);
+	lv_obj_set_pos(cont, 0, title_height);
+	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_style_border_width(cont, 0, 0);
+	lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+	lv_obj_set_style_radius(cont, 0, 0);
+	lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_set_style_pad_all(cont, 0, 0);
+
+	static lv_style_t btn_style;
+	lv_style_init(&btn_style);
+	lv_style_set_bg_opa(&btn_style, LV_OPA_TRANSP);
+	lv_style_set_border_side(&btn_style, LV_BORDER_SIDE_BOTTOM);
+	lv_style_set_border_color(&btn_style, lv_palette_main(LV_PALETTE_GREY));
+	lv_style_set_border_width(&btn_style, 1);
+	lv_style_set_border_opa(&btn_style, LV_OPA_40);
+	lv_style_set_pad_all(&btn_style, 0);
+	lv_style_set_radius(&btn_style, 0);
+
+	static lv_style_t btn_pressed_style;
+	lv_style_init(&btn_pressed_style);
+	lv_style_set_bg_opa(&btn_pressed_style, LV_OPA_20);
+	lv_style_set_bg_color(&btn_pressed_style, lv_palette_main(LV_PALETTE_BLUE));
+
+	lv_obj_t *btn_1 = lv_btn_create(cont);
+	lv_obj_add_style(btn_1, &btn_style, 0);
+	lv_obj_add_style(btn_1, &btn_pressed_style, LV_STATE_PRESSED);
+	lv_obj_set_size(btn_1, screen_width, 40);
+	lv_obj_set_style_text_color(btn_1, lv_color_white(), 0);
+
+	lv_obj_t *label_1 = lv_label_create(btn_1);
+	lv_label_set_text(label_1, "Erase data");
+	lv_obj_set_style_text_font(label_1, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_color(label_1, lv_color_white(), 0);
+	lv_obj_align(label_1, LV_ALIGN_LEFT_MID, 16, 0);
+
+	lv_obj_add_event_cb(btn_1, app_display_tools_cb, LV_EVENT_CLICKED, (void *)1);
+
+	lv_obj_t *btn_2 = lv_btn_create(cont);
+	lv_obj_add_style(btn_2, &btn_style, 0);
+	lv_obj_add_style(btn_2, &btn_pressed_style, LV_STATE_PRESSED);
+	lv_obj_set_size(btn_2, screen_width, 40);
+	lv_obj_set_style_text_color(btn_2, lv_color_white(), 0);
+
+	lv_obj_t *label_2 = lv_label_create(btn_2);
+	lv_label_set_text(label_2, "Restart");
+	lv_obj_set_style_text_font(label_2, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_color(label_2, lv_color_white(), 0);
+	lv_obj_align(label_2, LV_ALIGN_LEFT_MID, 16, 0);
+
+	lv_obj_add_event_cb(btn_2, app_display_tools_cb, LV_EVENT_CLICKED, (void *)2);
+}
+
+static void app_display_mnemonic_cb()
+{
+	app_display_index();
+}
+
+void app_display_mnemonic(int legth)
+{
+	char buffer[256] = {0};
+
+	wallet_init_default_display(legth, "", buffer, sizeof(buffer));
+
+	char words[24][12];
+	int word_count = 0;
+	char *token = strtok(buffer, " ");
+
+	while (token != NULL && word_count < 24) {
+		snprintf(words[word_count], sizeof(words[word_count]), "%d. %s", word_count + 1,
+			 token);
+		word_count++;
+		token = strtok(NULL, " ");
+	}
+
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+	lv_coord_t item_width = (screen_width - 50) / 2;
+
+	lv_obj_t *title = lv_label_create(screen);
+	lv_label_set_text(title, "Mnemonic");
+	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_text_color(title, lv_color_white(), 0);
+	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
+	lv_obj_set_style_pad_all(title, 8, 0);
+	lv_obj_set_size(title, screen_width, LV_SIZE_CONTENT);
+	lv_obj_set_pos(title, 0, 0);
+	lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+
+	lv_obj_set_style_border_side(title, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(title, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_border_width(title, 2, 0);
+	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
+	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
+
+	lv_obj_update_layout(title);
+	lv_coord_t title_height = lv_obj_get_height(title);
+
+	lv_obj_t *cont = lv_obj_create(screen);
+	lv_obj_set_size(cont, screen_width, screen_height - title_height);
+	lv_obj_set_pos(cont, 0, title_height);
+	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
+	lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+	lv_obj_set_style_pad_all(cont, 10, 0);
+	lv_obj_set_style_pad_row(cont, 10, 0);
+	lv_obj_set_style_pad_column(cont, 10, 0);
+	lv_obj_set_style_border_width(cont, 0, 0);
+	lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+	lv_obj_set_style_radius(cont, 0, 0);
+	lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+
+	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
+
+	for (int i = 0; i < word_count; i++) {
+		lv_obj_t *label = lv_label_create(cont);
+		lv_label_set_text(label, words[i]);
+		lv_obj_set_style_text_font(label, &lv_font_montserrat_16, 0);
+		lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
+		lv_obj_set_style_text_color(label, lv_color_white(), 0);
+		lv_obj_set_style_border_side(label, LV_BORDER_SIDE_BOTTOM, 0);
+		lv_obj_set_style_border_color(label, lv_palette_main(LV_PALETTE_BLUE), 0);
+		lv_obj_set_style_border_width(label, 2, 0);
+		lv_obj_set_style_border_opa(label, LV_OPA_50, 0);
+		lv_obj_set_style_radius(label, 0, 0);
+		lv_obj_set_style_pad_all(label, 8, 0);
+		lv_obj_set_width(label, item_width);
+		lv_obj_set_style_min_width(label, item_width, 0);
+		lv_obj_set_style_max_width(label, item_width, 0);
+		lv_obj_set_height(label, LV_SIZE_CONTENT);
+	}
+
+	lv_obj_t *hint_label = lv_label_create(cont);
+	lv_label_set_text(hint_label, "Please copy it on a reliable medium such as pen and paper!");
+	lv_obj_set_style_text_font(hint_label, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_color(hint_label, lv_color_white(), 0);
+	lv_obj_set_style_text_align(hint_label, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_set_style_border_width(hint_label, 0, 0);
+	lv_obj_set_width(hint_label, LV_PCT(100));
+	lv_obj_set_style_pad_top(hint_label, 20, 0);
+	lv_obj_set_style_text_align(hint_label, LV_TEXT_ALIGN_LEFT, 0);
+
+	lv_obj_t *btn_cont = lv_obj_create(cont);
+	lv_obj_set_size(btn_cont, LV_PCT(100), 60);
+	lv_obj_set_style_border_width(btn_cont, 0, 0);
+	lv_obj_set_style_bg_opa(btn_cont, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_pad_all(btn_cont, 0, 0);
+	lv_obj_set_flex_flow(btn_cont, LV_FLEX_FLOW_ROW);
+	lv_obj_set_flex_align(btn_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+
+	lv_obj_t *ok_btn = lv_btn_create(btn_cont);
+	lv_obj_set_size(ok_btn, 100, 40);
+	lv_obj_set_style_bg_color(ok_btn, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_radius(ok_btn, 8, 0);
+	lv_obj_t *ok_label = lv_label_create(ok_btn);
+	lv_label_set_text(ok_label, "Ok");
+	lv_obj_set_style_text_color(ok_label, lv_color_white(), 0);
+	lv_obj_center(ok_label);
+	lv_obj_add_event_cb(ok_btn, app_display_mnemonic_cb, LV_EVENT_CLICKED, NULL);
+}
+
+static void app_display_init_show_select_length_cb(lv_event_t *e)
+
+{
+	int word_count = (intptr_t)lv_event_get_user_data(e);
+	app_display_mnemonic(word_count);
+}
+
+void app_display_init_show_select_length()
+{
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	lv_obj_t *title = lv_label_create(screen);
+	lv_label_set_text(title, "Select");
+	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_text_color(title, lv_color_white(), 0);
+	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
+	lv_obj_set_style_pad_all(title, 8, 0);
+	lv_obj_set_size(title, screen_width, LV_SIZE_CONTENT);
+	lv_obj_set_pos(title, 0, 0);
+	lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+
+	lv_obj_set_style_border_side(title, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(title, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_border_width(title, 2, 0);
+	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
+	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
+
+	lv_obj_update_layout(title);
+	lv_coord_t title_height = lv_obj_get_height(title);
+
+	lv_obj_t *cont = lv_obj_create(screen);
+	lv_obj_set_size(cont, screen_width, screen_height - title_height);
+	lv_obj_set_pos(cont, 0, title_height);
+	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_style_border_width(cont, 0, 0);
+	lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+	lv_obj_set_style_radius(cont, 0, 0);
+	lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_set_style_pad_row(cont, 20, 0);
+
+	lv_obj_t *btn1 = lv_btn_create(cont);
+	lv_obj_t *label1 = lv_label_create(btn1);
+	lv_label_set_text(label1, "12 words");
+	lv_obj_set_style_text_font(label1, &lv_font_montserrat_18, 0);
+	lv_obj_center(label1);
+	lv_obj_add_event_cb(btn1, app_display_init_show_select_length_cb, LV_EVENT_CLICKED,
+			    (void *)12);
+
+	lv_obj_t *btn2 = lv_btn_create(cont);
+	lv_obj_t *label2 = lv_label_create(btn2);
+	lv_label_set_text(label2, "18 words");
+	lv_obj_center(label2);
+	lv_obj_set_style_text_font(label2, &lv_font_montserrat_18, 0);
+	lv_obj_add_event_cb(btn2, app_display_init_show_select_length_cb, LV_EVENT_CLICKED,
+			    (void *)18);
+
+	lv_obj_t *btn3 = lv_btn_create(cont);
+	lv_obj_t *label3 = lv_label_create(btn3);
+	lv_label_set_text(label3, "24 words");
+	lv_obj_center(label3);
+	lv_obj_set_style_text_font(label3, &lv_font_montserrat_18, 0);
+	lv_obj_add_event_cb(btn3, app_display_init_show_select_length_cb, LV_EVENT_CLICKED,
+			    (void *)24);
+}
+
+void app_display_logo()
+{
+	char logo[12] = "OSKey\0";
+
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
+
+	lv_obj_t *label = lv_label_create(screen);
+	lv_label_set_text(label, logo);
+	lv_obj_set_style_text_font(label, &lv_font_montserrat_32, 0);
+	lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+	lv_obj_set_style_text_color(label, lv_color_white(), LV_PART_MAIN);
+
+	return;
+}
+
+static lv_obj_t *cont = NULL;
+static int title_height = 0;
+
+static void keyboard_event_cb(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	lv_obj_t *kb = lv_event_get_target(e);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	if (code == LV_EVENT_CANCEL) {
+		lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+		printf("Keyboard hidden by close button\n");
+
+		if (cont) {
+			lv_obj_set_size(cont, lv_disp_get_hor_res(NULL),
+					screen_height - title_height);
+		}
+	}
+	if (code == LV_EVENT_READY) {
+		lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+		printf("Keyboard hidden by ready button\n");
+
+		lv_obj_t *ta = lv_keyboard_get_textarea(kb);
+
+		if (cont) {
+			lv_obj_set_size(cont, lv_disp_get_hor_res(NULL),
+					screen_height - title_height);
+		}
+
+		if (ta) {
+			const char *text = lv_textarea_get_text(ta);
+
+			bool run = wallet_init_custom_display(text, "");
+
+			if (run) {
+				app_display_index();
+			} else {
+				printf("Import mnemonic fail!\n");
+			}
+		}
+	}
+}
+
+static void textarea_event_cb(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	lv_obj_t *keyboard = (lv_obj_t *)lv_event_get_user_data(e);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	if (code == LV_EVENT_CLICKED) {
+		lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_move_foreground(keyboard);
+		if (cont) {
+			lv_obj_set_size(cont, lv_disp_get_hor_res(NULL),
+					screen_height - title_height - (screen_height / 2));
+		}
+	}
+}
+
+void app_display_import_mnemonic()
+{
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	lv_obj_t *title = lv_label_create(screen);
+	lv_label_set_text(title, "Import");
+	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_text_color(title, lv_color_white(), 0);
+	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
+	lv_obj_set_style_pad_all(title, 8, 0);
+	lv_obj_set_size(title, screen_width, LV_SIZE_CONTENT);
+	lv_obj_set_pos(title, 0, 0);
+	lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+
+	lv_obj_set_style_border_side(title, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(title, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_border_width(title, 2, 0);
+	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
+	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
+	lv_obj_update_layout(title);
+	title_height = lv_obj_get_height(title);
+
+	cont = lv_obj_create(screen);
+	lv_obj_set_size(cont, screen_width, screen_height - title_height);
+	lv_obj_set_pos(cont, 0, title_height);
+	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_style_border_width(cont, 0, 0);
+	lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+	lv_obj_set_style_radius(cont, 0, 0);
+	lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_OFF);
+
+	lv_obj_t *text_area = lv_textarea_create(cont);
+	lv_textarea_set_accepted_chars(text_area, "abcdefghijklmnopqrstuvwxyz ");
+	lv_obj_set_scrollbar_mode(text_area, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_set_style_text_font(text_area, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_max_height(text_area, lv_obj_get_height(cont), 0);
+	lv_textarea_set_placeholder_text(text_area, "Enter words here...");
+
+	lv_obj_t *keyboard = lv_keyboard_create(screen);
+	lv_keyboard_set_textarea(keyboard, text_area);
+	lv_obj_set_size(keyboard, screen_width, screen_height / 2);
+	lv_obj_align(keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
+	lv_obj_set_flex_grow(text_area, 1);
+	lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+	lv_obj_move_foreground(keyboard);
+
+	lv_obj_add_event_cb(keyboard, keyboard_event_cb, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(text_area, textarea_event_cb, LV_EVENT_CLICKED, keyboard);
 }
 
 void app_display_loop()
 {
 	lv_timer_handler();
+
 	display_blanking_off(display_dev);
 
-	app_display_hello();
+	app_display_logo();
+
+	lv_timer_handler();
+
+	k_msleep(3000);
+
+	if (storage_seed_check()) {
+		app_display_index();
+	} else {
+		app_display_init();
+	}
 
 	while (1) {
 		uint32_t sleep_ms = lv_timer_handler();
