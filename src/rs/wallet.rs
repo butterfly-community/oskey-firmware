@@ -41,7 +41,7 @@ pub fn event_hub(req: ReqData) -> Result<()> {
             oskey_action::wallet_version_req(app_version_get, storage_seed_check)
         }
         Payload::InitRequest(data) => {
-            oskey_action::wallet_init_default(data, app_cs_random, storage_seed_write)?
+            oskey_action::wallet_init_default(data, app_cs_random, true, storage_seed_write)?
         }
         Payload::InitCustomRequest(data) => {
             oskey_action::wallet_init_custom(data, storage_seed_write)?
@@ -83,7 +83,7 @@ extern "C" fn wallet_init_default_display(
         seed: None,
     };
 
-    let exec = match oskey_action::wallet_init_default(res, app_cs_random, storage_seed_write) {
+    let exec = match oskey_action::wallet_init_default(res, app_cs_random, false, storage_seed_write) {
         Ok(v) => v,
         Err(_) => return false,
     };

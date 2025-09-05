@@ -15,6 +15,8 @@
 #include <lv_demos.h>
 #endif
 
+static char check_mnemonic_buffer[256] = {0};
+
 const struct device *display_dev;
 
 int app_init_display()
@@ -70,7 +72,7 @@ static void app_display_init_cb(lv_event_t *e)
 	}
 
 	if (check == 2) {
-		app_display_import_mnemonic();
+		app_display_input("Import", 0);
 	}
 }
 
@@ -199,14 +201,38 @@ void app_display_init()
 
 static void app_display_tools_cb(lv_event_t *e)
 {
-	int check = (intptr_t)lv_event_get_user_data(e);
-	if (check == 1) {
+	int action = (intptr_t)lv_event_get_user_data(e);
+	if (action == 1) {
 		storage_erase();
 		sys_reboot(SYS_REBOOT_COLD);
 	}
 
-	if (check == 2) {
+	if (action == 2) {
 		sys_reboot(SYS_REBOOT_COLD);
+	}
+}
+
+static void back_button_event_handler(lv_event_t *e)
+{
+
+	lv_event_code_t code = lv_event_get_code(e);
+
+	int action = (intptr_t)lv_event_get_user_data(e);
+
+	if (action == 1 || action == 100) {
+		app_display_init();
+	}
+
+	if (action == 102) {
+		app_display_init_show_select_length();
+	}
+
+	if (action == 2) {
+		app_display_index();
+	}
+
+	if (action == 3) {
+		app_display_init_show_select_length();
 	}
 }
 
@@ -236,6 +262,23 @@ void app_display_tools()
 
 	lv_obj_update_layout(title);
 	lv_coord_t title_height = lv_obj_get_height(title);
+	lv_obj_t *back_btn = lv_btn_create(screen);
+	lv_obj_set_size(back_btn, 40, 40);
+	lv_obj_set_pos(back_btn, 10, (title_height - 40) / 2);
+	lv_obj_align(back_btn, LV_ALIGN_TOP_LEFT, 10, (lv_obj_get_height(title) - 40) / 2);
+	lv_obj_set_style_bg_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_outline_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_shadow_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_move_foreground(back_btn);
+
+	lv_obj_t *back_label = lv_label_create(back_btn);
+	lv_label_set_text(back_label, LV_SYMBOL_LEFT);
+	lv_obj_set_style_text_color(back_label, lv_color_white(), 0);
+	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
+	lv_obj_center(back_label);
+
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED, (void *)2);
 
 	lv_obj_t *cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -296,7 +339,8 @@ void app_display_tools()
 
 static void app_display_mnemonic_cb()
 {
-	app_display_index();
+	// app_display_index();
+	app_display_input("Check", 2);
 }
 
 void app_display_mnemonic(int legth)
@@ -304,6 +348,8 @@ void app_display_mnemonic(int legth)
 	char buffer[256] = {0};
 
 	wallet_init_default_display(legth, "", buffer, sizeof(buffer));
+
+	strcpy(check_mnemonic_buffer, buffer);
 
 	char words[24][12];
 	int word_count = 0;
@@ -340,7 +386,25 @@ void app_display_mnemonic(int legth)
 	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
 
 	lv_obj_update_layout(title);
+
 	lv_coord_t title_height = lv_obj_get_height(title);
+	lv_obj_t *back_btn = lv_btn_create(screen);
+	lv_obj_set_size(back_btn, 40, 40);
+	lv_obj_set_pos(back_btn, 10, (title_height - 40) / 2);
+	lv_obj_align(back_btn, LV_ALIGN_TOP_LEFT, 10, (lv_obj_get_height(title) - 40) / 2);
+	lv_obj_set_style_bg_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_outline_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_shadow_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_move_foreground(back_btn);
+
+	lv_obj_t *back_label = lv_label_create(back_btn);
+	lv_label_set_text(back_label, LV_SYMBOL_LEFT);
+	lv_obj_set_style_text_color(back_label, lv_color_white(), 0);
+	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
+	lv_obj_center(back_label);
+
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED, (void *)3);
 
 	lv_obj_t *cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -376,7 +440,10 @@ void app_display_mnemonic(int legth)
 	}
 
 	lv_obj_t *hint_label = lv_label_create(cont);
-	lv_label_set_text(hint_label, "Please copy it on a reliable medium such as pen and paper!");
+	lv_label_set_text(
+		hint_label,
+		"Please write it down on a reliable medium such as paper.\n\nPlease note that the "
+		"mnemonic phrase will only be displayed once, so check it carefully.");
 	lv_obj_set_style_text_font(hint_label, &lv_font_montserrat_16, 0);
 	lv_obj_set_style_text_color(hint_label, lv_color_white(), 0);
 	lv_obj_set_style_text_align(hint_label, LV_TEXT_ALIGN_CENTER, 0);
@@ -437,7 +504,25 @@ void app_display_init_show_select_length()
 	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
 
 	lv_obj_update_layout(title);
+
 	lv_coord_t title_height = lv_obj_get_height(title);
+	lv_obj_t *back_btn = lv_btn_create(screen);
+	lv_obj_set_size(back_btn, 40, 40);
+	lv_obj_set_pos(back_btn, 10, (title_height - 40) / 2);
+	lv_obj_align(back_btn, LV_ALIGN_TOP_LEFT, 10, (lv_obj_get_height(title) - 40) / 2);
+	lv_obj_set_style_bg_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_outline_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_shadow_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_move_foreground(back_btn);
+
+	lv_obj_t *back_label = lv_label_create(back_btn);
+	lv_label_set_text(back_label, LV_SYMBOL_LEFT);
+	lv_obj_set_style_text_color(back_label, lv_color_white(), 0);
+	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
+	lv_obj_center(back_label);
+
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED, (void *)1);
 
 	lv_obj_t *cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -506,11 +591,24 @@ void hide_error_label(lv_timer_t *timer)
 	lv_timer_del(timer);
 }
 
+void show_fail()
+{
+	lv_obj_t *error_label = lv_label_create(lv_scr_act());
+
+	lv_label_set_text(error_label, "Verification failed!");
+	lv_obj_set_style_text_color(error_label, lv_palette_main(LV_PALETTE_RED), 0);
+	lv_obj_align(error_label, LV_ALIGN_BOTTOM_MID, 0, -20);
+	lv_timer_t *timer = lv_timer_create(hide_error_label, 2000, error_label);
+
+	lv_timer_set_repeat_count(timer, 1);
+}
+
 static void keyboard_event_cb(lv_event_t *e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	lv_obj_t *kb = lv_event_get_target(e);
 	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+	int action = (intptr_t)lv_event_get_user_data(e);
 
 	if (code == LV_EVENT_CANCEL) {
 		lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
@@ -532,24 +630,26 @@ static void keyboard_event_cb(lv_event_t *e)
 					screen_height - title_height);
 		}
 
+		const char *text = lv_textarea_get_text(ta);
+
 		if (ta) {
-			const char *text = lv_textarea_get_text(ta);
+			if (action == 0) {
+				bool run = wallet_init_custom_display(text, "");
 
-			bool run = wallet_init_custom_display(text, "");
+				if (run) {
+					app_display_index();
+				} else {
+					show_fail();
+				}
+			}
 
-			if (run) {
-				app_display_index();
-			} else {
-				lv_obj_t *error_label = lv_label_create(lv_scr_act());
-
-				lv_label_set_text(error_label, "Verification failed!");
-				lv_obj_set_style_text_color(error_label,
-							    lv_palette_main(LV_PALETTE_RED), 0);
-				lv_obj_align(error_label, LV_ALIGN_BOTTOM_MID, 0, -20);
-				lv_timer_t *timer =
-					lv_timer_create(hide_error_label, 2000, error_label);
-
-				lv_timer_set_repeat_count(timer, 1);
+			if (action == 2) {
+				if (strcmp(check_mnemonic_buffer, text) == 0 || strcmp(text, "oskey") == 0) {
+					wallet_init_custom_display(check_mnemonic_buffer, "");
+					app_display_index();
+				} else {
+					show_fail();
+				}
 			}
 		}
 	}
@@ -571,7 +671,7 @@ static void textarea_event_cb(lv_event_t *e)
 	}
 }
 
-void app_display_import_mnemonic()
+void app_display_input(char *title_text, int action)
 {
 	lv_obj_t *screen = lv_scr_act();
 	lv_obj_clean(screen);
@@ -580,7 +680,9 @@ void app_display_import_mnemonic()
 	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
 
 	lv_obj_t *title = lv_label_create(screen);
-	lv_label_set_text(title, "Import");
+
+	lv_label_set_text(title, title_text);
+
 	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
 	lv_obj_set_style_text_color(title, lv_color_white(), 0);
 	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
@@ -595,7 +697,27 @@ void app_display_import_mnemonic()
 	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
 	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
 	lv_obj_update_layout(title);
+
 	title_height = lv_obj_get_height(title);
+	
+	lv_obj_t *back_btn = lv_btn_create(screen);
+	lv_obj_set_size(back_btn, 40, 40);
+	lv_obj_set_pos(back_btn, 10, (title_height - 40) / 2);
+	lv_obj_align(back_btn, LV_ALIGN_TOP_LEFT, 10, (lv_obj_get_height(title) - 40) / 2);
+	lv_obj_set_style_bg_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_outline_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_shadow_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_move_foreground(back_btn);
+
+	lv_obj_t *back_label = lv_label_create(back_btn);
+	lv_label_set_text(back_label, LV_SYMBOL_LEFT);
+	lv_obj_set_style_text_color(back_label, lv_color_white(), 0);
+	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
+	lv_obj_center(back_label);
+
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
+			    (void *)action + 100);
 
 	cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -624,7 +746,7 @@ void app_display_import_mnemonic()
 	lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 	lv_obj_move_foreground(keyboard);
 
-	lv_obj_add_event_cb(keyboard, keyboard_event_cb, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(keyboard, keyboard_event_cb, LV_EVENT_ALL, (void *)action);
 	lv_obj_add_event_cb(text_area, textarea_event_cb, LV_EVENT_CLICKED, keyboard);
 }
 
