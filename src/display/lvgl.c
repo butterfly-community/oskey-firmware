@@ -210,13 +210,14 @@ static void app_display_tools_cb(lv_event_t *e)
 	if (action == 2) {
 		sys_reboot(SYS_REBOOT_COLD);
 	}
+
+	if (action == 3) {
+		app_display_input("Change PIN", 300);
+	}
 }
 
 static void back_button_event_handler(lv_event_t *e)
 {
-
-	lv_event_code_t code = lv_event_get_code(e);
-
 	int action = (intptr_t)lv_event_get_user_data(e);
 
 	if (action == 1 || action == 100) {
@@ -233,6 +234,10 @@ static void back_button_event_handler(lv_event_t *e)
 
 	if (action == 3) {
 		app_display_init_show_select_length();
+	}
+
+	if (action == 400 || action == 401) {
+		app_display_tools();
 	}
 }
 
@@ -307,6 +312,20 @@ void app_display_tools()
 	lv_style_init(&btn_pressed_style);
 	lv_style_set_bg_opa(&btn_pressed_style, LV_OPA_20);
 	lv_style_set_bg_color(&btn_pressed_style, lv_palette_main(LV_PALETTE_BLUE));
+
+	lv_obj_t *btn_pin = lv_btn_create(cont);
+	lv_obj_add_style(btn_pin, &btn_style, 0);
+	lv_obj_add_style(btn_pin, &btn_pressed_style, LV_STATE_PRESSED);
+	lv_obj_set_size(btn_pin, screen_width, 40);
+	lv_obj_set_style_text_color(btn_pin, lv_color_white(), 0);
+
+	lv_obj_t *label_pin = lv_label_create(btn_pin);
+	lv_label_set_text(label_pin, "PIN Setting");
+	lv_obj_set_style_text_font(label_pin, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_color(label_pin, lv_color_white(), 0);
+	lv_obj_align(label_pin, LV_ALIGN_LEFT_MID, 16, 0);
+
+	lv_obj_add_event_cb(btn_pin, app_display_tools_cb, LV_EVENT_CLICKED, (void *)3);
 
 	lv_obj_t *btn_1 = lv_btn_create(cont);
 	lv_obj_add_style(btn_1, &btn_style, 0);
@@ -603,6 +622,8 @@ void show_fail()
 	lv_timer_set_repeat_count(timer, 1);
 }
 
+char pin_buffer[30] = {0};
+
 static void keyboard_event_cb(lv_event_t *e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
@@ -644,11 +665,38 @@ static void keyboard_event_cb(lv_event_t *e)
 			}
 
 			if (action == 2) {
-				if (strcmp(check_mnemonic_buffer, text) == 0 || strcmp(text, "oskey") == 0) {
+				if (strcmp(check_mnemonic_buffer, text) == 0 ||
+				    strcmp(text, "oskey") == 0) {
 					wallet_init_custom_display(check_mnemonic_buffer, "");
 					app_display_index();
 				} else {
 					show_fail();
+				}
+			}
+
+			if (action == 300) {
+				strcpy(pin_buffer, text);
+				app_display_input("Check", 301);
+			}
+
+			if (action == 301) {
+				if (strcmp(pin_buffer, text) == 0) {
+					storage_general_write(pin_buffer, strlen(pin_buffer) + 1,
+							      STORAGE_ID_PIN);
+					app_display_index();
+				} else {
+					show_fail();
+				}
+			}
+
+			if (action == 310) {
+				char pin[20] = {0};
+				if (storage_general_read(pin, sizeof(pin), STORAGE_ID_PIN) > 0) {
+					if (strcmp(pin, text) == 0) {
+						app_display_index();
+					} else {
+						show_fail();
+					}
 				}
 			}
 		}
@@ -671,7 +719,7 @@ static void textarea_event_cb(lv_event_t *e)
 	}
 }
 
-void app_display_input(char *title_text, int action)
+void app_display_input(char *title_text, uintptr_t action)
 {
 	lv_obj_t *screen = lv_scr_act();
 	lv_obj_clean(screen);
@@ -699,7 +747,7 @@ void app_display_input(char *title_text, int action)
 	lv_obj_update_layout(title);
 
 	title_height = lv_obj_get_height(title);
-	
+
 	lv_obj_t *back_btn = lv_btn_create(screen);
 	lv_obj_set_size(back_btn, 40, 40);
 	lv_obj_set_pos(back_btn, 10, (title_height - 40) / 2);
@@ -717,7 +765,7 @@ void app_display_input(char *title_text, int action)
 	lv_obj_center(back_label);
 
 	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
-			    (void *)action + 100);
+			    (void *)(action + 100));
 
 	cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -736,6 +784,7 @@ void app_display_input(char *title_text, int action)
 	lv_obj_set_scrollbar_mode(text_area, LV_SCROLLBAR_MODE_AUTO);
 	lv_obj_set_style_text_font(text_area, &lv_font_montserrat_18, 0);
 	lv_obj_set_style_max_height(text_area, lv_obj_get_height(cont), 0);
+	lv_obj_set_width(text_area, lv_pct(100));
 	lv_textarea_set_placeholder_text(text_area, "Enter words here...");
 
 	lv_obj_t *keyboard = lv_keyboard_create(screen);
@@ -762,7 +811,9 @@ void app_display_loop()
 
 	k_msleep(3000);
 
-	if (storage_seed_check()) {
+	if (storage_general_check(STORAGE_ID_PIN)) {
+		app_display_input("PIN", 310);
+	} else if (storage_general_check(STORAGE_ID_SEED)) {
 		app_display_index();
 	} else {
 		app_display_init();

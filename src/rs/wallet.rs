@@ -14,7 +14,7 @@ extern "C" {
     pub(crate) fn app_cs_random(dst: *mut u8, len: usize) -> bool;
     pub(crate) fn app_uart_tx_push_array(data: *const u8, len: usize);
     pub(crate) fn app_version_get(data: *mut u8, len: usize) -> bool;
-    pub(crate) fn storage_seed_check() -> bool;
+    pub(crate) fn storage_general_check(id: u16) -> bool;
     pub(crate) fn storage_seed_write(data: *const u8, len: usize, phrase_len: usize) -> bool;
     pub(crate) fn storage_seed_read(data: *mut u8, len: usize) -> bool;
 }
@@ -24,6 +24,12 @@ extern "C" fn event_bytes_handle(bytes: *mut u8, len: usize) {
     let bytes = unsafe { core::slice::from_raw_parts(bytes, len) };
     let _event = event_parser(bytes);
     return;
+}
+
+#[no_mangle]
+extern "C" fn storage_seed_check() -> bool {
+    let check = unsafe { storage_general_check(2) };
+    return check;
 }
 
 pub fn event_parser(bytes: &[u8]) -> Result<()> {
@@ -83,10 +89,11 @@ extern "C" fn wallet_init_default_display(
         seed: None,
     };
 
-    let exec = match oskey_action::wallet_init_default(res, app_cs_random, false, storage_seed_write) {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
+    let exec =
+        match oskey_action::wallet_init_default(res, app_cs_random, false, storage_seed_write) {
+            Ok(v) => v,
+            Err(_) => return false,
+        };
 
     match exec {
         res_data::Payload::InitWalletResponse(r) => {

@@ -61,14 +61,36 @@ int storage_init()
 	return res;
 }
 
-bool storage_seed_check()
+bool storage_general_check(uint16_t id)
 {
-	uint8_t read_value[65] = {0};
-	int res = nvs_read(&fs, 2, &read_value, sizeof(read_value));
+	uint8_t read_value[2] = {0};
+	int res = nvs_read(&fs, id, &read_value, sizeof(read_value));
 	if (res < 0) {
 		return false;
 	}
 	return true;
+}
+
+bool storage_general_write(const uint8_t *data, int len, uint16_t id)
+{
+	int res = nvs_write(&fs, id, data, len);
+	if (res < 0) {
+		return false;
+	}
+	return true;
+}
+
+int storage_general_read(uint8_t *data, int len, uint16_t id)
+{
+	if (!storage_general_check(id)) {
+		return -1000;
+	}
+
+	int res = nvs_read(&fs, id, data, len);
+	if (res < 0) {
+		return res;
+	}
+	return res;
 }
 
 bool storage_seed_write(const uint8_t *data, int len, int phrase_len)
@@ -82,7 +104,7 @@ bool storage_seed_write(const uint8_t *data, int len, int phrase_len)
 
 int storage_seed_read(uint8_t *data, int len)
 {
-	if (!storage_seed_check()) {
+	if (!storage_general_check(STORAGE_ID_SEED)) {
 		return -1;
 	}
 	if (len > 64) {

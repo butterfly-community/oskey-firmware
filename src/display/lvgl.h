@@ -11,7 +11,7 @@ int app_init_display();
 
 void app_display_init_show_select_length();
 
-void app_display_input(char *title_text, int action);
+void app_display_input(char *title_text, uintptr_t action);
 
 void app_display_tools();
 
