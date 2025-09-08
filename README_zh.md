@@ -38,31 +38,31 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 ### 预编译固件
 
-  我们会为我们拥有的开发板预编译固件，请查看右侧 [Release](https://github.com/butterfly-community/oskey-firmware/releases) 下载或者下文查看我们拥有哪些开发板。
+我们会为我们拥有的开发板预编译固件，请查看右侧 [Release](https://github.com/butterfly-community/oskey-firmware/releases) 下载或者下文查看我们拥有哪些开发板。
 
 ### 自编译固件
 
-  如果开发板不在预编译固件中，请查看以下链接设置开发环境，为开发板编译固件。
+如果开发板不在预编译固件中，请查看以下链接设置开发环境，为开发板编译固件。
 
 #### 环境配置
 
-  [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
+[https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 
-  以下 `esp32c3_devkitm` 为我们推荐的开发板，其他开发板请查看支持列表 [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html)。
+以下 `esp32c3_devkitm` 为我们推荐的开发板，其他开发板请查看支持列表 [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html)。
 
-  如果您已经按照上面的链接配置完成，请尝试用这个命令编译示例，请确保没有错误。
+如果您已经按照上面的链接配置完成，请尝试用这个命令编译示例，请确保没有错误。
 
 ```bash
 west build -p always -b esp32c3_devkitm samples/hello_world
 ```
 
-  **这个项目还需要额外的 Rust 支持，请参考以下链接配置。**
+**这个项目还需要额外的 Rust 支持，请参考以下链接配置。**
 
-[  https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
+[ https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
 
-  [https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800](https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800)
+[https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800](https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800)
 
-  **还可以参考** **[Dockerfile](./Dockerfile)**
+**还可以参考** **[Dockerfile](./Dockerfile)**
 
 #### 编译 OSKey
 
@@ -71,20 +71,22 @@ west build -p always -b esp32c3_devkitm samples/hello_world
    ```bash
    git clone --recursive https://github.com/butterfly-community/oskey-firmware.git
    ```
+
 2. 设置环境变量
 
    > Windows 环境请查看 [这里](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts)
-   >
 
    ```bash
    # Mac 或者 Linux环境
    source ~/zephyrproject/zephyr/zephyr-env.sh
    ```
+
 3. 编译 OSKey 源码
 
    ```bash
    west build -p always -b esp32c3_devkitm
    ```
+
 4. 写入固件
 
    ```bash
@@ -93,24 +95,39 @@ west build -p always -b esp32c3_devkitm samples/hello_world
 
 ### 开发板
 
-我们特意选择了来自不同的 5 个芯片制造商的 3 种架构的开发板作为官方支持，以展示我们不受供应商锁定的能力。开发者会在这些开发板上开发测试。
-
 除了我们拥有的开发板，也直接支持其他 300+ 款开发板，请查看支持列表 [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html)。
 
 由于开发板型号太多，这里只写了芯片的价格。请自行选择喜欢的开发板。
 
 **如果您已经拥有我们推荐的开发板，这里有一个[快速使用指南](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/board)。**
 
+#### 基础体验
+
+我们特意选择了来自不同的 4 个芯片制造商的 3 种架构的开发板作为官方支持，以展示我们不受供应商锁定的能力。开发者会在这些开发板上开发测试。
+
 <br />
 
-|   名称   | [ESP32&nbsp;C3](https://docs.zephyrproject.org/latest/boards/espressif/esp32c3_devkitm/doc/index.html)&nbsp;(Recommended)🔥🔥 | [Raspberry&nbsp;Pi&nbsp;Pico](https://docs.zephyrproject.org/latest/boards/raspberrypi/rpi_pico/doc/index.html) 🔥 | [Nucleo F401RE](https://docs.zephyrproject.org/latest/boards/st/nucleo_f401re/doc/index.html) | [nRF52840-MDK](https://docs.zephyrproject.org/latest/boards/makerdiary/nrf52840_mdk/doc/index.html) | [NXP FRDM-K64F](https://docs.zephyrproject.org/latest/boards/nxp/frdm_k64f/doc/index.html) |
-| :------: | :------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------: |
-|   图片   |                            ![esp32-c3-core](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png)                            |                                    ![rpi-pico](doc/image/board/pico-board.png)                                    |                       ![stm32f401](doc/image/board/nucleo_f401re.jpg)                       |                        ![nrf52840-mdk](doc/image/board/mdk52840-cover.png)                        |                        ![frdm_k64f](doc/image/board/frdm_k64f.jpg)                        |
-|   厂商   |                                                         Espressif                                                         |                                                   RaspberryPi                                                   |                                     STMicroelectronics                                     |                                       Nordic Semiconductor                                       |                                           NXP                                           |
-|   芯片   |                                                        ESP32-C3FH4                                                        |                                                     RP2040                                                     |                                       STM32F401RET6                                       |                                             nRF52840                                             |                                     MK64FN1M0VLL12                                     |
-|   架构   |                                                           RISC-V                                                           |                                                  Arm Cortex-M0                                                  |                                       ARM Cortex-M4                                       |                                          ARM Cortex-M4                                          |                                      ARM Cortex-M4                                      |
-|   RAM   |                                                           400 KB                                                           |                                                     264 KB                                                     |                                           96 KB                                           |                                              256 KB                                              |                                         256 KB                                         |
-|   ROM   |                                                        384 KB + 4 M                                                        |                                                   16 KB + 2 M                                                   |                                           512 KB                                           |                                               1 M                                               |                                           1 M                                           |
-| 芯片价格 |                                                           \$0.5                                                           |                                                      \$0.8                                                      |                                            \$2                                            |                                               \$3                                               |                                          \$20                                          |
+|   名称   | [ESP32&nbsp;C3](https://docs.zephyrproject.org/latest/boards/espressif/esp32c3_devkitm/doc/index.html)&nbsp;(Recommended)🔥🔥 | [Raspberry&nbsp;Pi&nbsp;Pico](https://docs.zephyrproject.org/latest/boards/raspberrypi/rpi_pico/doc/index.html) 🔥 | [Nucleo F401RE](https://docs.zephyrproject.org/latest/boards/st/nucleo_f401re/doc/index.html) | [nRF52840-MDK](https://docs.zephyrproject.org/latest/boards/makerdiary/nrf52840_mdk/doc/index.html) |
+| :------: | :---------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------: |
+|   图片   |                             ![esp32-c3-core](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png)                             |                                    ![rpi-pico](doc/image/board/pico-board.png)                                     |                        ![stm32f401](doc/image/board/nucleo_f401re.jpg)                        |                         ![nrf52840-mdk](doc/image/board/mdk52840-cover.png)                         |
+|   厂商   |                                                           Espressif                                                           |                                                    RaspberryPi                                                     |                                      STMicroelectronics                                       |                                        Nordic Semiconductor                                         |
+|   芯片   |                                                          ESP32-C3FH4                                                          |                                                       RP2040                                                       |                                         STM32F401RET6                                         |                                              nRF52840                                               |
+|   架构   |                                                            RISC-V                                                             |                                                   Arm Cortex-M0                                                    |                                         ARM Cortex-M4                                         |                                            ARM Cortex-M4                                            |
+| 芯片价格 |                                                             \$0.5                                                             |                                                       \$0.8                                                        |                                              \$2                                              |                                                 \$3                                                 |
 
-默认情况下开发板的芯片未经过安全锁定，不具备任何安全功能。如何锁定芯片取决于您开发板上的芯片制造商，请查询对应芯片的文档，我们暂时无法帮助您锁定芯片。**请特别注意此项**。
+#### 完整体验
+
+这些型号具有屏幕和触摸支持，可以体验硬件钱包的完整功能。
+
+|   名称   |                                 [Lichuang ESP32-S3](https://item.szlcsc.com/43285221.html)                                 |    [STM32F769I Discovery](https://docs.zephyrproject.org/latest/boards/st/stm32f769i_disco/doc/index.html)    |
+| :------: | :------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------: |
+|   图片   | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-c3-devkitm" width="200" style="max-width:100%; height:auto;">` | <img src="doc/image/board/stm32f769i_disco.jpg" alt="stm32" width="200" style="max-width:100%; height:auto;"> |
+| 屏幕尺寸 |                                                           2-inch                                                           |                                                    4-inch                                                     |
+|   价格   |                                                            \$20                                                            |                                                     \$80                                                      |
+
+默认情况下开发板的芯片未经过安全锁定，不具备任何安全功能。如何锁定芯片取决于您开发板上的芯片制造商，请查询对应芯片的文档。
+
+## Power By
+
+| <a href="https://www.gccofficial.org/" target="_blank"><img src="doc/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="doc/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
