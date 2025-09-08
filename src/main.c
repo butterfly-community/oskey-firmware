@@ -11,8 +11,6 @@
 #include "net/mqtt.h"
 #include "display/lvgl.h"
 
-bool app_cs_random(void *dst, size_t len);
-
 int main(void)
 {
 	k_msleep(1000);
@@ -49,7 +47,7 @@ int main(void)
 	return 0;
 }
 
-bool app_cs_random(void *dst, size_t len) 
+bool app_cs_random(void *dst, size_t len)
 {
 	sys_csrand_get(dst, len);
 	return true;
@@ -63,4 +61,21 @@ void rust_panic_wrap(void)
 void app_version_get(void *ver, size_t len)
 {
 	snprintf(ver, len, "0.0.3");
+}
+
+bool app_check_support(uint32_t number)
+{
+	if (number == CHECK_INPUT_DISPLAY) {
+#if defined(CONFIG_DISPLAY) && defined(CONFIG_INPUT)
+		return true;
+#else
+		return false;
+#endif
+	}
+	return false;
+}
+
+bool app_check_lock(uint32_t number)
+{
+	return lock_mark;
 }

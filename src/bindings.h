@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+extern const uint32_t CHECK_INPUT_DISPLAY;
+
 void event_bytes_handle(uint8_t *bytes, uintptr_t len);
 
 bool storage_seed_check(void);
@@ -13,3 +15,5 @@ bool wallet_init_default_display(uintptr_t mnemonic_length,
                                  uintptr_t len);
 
 bool wallet_init_custom_display(const char *mnemonic, const char *password);
+
+bool wallet_sign_display(void);

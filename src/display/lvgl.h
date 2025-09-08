@@ -3,6 +3,8 @@
 
 #include <zephyr/kernel.h>
 
+static volatile bool lock_mark = false;
+
 int app_init_display();
 
 void app_display_loop();
