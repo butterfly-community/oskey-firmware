@@ -951,4 +951,9 @@ int app_init_display()
 	return 0;
 }
 
+void app_display_sign(char *text)
+{
+	return;
+}
+
 #endif

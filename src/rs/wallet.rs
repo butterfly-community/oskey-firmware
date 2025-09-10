@@ -79,7 +79,7 @@ pub fn event_hub(req: ReqData) -> Result<()> {
         Payload::SignRequest(data) => {
             let check = unsafe { app_check_support(CHECK_INPUT_DISPLAY) };
             if !check {
-                Some(oskey_action::wallet_sign_msg(data, storage_seed_read)?);
+                Some(oskey_action::wallet_sign_msg(data, storage_seed_read)?)
             } else {
                 unsafe {
                     #[allow(static_mut_refs)]
@@ -89,8 +89,8 @@ pub fn event_hub(req: ReqData) -> Result<()> {
                     c_string.push('\0');
                     app_display_sign(c_string.as_ptr() as *const c_char);
                 }
+                None
             }
-            None
         }
     };
 

@@ -28,3 +28,8 @@ esptool.py -p /dev/ttyUSB0 -b 400000 --no-stub   --after no_reset --chip esp32c3
 
 
 west build -p always -b  native_sim/native/64 --  -DEXTRA_CONF_FILE="boards/conf/enable_lvgl.conf;boards/conf/enable_lvgl_benchmark.conf" 
+
+west build -b rpi_pico -- -DEXTRA_CONF_FILE="boards/conf/enable_test_rng.conf" -DOPENOCD=/usr/local/bin/openocd -DOPENOCD_DEFAULT_PATH=/usr/local/share/openocd/scripts -DRPI_PICO_DEBUG_ADAPTER=cmsis-dap
+
+# erase flash
+/usr/local/bin/openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "init; reset init; flash erase_sector 0 0 last; reset; exit"

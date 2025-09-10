@@ -1,11 +1,20 @@
-// / {
-//     chosen {
-//         zephyr,console = &cdc_acm_uart0;
-//     };
-// };
+&flash0 {
+	reg = <0x10000000 DT_SIZE_M(4)>;
 
-// &zephyr_udc0 {
-//     cdc_acm_uart0: cdc_acm_uart0 {
-//     	compatible = "zephyr,cdc-acm-uart";
-//     };
-// };
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		code_partition: partition@100 {
+			label = "code";
+			reg = <0x100 (DT_SIZE_M(1) - 0x100)>;
+			read-only;
+		};
+
+		storage_partition: partition@100000 {
+			label = "storage";
+			reg = <0x100000  DT_SIZE_M(1)>;
+		};
+	};
+};
