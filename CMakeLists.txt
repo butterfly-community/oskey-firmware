@@ -44,7 +44,6 @@ zephyr_get_compile_options_for_lang(C options_list)
 
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_options.txt" CONTENT "${options_list}")
 
-add_subdirectory(temp)
 add_subdirectory(lib/core/wallet/psa)
 
 target_sources(app PRIVATE
@@ -62,18 +61,14 @@ target_sources(app PRIVATE
   src/input/touch.c
 )
 
-target_compile_options(temp PRIVATE)
-
 target_compile_options(crypto PRIVATE)
 
 target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/core/wallet)
 
-target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/temp)
-
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 rust_cargo_application()
 
-target_link_libraries(app PRIVATE crypto temp)
+target_link_libraries(app PRIVATE crypto)
