@@ -18,8 +18,6 @@ We are building core infrastructure connecting digital world with real world. No
 
 ### **Guide**
 
-**[Firmware Flashing Guide](https://github.com/butterfly-community/oskey-irmware/tree/master/doc/board)**
-
 **[Quick Start Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/start)**
 
 ### Feature:
@@ -46,64 +44,15 @@ We provide pre-compiled firmware for development boards we own. Please check the
 
 If your development board is not included in pre-compiled firmware, please check the following links to set up the development environment and compile firmware for your board.
 
-#### Getting Started
+[Click here](doc/start/Compile.md)
 
-[https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
-
-`esp32c3_devkitm` is our recommended development board. For other boards, please check the [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html).
-
-If you have completed the steps in the link above, try compiling the example with this command.
-
-```bash
-west build -p always -b esp32c3_devkitm samples/hello_world
-```
-
-**This project also requires additional Rust configuration. please refer here.**
-
-[ https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
-
-[https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800](https://github.com/zephyrproject-rtos/zephyr-lang-rust/discussions/11#discussioncomment-10905800)
-
-**Also refer to** **[Dockerfile](./Dockerfile)**
-
-#### Compile OSKey
-
-1. Clone source code
-
-   ```bash
-   git clone --recursive https://github.com/butterfly-community/oskey-firmware.git
-   ```
-
-2. Set environment variables
-
-   > Please refer to [here](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts) for the Windows environment.
-
-   ```bash
-   # Mac or Linux environment
-   source ~/zephyrproject/zephyr/zephyr-env.sh
-   ```
-
-3. Compile OSKey source code
-
-   ```bash
-   west build -p always -b esp32c3_devkitm
-   ```
-
-4. Flash
-
-   ```bash
-   west flash
-   ```
-
-### Development Boards
+## Development Boards
 
 We also provide direct support for over 300 development boards without any modifications needed. For a complete list, please check our [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html) documentation.
 
 Due to the wide variety of development board models available, only the chip price is listed here. Please select your preferred development board.
 
-**If you have a recommended development board, here's a [quick guide to get started](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/board).**
-
-#### Base experience
+### Base experience
 
 We carefully selected 4 development boards representing 3 different architectures from 5 different chip manufacturers as our officially supported boards. This demonstrates our vendor-independent capability. Our developers actively develop and test on these boards.
 
@@ -117,7 +66,7 @@ We carefully selected 4 development boards representing 3 different architecture
 | Architecture |                                                    RISC-V                                                    |                                                  Arm Cortex-M0                                                   |                                         ARM Cortex-M4                                         |                                            ARM Cortex-M4                                            |
 |  MCU Price   |                                                    \$0.5                                                     |                                                      \$0.8                                                       |                                              \$2                                              |                                                 \$3                                                 |
 
-#### Fully experience
+### Fully experience
 
 These models have screens and touch support, giving them full functionality as hardware wallets.
 

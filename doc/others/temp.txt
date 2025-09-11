@@ -8,6 +8,8 @@ west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LO
 
 west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LOG=y && west flash --esp-device=/dev/ttyACM0 && west espressif monitor
 
+west build -p always -b esp32s3_devkitm/esp32s3/procpu --sysbuild --build-dir temp -- -DPATH=$(pwd) -DEXTRA_CONF_FILE="boards/conf/enable_mcuboot.conf;boards/conf/enable_lvgl.conf;boards/lichuang_esp32s3.conf;" -DEXTRA_DTC_OVERLAY_FILE="boards/lichuang_esp32s3.overlay" && west flash --build-dir temp --esp-device=/dev/ttyACM0 && west espressif monitor -p /dev/ttyACM0
+
 
 west build -b native_sim/native/64 -p always -- -DEXTRA_CONF_FILE=boards/conf/enable_dev.conf
 
