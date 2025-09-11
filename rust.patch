@@ -1,46 +1,140 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 75ece41..4a0df8a 100644
+index 75ece41..8f692c2 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -53,6 +53,8 @@ function(_rust_map_target)
+@@ -53,6 +53,12 @@ function(_rust_map_target)
      set(RUST_TARGET "x86_64-unknown-none" PARENT_SCOPE)
    elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64"))
      set(RUST_TARGET "aarch64-unknown-none" PARENT_SCOPE)
 +  elseif(CONFIG_SOC_ESP32S3)
 +    set(RUST_TARGET "xtensa-esp32s3-none-elf" PARENT_SCOPE)
++  elseif(CONFIG_SOC_ESP32S2)
++    set(RUST_TARGET "xtensa-esp32s2-none-elf" PARENT_SCOPE)
++  elseif(CONFIGCONFIG_SOC_FAMILY_ESPRESSIF_ESP32_SOC_ESP32)
++    set(RUST_TARGET "xtensa-esp32-none-elf" PARENT_SCOPE)
    else()
      message(FATAL_ERROR "Rust: Add support for other target")
    endif()
-@@ -173,7 +175,7 @@ ${config_paths}
-       WRAPPER_FILE="${WRAPPER_FILE}"
-       DT_AUGMENTS="${DT_AUGMENTS}"
-       BINARY_DIR_INCLUDE_GENERATED="${BINARY_DIR_INCLUDE_GENERATED}"
--      cargo build
-+      cargo +esp build -Z build-std=core,alloc
-       ${rust_build_type_arg}
+@@ -158,38 +164,67 @@ ${config_paths}
+   # TODO: Figure out how to factor these out.
  
-       # Override the features according to the shield given. For a general case,
+   # The library is built by invoking Cargo.
+-  add_custom_command(
+-    OUTPUT ${DUMMY_FILE}
+-    BYPRODUCTS ${RUST_LIBRARY} ${WRAPPER_FILE}
+-    USES_TERMINAL
+-    COMMAND
+-      ${CMAKE_COMMAND} -E
+-      env BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}
+-      ZEPHYR_BASE=${ZEPHYR_BASE}
+-      DOTCONFIG=${DOTCONFIG}
+-      ZEPHYR_DTS=${ZEPHYR_DTS}
+-      INCLUDE_DIRS="${include_dirs}"
+-      INCLUDE_DEFINES="${include_defines}"
+-      WRAPPER_FILE="${WRAPPER_FILE}"
+-      DT_AUGMENTS="${DT_AUGMENTS}"
+-      BINARY_DIR_INCLUDE_GENERATED="${BINARY_DIR_INCLUDE_GENERATED}"
+-      cargo build
+-      ${rust_build_type_arg}
+ 
+-      # Override the features according to the shield given. For a general case,
+-      # this will need to come from a variable or argument.
+-      # TODO: This needs to be passed in.
+-      # --no-default-features
+-      # --features ${SHIELD_FEATURE}
++  
++  # Override the features according to the shield given. For a general case,
++  # this will need to come from a variable or argument.
++  # TODO: This needs to be passed in.
++  # --no-default-features
++  # --features ${SHIELD_FEATURE}
+ 
+-      # Set a replacement so that packages can just use `zephyr-sys` as a package
+-      # name to find it.
+-      ${command_paths}
+-      --target ${RUST_TARGET}
+-      --target-dir ${CARGO_TARGET_DIR}
+-    COMMENT "Building Rust application"
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-  )
++  # Set a replacement so that packages can just use `zephyr-sys` as a package
++  # name to find it.
++
++  if(CONFIG_XTENSA AND CONFIG_SOC_FAMILY_ESPRESSIF_ESP32)
++    add_custom_command(
++      OUTPUT ${DUMMY_FILE}
++      BYPRODUCTS ${RUST_LIBRARY} ${WRAPPER_FILE}
++      USES_TERMINAL
++      COMMAND
++        ${CMAKE_COMMAND} -E
++        env BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}
++        ZEPHYR_BASE=${ZEPHYR_BASE}
++        DOTCONFIG=${DOTCONFIG}
++        ZEPHYR_DTS=${ZEPHYR_DTS}
++        INCLUDE_DIRS="${include_dirs}"
++        INCLUDE_DEFINES="${include_defines}"
++        WRAPPER_FILE="${WRAPPER_FILE}"
++        DT_AUGMENTS="${DT_AUGMENTS}"
++        BINARY_DIR_INCLUDE_GENERATED="${BINARY_DIR_INCLUDE_GENERATED}"
++        cargo +esp build -Z build-std=core,alloc
++        ${rust_build_type_arg}
++        ${command_paths}
++        --target ${RUST_TARGET}
++        --target-dir ${CARGO_TARGET_DIR}
++      COMMENT "Building Rust application"
++      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++    )
++  else()
++    add_custom_command(
++      OUTPUT ${DUMMY_FILE}
++      BYPRODUCTS ${RUST_LIBRARY} ${WRAPPER_FILE}
++      USES_TERMINAL
++      COMMAND
++        ${CMAKE_COMMAND} -E
++        env BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}
++        ZEPHYR_BASE=${ZEPHYR_BASE}
++        DOTCONFIG=${DOTCONFIG}
++        ZEPHYR_DTS=${ZEPHYR_DTS}
++        INCLUDE_DIRS="${include_dirs}"
++        INCLUDE_DEFINES="${include_defines}"
++        WRAPPER_FILE="${WRAPPER_FILE}"
++        DT_AUGMENTS="${DT_AUGMENTS}"
++        BINARY_DIR_INCLUDE_GENERATED="${BINARY_DIR_INCLUDE_GENERATED}"
++        cargo build
++        ${rust_build_type_arg}
++        ${command_paths}
++        --target ${RUST_TARGET}
++        --target-dir ${CARGO_TARGET_DIR}
++      COMMENT "Building Rust application"
++      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++    )
++  endif()
++  
+ 
+   # Be sure we don't try building this until all of the generated headers have been generated.
+   add_custom_target(librustapp ALL
 diff --git a/Kconfig b/Kconfig
-index 0b2d057..867539c 100644
+index 0b2d057..0c5442a 100644
 --- a/Kconfig
 +++ b/Kconfig
 @@ -9,6 +9,7 @@ config RUST_SUPPORTED
  	bool
  	default y if ((CPU_CORTEX_M || \
  				(RISCV && !RISCV_ISA_RV32E && !RISCV_ISA_RV128I) || \
-+				SOC_SERIES_ESP32S3 || \
++				(SOC_FAMILY_ESPRESSIF_ESP32) || \
  				(ARCH_POSIX && 64BIT)) && \
  				!TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
  	help
 diff --git a/dt-rust.yaml b/dt-rust.yaml
-index c1390c7..667769d 100644
+index c1390c7..a1c012d 100644
 --- a/dt-rust.yaml
 +++ b/dt-rust.yaml
-@@ -33,6 +33,7 @@
+@@ -33,6 +33,8 @@
    rules:
      - !Compatible
        names:
 +        - "espressif,esp32-flash-controller"
++        - "st,stm32-flash-controller"
          - "nordic,nrf52-flash-controller"
          - "nordic,nrf51-flash-controller"
          - "raspberrypi,pico-flash-controller"
