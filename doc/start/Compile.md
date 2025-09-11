@@ -1,6 +1,8 @@
-#### Getting Started
+## Getting Started
 
 [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
+
+## Try Compile Demo
 
 `esp32c3_devkitm` is our recommended development board. For other boards, please check the [Supported Boards](https://docs.zephyrproject.org/latest/boards/index.html).
 
@@ -9,18 +11,13 @@ If you have completed the steps in the link above, try compiling the example wit
 ```bash
 west build -p always -b esp32c3_devkitm samples/hello_world
 ```
+## Rust Support
 
 **This project also requires additional Rust configuration. please refer here.**
 
 [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
 
 [https://docs.zephyrproject.org/latest/develop/languages/rust/index.html](https://docs.zephyrproject.org/latest/develop/languages/rust/index.html)
-
-**另外可以参考** **[Dockerfile](../../Dockerfile)**
-
-**If use Espressif ESP32/ESPS2/ESPS3 chip，You will need to configure the Espressif rust toolchain**
-
-[https://docs.espressif.com/projects/rust/book/installation/riscv-and-xtensa.html](https://docs.espressif.com/projects/rust/book/installation/riscv-and-xtensa.html)
 
 Additional application patches are also required.
 
@@ -32,7 +29,15 @@ wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/h
 git apply rust.patch
 ```
 
-#### Compile OSKey
+Also refer to [Docker](../../Dockerfile)
+
+**If use Espressif ESP32/ESPS2/ESPS3 chip，You will need to configure the Espressif rust toolchain**
+
+[https://docs.espressif.com/projects/rust/book/installation/riscv-and-xtensa.html](https://docs.espressif.com/projects/rust/book/installation/riscv-and-xtensa.html)
+
+
+
+## Compile OSKey
 
 1. Clone source code
 
