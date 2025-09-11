@@ -1,5 +1,7 @@
 #include "storage.h"
 
+#ifdef CONFIG_NVS
+
 #include <zephyr/kernel.h>
 #include <zephyr/fs/nvs.h>
 #include <zephyr/storage/flash_map.h>
@@ -15,8 +17,8 @@
 #define NVS_PARTITION_NODE DT_NODE_BY_FIXED_PARTITION_LABEL(storage)
 #define NVS_FLASH_NODE     DT_MTD_FROM_FIXED_PARTITION(NVS_PARTITION_NODE)
 
-#if DT_NODE_EXISTS(DT_GPARENT(NVS_PARTITION_NODE)) && \
-    DT_NODE_HAS_PROP(DT_GPARENT(NVS_PARTITION_NODE), erase_block_size)
+#if DT_NODE_EXISTS(DT_GPARENT(NVS_PARTITION_NODE)) &&                                              \
+	DT_NODE_HAS_PROP(DT_GPARENT(NVS_PARTITION_NODE), erase_block_size)
 #define NVS_FLASH_ERASE_SIZE DT_PROP(DT_GPARENT(NVS_PARTITION_NODE), erase_block_size)
 #else
 #define NVS_FLASH_ERASE_SIZE 4096
@@ -86,61 +88,86 @@ bool storage_general_write(const uint8_t *data, int len, uint16_t id)
 	return true;
 }
 
-int storage_general_read(uint8_t *data, int len, uint16_t id)
+int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 {
-	if (!storage_general_check(id)) {
-		return -1000;
-	}
-
-	int res = nvs_read(&fs, id, data, len);
-	if (res < 0) {
-		return res;
-	}
-	return res;
-}
-
-bool storage_seed_write(const uint8_t *data, int len, int phrase_len)
-{
-	int res = nvs_write(&fs, 2, data, len);
-	if (res < 0) {
-		return false;
-	}
-	return true;
-}
-
-int storage_seed_read(uint8_t *data, int len)
-{
-	if (!storage_general_check(STORAGE_ID_SEED)) {
-		return -1;
-	}
-	if (len > 64) {
-		return -2;
-	}
-	int res = nvs_read(&fs, 2, data, len);
-	if (res < 0) {
-		return res;
-	}
-	return 0;
+	return nvs_read(&fs, id, data, len);
 }
 
 int storage_erase()
 {
-	int res = nvs_clear(&fs);
+	return nvs_clear(&fs);
+}
 
-	if (res < 0) {
-		return res;
+int storage_delete(uint16_t id)
+{
+	return nvs_delete(&fs, id);
+}
+
+#else
+
+static uint8_t storage_seed_buffer[64] = {0};
+static uint8_t storage_pin_buffer[22] = {0};
+
+int storage_init()
+{
+	memset(storage_seed_buffer, 0, sizeof(storage_seed_buffer));
+	memset(storage_pin_buffer, 0, sizeof(storage_pin_buffer));
+	return 0;
+}
+
+bool storage_general_check(uint16_t id)
+{
+	if (id == STORAGE_ID_SEED) {
+		return storage_seed_buffer[0] != 0;
+	} else if (id == STORAGE_ID_PIN) {
+		return storage_pin_buffer[0] != 0;
 	}
+	return false;
+}
 
+bool storage_general_write(const uint8_t *data, int len, uint16_t id)
+{
+	if (id == STORAGE_ID_SEED) {
+		if (len > sizeof(storage_seed_buffer)) {
+			return false;
+		}
+		memcpy(storage_seed_buffer, data, len);
+		return true;
+	} else if (id == STORAGE_ID_PIN) {
+		if (len > sizeof(storage_pin_buffer)) {
+			return false;
+		}
+		memcpy(storage_pin_buffer, data, len);
+		return true;
+	}
+	return false;
+}
+
+int storage_general_read(uint8_t *data, size_t len, uint16_t id)
+{
+	if (id == STORAGE_ID_SEED) {
+		if (len > sizeof(storage_seed_buffer)) {
+			len = sizeof(storage_seed_buffer);
+		}
+		memcpy(data, storage_seed_buffer, len);
+		return len;
+	} else if (id == STORAGE_ID_PIN) {
+		if (len > sizeof(storage_pin_buffer)) {
+			len = sizeof(storage_pin_buffer);
+		}
+		memcpy(data, storage_pin_buffer, len);
+		return len;
+	}
+	return false;
+}
+
+int storage_erase()
+{
 	return 0;
 }
 
 int storage_delete(uint16_t id)
 {
-	int res = nvs_delete(&fs, id);
-
-	if (res < 0) {
-		return res;
-	}
-
 	return 0;
 }
+#endif

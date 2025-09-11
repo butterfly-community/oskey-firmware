@@ -5,9 +5,21 @@
 
 extern const uint32_t CHECK_INPUT_DISPLAY;
 
+extern const uint16_t STORAGE_ID_SEED;
+
+extern const uint16_t STORAGE_ID_PIN;
+
+bool app_version_get_rs(uint8_t *data, uintptr_t *len);
+
+bool app_cs_random_rs(uint8_t *bytes, uintptr_t len);
+
 void event_bytes_handle(uint8_t *bytes, uintptr_t len);
 
 bool storage_seed_check(void);
+
+bool storage_seed_read(uint8_t *data, uintptr_t *len);
+
+bool storage_seed_write(const uint8_t *data, uintptr_t len, uintptr_t _phrase_len);
 
 bool wallet_init_default_display(uintptr_t mnemonic_length,
                                  const char *password,

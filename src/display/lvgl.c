@@ -801,7 +801,8 @@ static void keyboard_event_cb(lv_event_t *e)
 
 			if (action == 310) {
 				char pin[20] = {0};
-				if (storage_general_read(pin, sizeof(pin), STORAGE_ID_PIN) > 0) {
+				size_t len = sizeof(20);
+				if (storage_general_read(pin, len, STORAGE_ID_PIN) > 0) {
 					if (strcmp(pin, text) == 0) {
 						lock_mark = false;
 						app_display_index();

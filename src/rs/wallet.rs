@@ -14,17 +14,31 @@ static mut GLOBAL_SIGN: Option<proto::SignRequest> = None;
 extern "C" {
     pub(crate) fn app_cs_random(dst: *mut u8, len: usize) -> bool;
     pub(crate) fn app_uart_tx_push_array(data: *const u8, len: usize);
-    pub(crate) fn app_version_get(data: *mut u8, len: usize) -> bool;
+    pub(crate) fn app_version_get(data: *mut u8, len: *mut usize) -> bool;
     pub(crate) fn app_check_support(number: u32) -> bool;
     pub(crate) fn app_check_lock() -> bool;
     pub(crate) fn app_display_sign(text: *const c_char);
     pub(crate) fn storage_general_check(id: u16) -> bool;
-    pub(crate) fn storage_seed_write(data: *const u8, len: usize, phrase_len: usize) -> bool;
-    pub(crate) fn storage_seed_read(data: *mut u8, len: usize) -> bool;
+    pub(crate) fn storage_general_read(data: *mut u8, len: *mut usize, id: u16) -> bool;
+    pub(crate) fn storage_general_write(data: *const u8, len: usize, id: u16) -> bool;
 }
 
 #[no_mangle]
 pub static CHECK_INPUT_DISPLAY: u32 = 0;
+#[no_mangle]
+pub static STORAGE_ID_SEED: u16 = 2;
+#[no_mangle]
+pub static STORAGE_ID_PIN: u16 = 10;
+
+#[no_mangle]
+extern "C" fn app_version_get_rs(data: *mut u8, len: *mut usize) -> bool {
+    return unsafe { app_version_get(data, len) };
+}
+
+#[no_mangle]
+extern "C" fn app_cs_random_rs(bytes: *mut u8, len: usize) -> bool {
+    return unsafe { app_cs_random(bytes, len) };
+}
 
 #[no_mangle]
 extern "C" fn event_bytes_handle(bytes: *mut u8, len: usize) {
@@ -35,7 +49,19 @@ extern "C" fn event_bytes_handle(bytes: *mut u8, len: usize) {
 
 #[no_mangle]
 extern "C" fn storage_seed_check() -> bool {
-    let check = unsafe { storage_general_check(2) };
+    let check = unsafe { storage_general_check(STORAGE_ID_SEED) };
+    return check;
+}
+
+#[no_mangle]
+extern "C" fn storage_seed_read(data: *mut u8, len: *mut usize) -> bool {
+    let check = unsafe { storage_general_read(data, len, STORAGE_ID_SEED) };
+    return check;
+}
+
+#[no_mangle]
+extern "C" fn storage_seed_write(data: *const u8, len: usize, _phrase_len: usize) -> bool {
+    let check = unsafe { storage_general_write(data, len, STORAGE_ID_SEED) };
     return check;
 }
 
@@ -60,12 +86,12 @@ pub fn event_hub(req: ReqData) -> Result<()> {
     let payload = match res_payload {
         Payload::Unknown(_unknown) => Some(oskey_action::wallet_unknown_req()),
         Payload::VersionRequest(_) => Some(oskey_action::wallet_version_req(
-            app_version_get,
+            app_version_get_rs,
             storage_seed_check,
         )),
         Payload::InitRequest(data) => Some(oskey_action::wallet_init_default(
             data,
-            app_cs_random,
+            app_cs_random_rs,
             true,
             storage_seed_write,
         )?),
@@ -135,7 +161,7 @@ extern "C" fn wallet_init_default_display(
     };
 
     let exec =
-        match oskey_action::wallet_init_default(res, app_cs_random, false, storage_seed_write) {
+        match oskey_action::wallet_init_default(res, app_cs_random_rs, false, storage_seed_write) {
             Ok(v) => v,
             Err(_) => return false,
         };
