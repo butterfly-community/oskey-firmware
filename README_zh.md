@@ -76,7 +76,7 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 默认情况下开发板的芯片未经过安全锁定，不具备任何安全功能。如何锁定芯片请查询对应芯片的文档。
 
-## Power By
+## Powered by
 
 | <a href="https://www.gccofficial.org/" target="_blank"><img src="doc/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="doc/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |

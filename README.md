@@ -82,7 +82,7 @@ By default, the chip on the development board is not security-locked and has no 
 
 Each chip model has its own specific locking protocol that varies by manufacturer. Please refer to your chip's technical documentation.
 
-## Power By
+## Powered by
 
 | <a href="https://www.gccofficial.org/" target="_blank"><img src="doc/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a>  | <a href="https://openbuild.xyz/" target="_blank"><img src="doc/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
