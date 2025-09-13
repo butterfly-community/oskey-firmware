@@ -12,14 +12,14 @@ static mut GLOBAL_SIGN: Option<proto::SignRequest> = None;
 #[allow(unused_doc_comments)]
 /// cbindgen:ignore
 extern "C" {
-    pub(crate) fn app_cs_random(dst: *mut u8, len: usize) -> bool;
+    pub(crate) fn app_csrand_get(dst: *mut u8, len: usize) -> bool;
     pub(crate) fn app_uart_tx_push_array(data: *const u8, len: usize);
-    pub(crate) fn app_version_get(data: *mut u8, len: *mut usize) -> bool;
+    pub(crate) fn app_version_get(data: *mut u8, len: usize) -> bool;
     pub(crate) fn app_check_support(number: u32) -> bool;
     pub(crate) fn app_check_lock() -> bool;
     pub(crate) fn app_display_sign(text: *const c_char);
     pub(crate) fn storage_general_check(id: u16) -> bool;
-    pub(crate) fn storage_general_read(data: *mut u8, len: *mut usize, id: u16) -> bool;
+    pub(crate) fn storage_general_read(data: *mut u8, len: usize, id: u16) -> bool;
     pub(crate) fn storage_general_write(data: *const u8, len: usize, id: u16) -> bool;
 }
 
@@ -31,13 +31,13 @@ pub static STORAGE_ID_SEED: u16 = 2;
 pub static STORAGE_ID_PIN: u16 = 10;
 
 #[no_mangle]
-extern "C" fn app_version_get_rs(data: *mut u8, len: *mut usize) -> bool {
+extern "C" fn app_version_get_rs(data: *mut u8, len: usize) -> bool {
     return unsafe { app_version_get(data, len) };
 }
 
 #[no_mangle]
-extern "C" fn app_cs_random_rs(bytes: *mut u8, len: usize) -> bool {
-    return unsafe { app_cs_random(bytes, len) };
+extern "C" fn app_csrand_get_rs(bytes: *mut u8, len: usize) -> bool {
+    return unsafe { app_csrand_get(bytes, len) };
 }
 
 #[no_mangle]
@@ -54,7 +54,7 @@ extern "C" fn storage_seed_check() -> bool {
 }
 
 #[no_mangle]
-extern "C" fn storage_seed_read(data: *mut u8, len: *mut usize) -> bool {
+extern "C" fn storage_seed_read(data: *mut u8, len: usize) -> bool {
     let check = unsafe { storage_general_read(data, len, STORAGE_ID_SEED) };
     return check;
 }
@@ -91,7 +91,7 @@ pub fn event_hub(req: ReqData) -> Result<()> {
         )),
         Payload::InitRequest(data) => Some(oskey_action::wallet_init_default(
             data,
-            app_cs_random_rs,
+            app_csrand_get_rs,
             true,
             storage_seed_write,
         )?),
@@ -160,11 +160,15 @@ extern "C" fn wallet_init_default_display(
         seed: None,
     };
 
-    let exec =
-        match oskey_action::wallet_init_default(res, app_cs_random_rs, false, storage_seed_write) {
-            Ok(v) => v,
-            Err(_) => return false,
-        };
+    let exec = match oskey_action::wallet_init_default(
+        res,
+        app_csrand_get_rs,
+        false,
+        storage_seed_write,
+    ) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
 
     match exec {
         res_data::Payload::InitWalletResponse(r) => {

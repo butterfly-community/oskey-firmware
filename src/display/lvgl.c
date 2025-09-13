@@ -10,6 +10,7 @@
 #include "wrapper.h"
 #include "lvgl.h"
 #include "storage.h"
+#include "app.h"
 
 #ifdef CONFIG_LV_Z_DEMO_BENCHMARK
 #include <lv_demos.h>
@@ -911,6 +912,121 @@ void app_display_input(char *title_text, uintptr_t action)
 	lv_obj_add_event_cb(text_area, textarea_event_cb, LV_EVENT_CLICKED, keyboard);
 }
 
+static void app_display_features_cb(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	if (code == LV_EVENT_CLICKED) {
+		app_display_init();
+	}
+}
+
+void app_display_features()
+{
+	uint8_t features[7];
+	if (!app_check_feature(features, sizeof(features))) {
+		return;
+	}
+
+	const char *feature_descriptions[] = {
+		"Secure Boot",  "Flash Encryption",  "Bootloader", "Storage",
+		"Hardware Rng", "Display and Input", "User Button"};
+
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	lv_obj_t *title = lv_label_create(screen);
+	lv_label_set_text(title, "Feature");
+	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_text_color(title, lv_color_white(), 0);
+	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
+	lv_obj_set_style_pad_all(title, 8, 0);
+	lv_obj_set_size(title, screen_width, LV_SIZE_CONTENT);
+	lv_obj_set_pos(title, 0, 0);
+	lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+
+	lv_obj_set_style_border_side(title, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(title, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_border_width(title, 2, 0);
+	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
+	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
+
+	lv_obj_update_layout(title);
+	lv_coord_t title_height = lv_obj_get_height(title);
+
+	lv_obj_t *cont = lv_obj_create(screen);
+	lv_obj_set_size(cont, screen_width, screen_height - title_height);
+	lv_obj_set_pos(cont, 0, title_height);
+	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+	lv_obj_set_style_pad_row(cont, 0, 0);
+	lv_obj_set_style_pad_column(cont, 0, 0);
+	lv_obj_set_style_border_width(cont, 0, 0);
+	lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+	lv_obj_set_style_radius(cont, 0, 0);
+	lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
+
+	for (int i = 0; i < sizeof(features) / sizeof(features[0]); i++) {
+		lv_obj_t *feature_cont = lv_obj_create(cont);
+		lv_obj_set_size(feature_cont, LV_PCT(100), LV_SIZE_CONTENT);
+		lv_obj_set_flex_flow(feature_cont, LV_FLEX_FLOW_ROW);
+		lv_obj_set_flex_align(feature_cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
+				      LV_FLEX_ALIGN_CENTER);
+		lv_obj_set_style_pad_top(feature_cont, 6, 0);
+		lv_obj_set_style_pad_bottom(feature_cont, 6, 0);
+		lv_obj_set_style_bg_opa(feature_cont, LV_OPA_TRANSP, 0);
+		lv_obj_set_style_border_width(feature_cont, 0, 0);
+		lv_obj_t *symbol = lv_label_create(feature_cont);
+		lv_obj_set_width(symbol, 30);
+		lv_obj_set_style_text_align(symbol, LV_TEXT_ALIGN_CENTER, 0);
+
+		if (features[i]) {
+			lv_label_set_text(symbol, LV_SYMBOL_OK);
+			lv_obj_set_style_text_color(symbol, lv_palette_main(LV_PALETTE_GREEN), 0);
+		} else {
+			lv_label_set_text(symbol, LV_SYMBOL_CLOSE);
+			lv_obj_set_style_text_color(symbol, lv_palette_main(LV_PALETTE_RED), 0);
+		}
+		lv_obj_set_style_text_font(symbol, &lv_font_montserrat_14, 0);
+
+		lv_obj_t *desc = lv_label_create(feature_cont);
+		lv_label_set_text(desc, feature_descriptions[i]);
+		lv_obj_set_style_text_color(desc, lv_color_white(), 0);
+		lv_obj_set_style_text_font(desc, &lv_font_montserrat_14, 0);
+	}
+
+	lv_obj_t *hint = lv_label_create(cont);
+	lv_label_set_text(hint, "Plesae check hardware support!");
+	lv_obj_set_style_text_color(hint, lv_palette_main(LV_PALETTE_GREY), 0);
+	lv_obj_set_style_text_font(hint, &lv_font_montserrat_14, 0);
+	lv_obj_set_style_text_align(hint, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_set_width(hint, LV_PCT(100));
+	lv_obj_set_style_pad_top(hint, 10, 0);
+	lv_obj_set_style_pad_bottom(hint, 10, 0);
+
+	lv_obj_t *btn_cont = lv_obj_create(cont);
+	lv_obj_set_size(btn_cont, LV_PCT(100), 60);
+	lv_obj_set_style_border_width(btn_cont, 0, 0);
+	lv_obj_set_style_bg_opa(btn_cont, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_pad_all(btn_cont, 0, 0);
+	lv_obj_set_flex_flow(btn_cont, LV_FLEX_FLOW_ROW);
+	lv_obj_set_flex_align(btn_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+
+	lv_obj_t *ok_btn = lv_btn_create(btn_cont);
+	lv_obj_set_size(ok_btn, 100, 40);
+	lv_obj_set_style_bg_color(ok_btn, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_radius(ok_btn, 8, 0);
+	lv_obj_t *ok_label = lv_label_create(ok_btn);
+	lv_label_set_text(ok_label, "Checked");
+	lv_obj_set_style_text_color(ok_label, lv_color_black(), 0);
+	lv_obj_center(ok_label);
+	lv_obj_add_event_cb(ok_btn, app_display_features_cb, LV_EVENT_CLICKED, NULL);
+}
+
 void app_display_loop()
 {
 	lv_timer_handler();
@@ -929,7 +1045,7 @@ void app_display_loop()
 	} else if (storage_general_check(STORAGE_ID_SEED)) {
 		app_display_index();
 	} else {
-		app_display_init();
+		app_display_features();
 	}
 
 	lv_timer_handler();

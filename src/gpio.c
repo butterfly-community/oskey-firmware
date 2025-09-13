@@ -7,7 +7,7 @@
 
 const struct device *sw0_dev = NULL;
 
-bool user_button_exists(void)
+bool user_button_exists()
 {
 #if DT_NODE_EXISTS(DT_ALIAS(sw0))
 	sw0_dev = DEVICE_DT_GET(DT_ALIAS(sw0));

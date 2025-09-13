@@ -3,6 +3,8 @@
 
 #include "wrapper.h"
 
+static volatile bool storage_initd = false;
+
 int storage_init();
 bool storage_general_check(uint16_t id);
 bool storage_general_write(const uint8_t *data, int len, uint16_t id);

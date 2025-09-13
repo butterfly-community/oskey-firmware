@@ -59,6 +59,7 @@ target_sources(app PRIVATE
   src/audio/i2s.c
   src/usb/webusb.c
   src/input/touch.c
+  src/app.c
 )
 
 target_compile_options(crypto PRIVATE)

@@ -6,6 +6,7 @@
 #include <zephyr/fs/nvs.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/device.h>
+#include <zephyr/drivers/flash.h>
 
 #ifdef CONFIG_SOC_SERIES_ESP32C3
 
@@ -14,36 +15,33 @@
 
 #endif
 
-#define NVS_PARTITION_NODE DT_NODE_BY_FIXED_PARTITION_LABEL(storage)
-#define NVS_FLASH_NODE     DT_MTD_FROM_FIXED_PARTITION(NVS_PARTITION_NODE)
+#define NVS_PARTITION        storage_partition
+#define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
+#define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
+#define NVS_PARTITION_SIZE   FIXED_PARTITION_SIZE(NVS_PARTITION)
 
-#if DT_NODE_EXISTS(DT_GPARENT(NVS_PARTITION_NODE)) &&                                              \
-	DT_NODE_HAS_PROP(DT_GPARENT(NVS_PARTITION_NODE), erase_block_size)
-#define NVS_FLASH_ERASE_SIZE DT_PROP(DT_GPARENT(NVS_PARTITION_NODE), erase_block_size)
-#else
-#define NVS_FLASH_ERASE_SIZE 4096
-#endif
-
-#define NVS_PARTITION_OFFSET DT_REG_ADDR(NVS_PARTITION_NODE)
-#define NVS_PARTITION_SIZE   DT_REG_SIZE(NVS_PARTITION_NODE)
-#define NVS_SECTOR_COUNT     (NVS_PARTITION_SIZE / NVS_FLASH_ERASE_SIZE)
-
-static struct nvs_fs fs = {
-	.flash_device = DEVICE_DT_GET(NVS_FLASH_NODE),
-	.offset = NVS_PARTITION_OFFSET,
-	.sector_size = NVS_FLASH_ERASE_SIZE,
-	.sector_count = NVS_SECTOR_COUNT,
-};
+static struct nvs_fs fs;
 
 bool ohw_official = false;
 
 int storage_init()
 {
+	struct flash_pages_info info;
+
+	fs.flash_device = NVS_PARTITION_DEVICE;
 	int res = device_is_ready(fs.flash_device);
 	if (res < 0) {
 		return res;
 	}
 
+	fs.offset = NVS_PARTITION_OFFSET;
+	res = flash_get_page_info_by_offs(fs.flash_device, fs.offset, &info);
+	if (res < 0) {
+		return res;
+	}
+
+	fs.sector_size = info.size;
+	fs.sector_count = (NVS_PARTITION_SIZE / fs.sector_size);
 	res = nvs_mount(&fs);
 	if (res < 0) {
 		return res;
@@ -66,6 +64,9 @@ int storage_init()
 	}
 
 #endif
+	if (res >= 0) {
+		storage_initd = true;
+	}
 	return res;
 }
 
@@ -101,6 +102,28 @@ int storage_erase()
 int storage_delete(uint16_t id)
 {
 	return nvs_delete(&fs, id);
+}
+
+void storage_erase_partition()
+{
+	const struct flash_area *fa;
+
+	int ret = flash_area_open(FIXED_PARTITION_ID(storage_partition), &fa);
+	if (ret != 0) {
+		printk("Failed to open flash area: %d\n", ret);
+		return;
+	}
+
+	const struct device *flash_dev = flash_area_get_device(fa);
+
+	ret = flash_erase(flash_dev, fa->fa_off, fa->fa_size);
+	if (ret != 0) {
+		printk("Flash erase failed: %d\n", ret);
+	} else {
+		printk("Storage partition erased successfully.\n");
+	}
+
+	flash_area_close(fa);
 }
 
 #else
