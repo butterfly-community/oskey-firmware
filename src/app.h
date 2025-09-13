@@ -7,7 +7,7 @@
 bool app_csrand_get(void *dst, size_t len);
 void app_version_get(void *ver, size_t len);
 bool app_check_support(uint32_t number);
-bool app_check_lock(uint32_t number);
+bool app_check_lock();
 bool app_check_feature(uint8_t *buffer, size_t len);
-
+bool app_check_storage();
 #endif

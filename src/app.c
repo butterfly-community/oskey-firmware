@@ -77,7 +77,12 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	return true;
 }
 
-bool app_check_lock(uint32_t number)
+bool app_check_lock()
 {
 	return lock_mark;
+}
+
+bool app_check_storage()
+{
+	return storage_initd;
 }

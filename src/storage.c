@@ -94,7 +94,7 @@ int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 	return nvs_read(&fs, id, data, len);
 }
 
-int storage_erase()
+int storage_erase_nvs()
 {
 	return nvs_clear(&fs);
 }
@@ -104,26 +104,25 @@ int storage_delete(uint16_t id)
 	return nvs_delete(&fs, id);
 }
 
-void storage_erase_partition()
+int storage_erase_flash()
 {
 	const struct flash_area *fa;
 
 	int ret = flash_area_open(FIXED_PARTITION_ID(storage_partition), &fa);
 	if (ret != 0) {
-		printk("Failed to open flash area: %d\n", ret);
-		return;
+		return ret;
 	}
 
 	const struct device *flash_dev = flash_area_get_device(fa);
 
 	ret = flash_erase(flash_dev, fa->fa_off, fa->fa_size);
 	if (ret != 0) {
-		printk("Flash erase failed: %d\n", ret);
-	} else {
-		printk("Storage partition erased successfully.\n");
+		return ret;
 	}
 
 	flash_area_close(fa);
+
+	return ret;
 }
 
 #else
@@ -184,7 +183,7 @@ int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 	return false;
 }
 
-int storage_erase()
+int storage_erase_nvs()
 {
 	return 0;
 }
@@ -193,4 +192,10 @@ int storage_delete(uint16_t id)
 {
 	return 0;
 }
+
+int storage_erase_flash()
+{
+	return 0;
+}
+
 #endif

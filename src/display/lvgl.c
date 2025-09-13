@@ -207,7 +207,10 @@ static void app_display_tools_cb(lv_event_t *e)
 {
 	int action = (intptr_t)lv_event_get_user_data(e);
 	if (action == 1) {
-		storage_erase();
+		if (app_check_storage()) {
+			storage_erase_nvs();
+		}
+		storage_erase_flash();
 		sys_reboot(SYS_REBOOT_COLD);
 	}
 
