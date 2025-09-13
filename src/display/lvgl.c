@@ -893,7 +893,7 @@ void app_display_input(char *title_text, uintptr_t action)
 	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_OFF);
 
 	lv_obj_t *text_area = lv_textarea_create(cont);
-	lv_textarea_set_accepted_chars(text_area, "abcdefghijklmnopqrstuvwxyz ");
+	// lv_textarea_set_accepted_chars(text_area, "abcdefghijklmnopqrstuvwxyz ");
 	lv_obj_set_scrollbar_mode(text_area, LV_SCROLLBAR_MODE_AUTO);
 	lv_obj_set_style_text_font(text_area, &lv_font_montserrat_18, 0);
 	lv_obj_set_style_max_height(text_area, lv_obj_get_height(cont), 0);
