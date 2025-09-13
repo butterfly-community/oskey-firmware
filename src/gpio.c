@@ -9,13 +9,9 @@ const struct device *sw0_dev = NULL;
 
 bool user_button_exists()
 {
-#if DT_NODE_EXISTS(DT_ALIAS(sw0))
-	sw0_dev = DEVICE_DT_GET(DT_ALIAS(sw0));
-	if (!device_is_ready(sw0_dev)) {
-		return false;
-	}
+#if DT_HAS_ALIAS(sw0) && DT_NODE_HAS_STATUS(DT_ALIAS(sw0), okay)
 	return true;
 #else
-  return false;
+	return false;
 #endif
 }
