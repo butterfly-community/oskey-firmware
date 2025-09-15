@@ -72,11 +72,11 @@ These models have screens and touch support, giving them full functionality as h
 
 <br />
 
-|  Name   |                                 [Lichuang ESP32-S3](https://item.szlcsc.com/43285221.html)                                  |     [STM32F769I Discovery](https://docs.zephyrproject.org/latest/boards/st/stm32f769i_disco/doc/index.html)     |
-| :-----: | :-------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------: |
-|  Image  | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-c3-devkitm" width="220" style="max-width:100%; height:auto;"> | <img src="doc/image/board/stm32f769i_disco.jpg" alt="stm32" width="220" style="max-width:100%; height:auto;"> |
-| Display |                                                           2-inch                                                            |                                                     4-inch                                                      |
-|  Price  |                                                            \$20                                                             |                                                      \$80                                                       |
+|  Name   |                                [Lichuang ESP32-S3](https://item.szlcsc.com/43285221.html)                                 | [STM32H747I Discovery](https://docs.zephyrproject.org/latest/boards/st/stm32h747i_disco/doc/index.html#stm32h747i_disco) |
+| :-----: | :-----------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------: |
+|  Image  | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-c3-devkitm" width="220" style="max-width:100%; height:auto;"> |      <img src="doc/image/board/stm32h747i_disco.jpg" alt="stm32" width="220" style="max-width:100%; height:auto;">       |
+| Display |                                                          2-inch                                                           |                                                          4-inch                                                          |
+|  Price  |                                                           \$20                                                            |                                                          \$100                                                           |
 
 By default, the chip on the development board is not security-locked and has no security features enabled.
 
@@ -84,5 +84,5 @@ Each chip model has its own specific locking protocol that varies by manufacture
 
 ## Powered by
 
-| <a href="https://www.gccofficial.org/" target="_blank"><img src="doc/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a>  | <a href="https://openbuild.xyz/" target="_blank"><img src="doc/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a href="https://www.gccofficial.org/" target="_blank"><img src="doc/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="doc/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |

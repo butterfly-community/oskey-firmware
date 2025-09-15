@@ -7,3 +7,7 @@
 		zephyr,shell-uart = &uart0;
 	};
 };
+
+&usb_serial {
+	status = "okay";
+};

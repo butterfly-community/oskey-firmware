@@ -57,6 +57,7 @@
   lvgl_pointer {
 		compatible = "zephyr,lvgl-pointer-input";
 		input = <&ft6336>;
+    invert-y;
 	};
 };
 
@@ -74,9 +75,6 @@
     status = "okay";
     compatible = "focaltech,ft5336";
     reg = <0x38>;
-    screen-width = <320>;
-    screen-height = <240>;
-    inverted-y;
   };
 };
 
@@ -97,9 +95,6 @@
   pinctrl-0 = <&spim2_default>;
   cs-gpios = <&pca9557 0 GPIO_ACTIVE_LOW>;
   pinctrl-names = "default";
-  // dmas = <&dma 0>, <&dma 1>;
-	// dma-names = "rx", "tx";
-  // dma-enabled;
 };
 
 &dma {
