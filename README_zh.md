@@ -68,11 +68,11 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 这些型号具有屏幕和触摸支持，可以体验硬件钱包的完整功能。
 
-|   名称   |                                 [Lichuang ESP32-S3](https://item.szlcsc.com/43285221.html)                                 |    [STM32F769I Discovery](https://docs.zephyrproject.org/latest/boards/st/stm32f769i_disco/doc/index.html)    |
+|   名称   |                                 [Lichuang ESP32-S3](https://item.szlcsc.com/43285221.html)                                 |    [STM32H747I Discovery](https://docs.zephyrproject.org/latest/boards/st/stm32h747i_disco/doc/index.html)    |
 | :------: | :------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------: |
-|   图片   | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-c3-devkitm" width="200" style="max-width:100%; height:auto;">` | <img src="doc/image/board/stm32f769i_disco.jpg" alt="stm32" width="200" style="max-width:100%; height:auto;"> |
+|   图片   | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-c3-devkitm" width="200" style="max-width:100%; height:auto;">` | <img src="doc/image/board/stm32h747i_disco.jpg" alt="stm32" width="200" style="max-width:100%; height:auto;"> |
 | 屏幕尺寸 |                                                           2-inch                                                           |                                                    4-inch                                                     |
-|   价格   |                                                            \$20                                                            |                                                     \$80                                                      |
+|   价格   |                                                            \$20                                                            |                                                     \$100                                                     |
 
 默认情况下开发板的芯片未经过安全锁定，不具备任何安全功能。如何锁定芯片请查询对应芯片的文档。
 
