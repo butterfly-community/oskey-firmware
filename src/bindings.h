@@ -29,3 +29,5 @@ bool wallet_init_default_display(uintptr_t mnemonic_length,
 bool wallet_init_custom_display(const char *mnemonic, const char *password);
 
 bool wallet_sign_display(void);
+
+bool wallet_sign_eth_display(void);

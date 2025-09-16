@@ -4,10 +4,13 @@ use core::ffi::c_char;
 use oskey_bus::proto;
 use oskey_bus::proto::{req_data::Payload, res_data, ReqData, ResData};
 use oskey_bus::Message;
+
 extern crate alloc;
 extern crate zephyr;
 
 static mut GLOBAL_SIGN: Option<proto::SignRequest> = None;
+
+static mut GLOBAL_ETH_SIGN: Option<proto::SignEthRequest> = None;
 
 #[allow(unused_doc_comments)]
 /// cbindgen:ignore
@@ -118,6 +121,22 @@ pub fn event_hub(req: ReqData) -> Result<()> {
                 None
             }
         }
+        Payload::SignEthRequest(data) => {
+            let check = unsafe { app_check_support(CHECK_INPUT_DISPLAY) };
+            if !check {
+                Some(oskey_action::wallet_sign_eth(data, storage_seed_read)?.0)
+            } else {
+                unsafe {
+                    #[allow(static_mut_refs)]
+                    drop(GLOBAL_ETH_SIGN.take());
+                    GLOBAL_ETH_SIGN = Some(data.clone());
+                    let mut c_string = "Eth Sign\n".to_string();
+                    c_string.push('\0');
+                    app_display_sign(c_string.as_ptr() as *const c_char);
+                }
+                None
+            }
+        }
     };
 
     event_sent_res(payload)?;
@@ -219,4 +238,21 @@ extern "C" fn wallet_sign_display() -> bool {
     let res = oskey_action::wallet_sign_msg(payload, storage_seed_read);
 
     event_sent_res(res.ok()).is_ok()
+}
+
+#[no_mangle]
+#[allow(static_mut_refs)]
+extern "C" fn wallet_sign_eth_display() -> bool {
+    let payload = unsafe {
+        match GLOBAL_ETH_SIGN.take() {
+            Some(payload) => payload,
+            None => return false,
+        }
+    };
+    let res = match oskey_action::wallet_sign_eth(payload, storage_seed_read) {
+        Ok(v) => v.0,
+        Err(_) => return false,
+    };
+
+    event_sent_res(Some(res)).is_ok()
 }

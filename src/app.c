@@ -11,7 +11,7 @@ bool app_csrand_get(void *dst, size_t len)
 
 void app_version_get(void *ver, size_t len)
 {
-	snprintf(ver, len, "0.0.3");
+	snprintf(ver, len, "0.1.0");
 }
 
 bool app_check_support(uint32_t number)
