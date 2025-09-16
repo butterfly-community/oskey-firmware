@@ -20,9 +20,7 @@ const config = {
     {
       name: "esp32s3_devkitm",
       target: "esp32s3_devkitm/esp32s3/procpu",
-      conf: [
-        "boards/conf/enable_storage.conf",
-      ],
+      conf: ["boards/conf/enable_storage.conf"],
       overlay: [],
     },
     {
@@ -40,6 +38,16 @@ const config = {
         "boards/esp32s3_lichuang.conf",
       ],
       overlay: ["boards/esp32s3_lichuang.overlay"],
+    },
+    {
+      name: "lichuang_szpi_s3_usb_jtag_serial",
+      target: "esp32s3_devkitm/esp32s3/procpu",
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/esp32s3_lichuang.conf",
+      ],
+      overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/esp32_usb_jtag_serial.overlay"],
     },
     {
       name: "stm32_nucleo_f401re",
@@ -72,18 +80,14 @@ const config = {
       conf: ["boards/conf/enable_test_rng.conf"],
       overlay: [],
     },
-    {
-      name: "nxp_frdm_k64f",
-      target: "frdm_k64f",
-      conf: ["boards/conf/enable_storage.conf"],
-      overlay: [],
-    },
   ],
 };
 
 console.log("\n🚀 Start Buiding...\n");
 
 async function run() {
+  await cleanTemp();
+
   for (const board of config.boards) {
     const command = config.command
       .replace("{board}", board.target)
@@ -111,8 +115,30 @@ async function run() {
     }
     console.log(`✅ ${board.name} Build succeeded\n`);
 
+    const execFileOwner = new Deno.Command(shell, {
+      args: ["-c", "chmod -R 777 boards/build"],
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+
+    await execFileOwner.output();
+
     await copyBuildFiles(board.name);
   }
+
+  await cleanTemp();
+}
+
+async function cleanTemp() {
+  const shell = Deno.env.get("SHELL") || "bash";
+
+  const cleanProcess = new Deno.Command(shell, {
+    args: ["-c", "rm -rf temp"],
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+
+  await cleanProcess.output();
 }
 
 async function copyBuildFiles(boardName: string) {

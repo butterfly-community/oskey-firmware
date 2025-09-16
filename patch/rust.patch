@@ -1,7 +1,16 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 75ece41..8f692c2 100644
+index 75ece41..6614dda 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
+@@ -45,7 +45,7 @@ function(_rust_map_target)
+       set(RUST_TARGET "riscv64imac-unknown-none-elf" PARENT_SCOPE)
+     elseif(CONFIG_RISCV_ISA_RV32I)
+       # TODO: We have multiple choices, try to pick the best.
+-      set(RUST_TARGET "riscv32i-unknown-none-elf" PARENT_SCOPE)
++      set(RUST_TARGET "riscv32imc-unknown-none-elf" PARENT_SCOPE)
+     else()
+       message(FATAL_ERROR "Rust: Unsupported riscv ISA")
+     endif()
 @@ -53,6 +53,12 @@ function(_rust_map_target)
      set(RUST_TARGET "x86_64-unknown-none" PARENT_SCOPE)
    elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64"))
@@ -15,7 +24,7 @@ index 75ece41..8f692c2 100644
    else()
      message(FATAL_ERROR "Rust: Add support for other target")
    endif()
-@@ -158,38 +164,67 @@ ${config_paths}
+@@ -158,38 +164,55 @@ ${config_paths}
    # TODO: Figure out how to factor these out.
  
    # The library is built by invoking Cargo.
@@ -36,19 +45,13 @@ index 75ece41..8f692c2 100644
 -      BINARY_DIR_INCLUDE_GENERATED="${BINARY_DIR_INCLUDE_GENERATED}"
 -      cargo build
 -      ${rust_build_type_arg}
- 
+-
 -      # Override the features according to the shield given. For a general case,
 -      # this will need to come from a variable or argument.
 -      # TODO: This needs to be passed in.
 -      # --no-default-features
 -      # --features ${SHIELD_FEATURE}
-+  
-+  # Override the features according to the shield given. For a general case,
-+  # this will need to come from a variable or argument.
-+  # TODO: This needs to be passed in.
-+  # --no-default-features
-+  # --features ${SHIELD_FEATURE}
- 
+-
 -      # Set a replacement so that packages can just use `zephyr-sys` as a package
 -      # name to find it.
 -      ${command_paths}
@@ -57,9 +60,6 @@ index 75ece41..8f692c2 100644
 -    COMMENT "Building Rust application"
 -    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 -  )
-+  # Set a replacement so that packages can just use `zephyr-sys` as a package
-+  # name to find it.
-+
 +  if(CONFIG_XTENSA AND CONFIG_SOC_FAMILY_ESPRESSIF_ESP32)
 +    add_custom_command(
 +      OUTPUT ${DUMMY_FILE}
@@ -109,7 +109,6 @@ index 75ece41..8f692c2 100644
 +      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 +    )
 +  endif()
-+  
  
    # Be sure we don't try building this until all of the generated headers have been generated.
    add_custom_target(librustapp ALL
@@ -126,13 +125,14 @@ index 0b2d057..0c5442a 100644
  				!TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
  	help
 diff --git a/dt-rust.yaml b/dt-rust.yaml
-index c1390c7..a1c012d 100644
+index c1390c7..bee0aa3 100644
 --- a/dt-rust.yaml
 +++ b/dt-rust.yaml
-@@ -33,6 +33,8 @@
+@@ -33,6 +33,9 @@
    rules:
      - !Compatible
        names:
++        - "nxp,kinetis-ftfe"
 +        - "espressif,esp32-flash-controller"
 +        - "st,stm32-flash-controller"
          - "nordic,nrf52-flash-controller"

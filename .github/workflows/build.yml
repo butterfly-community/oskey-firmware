@@ -24,7 +24,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: boards/**/*
+          files: boards/build/*
           tag_name: ${{ github.ref_name }}
           name: OSKey ${{ github.ref_name }}
           draft: false
