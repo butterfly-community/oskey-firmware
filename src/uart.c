@@ -1,7 +1,7 @@
 #include "uart.h"
 #include "bindings.h"
 
-static uint8_t rx_buf[4096] = {0};
+static uint8_t *rx_buf = NULL;
 static uint32_t rx_len = 0;
 
 void app_uart_work_handler(struct k_work *work)
@@ -43,6 +43,7 @@ int app_uart_irq_register()
 	if (!device_is_ready(DEV_CONSOLE)) {
 		return -1;
 	}
+	rx_buf = k_malloc(12288 + 7);
 	uart_irq_callback_user_data_set(DEV_CONSOLE, app_uart_rx_handler, NULL);
 	uart_irq_rx_enable(DEV_CONSOLE);
 	return 0;

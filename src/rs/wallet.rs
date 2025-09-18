@@ -51,7 +51,13 @@ impl EthSignRequestCache {
             proto::sign_eth_request::Tx::Eip2930(app_eth_tx_eip2930) => {
                 OSKeyTxEip2930::from_proto(app_eth_tx_eip2930)?.to_string()
             }
-            proto::sign_eth_request::Tx::Eip191(app_eth_msg_sign) => app_eth_msg_sign.message,
+            proto::sign_eth_request::Tx::Eip191(app_eth_msg_sign) => {
+                if app_eth_msg_sign.message.len() > 1024 {
+                    app_eth_msg_sign.message[..256].to_string() + "..."
+                } else {
+                    app_eth_msg_sign.message
+                }
+            }
         };
         text.push('\0');
         Ok(text)

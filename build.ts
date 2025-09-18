@@ -2,9 +2,16 @@
 
 const config = {
   command:
-    'west build -p always -b {board} --build-dir temp {command} -- -DEXTRA_CONF_FILE="{conf}" -DEXTRA_DTC_OVERLAY_FILE="{overlay}" ',
+    'west build -p always -b {board} --build-dir temp {command} -- -DEXTRA_CONF_FILE="{conf}" -DEXTRA_DTC_OVERLAY_FILE="{overlay}" {extra}',
   files: ["bin", "elf", "uf2"],
   boards: [
+    {
+      name: "stm32_nucleo_f401re",
+      target: "nucleo_f401re",
+      conf: ["boards/conf/enable_test_rng.conf"],
+      overlay: [],
+      extra: "-D CONFIG_HEAP_MEM_POOL_SIZE=40960"
+    },
     {
       name: "esp32c3_devkitm",
       target: "esp32c3_devkitm",
@@ -50,12 +57,6 @@ const config = {
       overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/esp32_usb_jtag_serial.overlay"],
     },
     {
-      name: "stm32_nucleo_f401re",
-      target: "nucleo_f401re",
-      conf: ["boards/conf/enable_test_rng.conf"],
-      overlay: [],
-    },
-    {
       name: "stm32h747i_disco",
       target: "stm32h747i_disco/stm32h747xx/m7",
       conf: ["boards/conf/enable_storage.conf", "boards/conf/enable_lvgl.conf"],
@@ -93,7 +94,8 @@ async function run() {
       .replace("{board}", board.target)
       .replace("{conf}", board.conf.join(";"))
       .replace("{overlay}", board.overlay.join(";"))
-      .replace("{command}", board.command ?? "");
+      .replace("{command}", board.command ?? "")
+      .replace("{extra}", board.extra ?? "");
 
     console.log(`🔨 Build: ${board.name}\n`);
 
