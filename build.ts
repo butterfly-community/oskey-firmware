@@ -13,9 +13,9 @@ const config = {
     },
     {
       name: "esp32c3_core",
-      target: "esp32c3_luatos_core",
+      target: "esp32c3_devkitm",
       conf: ["boards/conf/enable_storage.conf"],
-      overlay: [],
+      overlay: ["boards/overlay/esp32_usb_jtag_serial.overlay"],
     },
     {
       name: "esp32s3_devkitm",
