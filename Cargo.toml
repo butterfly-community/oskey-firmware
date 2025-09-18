@@ -20,6 +20,9 @@ oskey-action = { path = "./lib/core/action", default-features = false, features 
 ] }
 oskey-bus = { path = "./lib/core/bus" }
 oskey-chain = { path = "./lib/core/chain" }
+
+# The following dependencies are configured for platform compatibility
+# and may cause errors on certain platforms
 portable-atomic = { version = "1.3", features = ["critical-section"] }
 once_cell = { version = "1.0", default-features = false, features = [
   'portable-atomic',
@@ -41,11 +44,10 @@ cbindgen = "0.29.0"
 
 
 [profile.release]
-codegen-units = 1
 strip = true
 opt-level = 'z'
-lto = "fat"
+lto = "thin"
 panic = 'abort'
 
 [profile.dev]
-opt-level = 1
+# opt-level = 1
