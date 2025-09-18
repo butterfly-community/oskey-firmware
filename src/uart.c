@@ -1,7 +1,7 @@
 #include "uart.h"
 #include "bindings.h"
 
-static uint8_t rx_buf[256];
+static uint8_t rx_buf[1024];
 static uint32_t rx_len = 0;
 
 void app_uart_work_handler(struct k_work *work)
