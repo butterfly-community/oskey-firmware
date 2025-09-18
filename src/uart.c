@@ -41,11 +41,9 @@ void app_uart_tx_push_array(const uint8_t *data, size_t len)
 int app_uart_irq_register()
 {
 	if (!device_is_ready(DEV_CONSOLE)) {
-		printk("UART device is not ready\n");
 		return -1;
 	}
 	uart_irq_callback_user_data_set(DEV_CONSOLE, app_uart_rx_handler, NULL);
 	uart_irq_rx_enable(DEV_CONSOLE);
-	printk("UART device is ready\n");
 	return 0;
 }

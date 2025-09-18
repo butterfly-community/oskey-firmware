@@ -47,12 +47,12 @@ int storage_init()
 		return res;
 	}
 
-	printk("NVS Configuration:\n");
-	printk("  Flash device: %p (%s)\n", fs.flash_device, fs.flash_device->name);
-	printk("  Offset: 0x%lx (%ld)\n", fs.offset, fs.offset);
-	printk("  Sector size: %d bytes\n", fs.sector_size);
-	printk("  Sector count: %d\n", fs.sector_count);
-	printk("  Total size: %d bytes\n", fs.sector_size * fs.sector_count);
+	// printk("NVS Configuration:\n");
+	// printk("  Flash device: %p (%s)\n", fs.flash_device, fs.flash_device->name);
+	// printk("  Offset: 0x%lx (%ld)\n", fs.offset, fs.offset);
+	// printk("  Sector size: %d bytes\n", fs.sector_size);
+	// printk("  Sector count: %d\n", fs.sector_count);
+	// printk("  Total size: %d bytes\n", fs.sector_size * fs.sector_count);
 
 #ifdef CONFIG_SOC_SERIES_ESP32C3
 

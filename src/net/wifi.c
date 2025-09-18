@@ -194,7 +194,6 @@ int wifi_start()
 
 int wifi_start()
 {
-	printk("WIFI not support!\n");
 	return 0;
 }
 

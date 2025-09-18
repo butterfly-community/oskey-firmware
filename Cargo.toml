@@ -14,23 +14,31 @@ alloy-consensus = { git = "https://github.com/vincent-forks/alloy", branch = "v1
 
 [dependencies]
 zephyr = "^0.1.0"
-bytes = { version = "1.10", default-features = false, features = [
-  "extra-platforms",
-] }
 anyhow = { version = "1.0", default-features = false }
-heapless = { version = "0.9", default-features = false }
 oskey-action = { path = "./lib/core/action", default-features = false, features = [
   "crypto-psa",
 ] }
 oskey-bus = { path = "./lib/core/bus" }
-portable-atomic = { version = "1.3", features = ["critical-section", "require-cas"] }
+oskey-chain = { path = "./lib/core/chain" }
+portable-atomic = { version = "1.3", features = ["critical-section"] }
 once_cell = { version = "1.0", default-features = false, features = [
   'portable-atomic',
+] }
+bytes = { version = "1.10", default-features = false, features = [
+  "extra-platforms",
+] }
+const-hex = { version = "1.16", default-features = false, features = [
+  "alloc",
+  "force-generic",
+] }
+sha2 = { version = "0.10", default-features = false, features = [
+  "force-soft-compact",
 ] }
 
 [build-dependencies]
 # zephyr-build = "^0.1.0"
 cbindgen = "0.29.0"
+
 
 [profile.release]
 codegen-units = 1
@@ -40,4 +48,4 @@ lto = "fat"
 panic = 'abort'
 
 [profile.dev]
-panic = "abort"
+opt-level = 1

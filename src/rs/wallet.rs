@@ -1,24 +1,69 @@
+extern crate alloc;
+extern crate zephyr;
+
+use alloc::format;
+use alloc::string::String;
 use alloc::string::ToString;
 use anyhow::{anyhow, Result};
 use core::ffi::c_char;
 use oskey_bus::proto;
 use oskey_bus::proto::{req_data::Payload, res_data, ReqData, ResData};
 use oskey_bus::Message;
+use oskey_chain::eth::OSKeyTxEip2930;
+use zephyr::sync::SpinMutex;
 
-extern crate alloc;
-extern crate zephyr;
+static ETH_SIGN_CACHE: EthSignRequestCache = EthSignRequestCache::new();
 
-static mut GLOBAL_SIGN: Option<proto::SignRequest> = None;
+pub struct EthSignRequestCache {
+    req: SpinMutex<Option<proto::SignEthRequest>>,
+}
 
-static mut GLOBAL_ETH_SIGN: Option<proto::SignEthRequest> = None;
+#[allow(unused)]
+impl EthSignRequestCache {
+    pub const fn new() -> Self {
+        Self {
+            req: SpinMutex::new(None),
+        }
+    }
 
+    pub fn store(&self, request: proto::SignEthRequest) -> Result<()> {
+        *self.req.lock()? = Some(request);
+        Ok(())
+    }
+
+    pub fn has(&self) -> Result<bool> {
+        Ok(self.req.lock()?.is_some())
+    }
+
+    pub fn clear(&self) -> Result<()> {
+        *self.req.lock()? = None;
+        Ok(())
+    }
+
+    pub fn peek(&self) -> Result<Option<proto::SignEthRequest>> {
+        Ok(self.req.lock()?.clone())
+    }
+
+    pub fn display(&self) -> Result<String> {
+        let guard = self.peek()?.ok_or_else(|| anyhow!("Not found"))?;
+        let tx = guard.tx.ok_or_else(|| anyhow!("Not found"))?;
+        let mut text = match tx {
+            proto::sign_eth_request::Tx::Eip2930(app_eth_tx_eip2930) => {
+                OSKeyTxEip2930::from_proto(app_eth_tx_eip2930)?.to_string()
+            }
+            proto::sign_eth_request::Tx::Eip191(app_eth_msg_sign) => app_eth_msg_sign.message,
+        };
+        text.push('\0');
+        Ok(text)
+    }
+}
 #[allow(unused_doc_comments)]
 /// cbindgen:ignore
 extern "C" {
     pub(crate) fn app_csrand_get(dst: *mut u8, len: usize) -> bool;
     pub(crate) fn app_uart_tx_push_array(data: *const u8, len: usize);
     pub(crate) fn app_version_get(data: *mut u8, len: usize) -> bool;
-    pub(crate) fn app_check_support(number: u32) -> bool;
+    pub(crate) fn app_check_feature(data: *mut u8, len: usize) -> bool;
     pub(crate) fn app_check_lock() -> bool;
     pub(crate) fn app_display_sign(text: *const c_char);
     pub(crate) fn storage_general_check(id: u16) -> bool;
@@ -26,8 +71,6 @@ extern "C" {
     pub(crate) fn storage_general_write(data: *const u8, len: usize, id: u16) -> bool;
 }
 
-#[no_mangle]
-pub static CHECK_INPUT_DISPLAY: u32 = 0;
 #[no_mangle]
 pub static STORAGE_ID_SEED: u16 = 2;
 #[no_mangle]
@@ -68,6 +111,28 @@ extern "C" fn storage_seed_write(data: *const u8, len: usize, _phrase_len: usize
     return check;
 }
 
+#[allow(dead_code)]
+enum Feature {
+    SecureBoot = 0,
+    FlashEncryption = 1,
+    Bootloader = 2,
+    StorageInit = 3,
+    HardwareRng = 4,
+    DisplayInput = 5,
+    UserKey = 6,
+}
+
+fn app_check_feature_rs(mask: Feature) -> bool {
+    let mut buffer = [0u8; 16];
+
+    if !unsafe { app_check_feature(buffer.as_mut_ptr(), buffer.len()) } {
+        return false;
+    }
+
+    let index = mask as usize;
+    index < buffer.len() && buffer[index] != 0
+}
+
 pub fn event_parser(bytes: &[u8]) -> Result<()> {
     let parser = oskey_bus::FrameParser::unpack(bytes)?;
     let payload_bytes = parser.ok_or(anyhow!("Waiting"))?;
@@ -87,70 +152,39 @@ pub fn event_hub(req: ReqData) -> Result<()> {
     };
 
     let payload = match res_payload {
-        Payload::Unknown(_unknown) => Some(oskey_action::wallet_unknown_req()),
-        Payload::VersionRequest(_) => Some(oskey_action::wallet_version_req(
-            app_version_get_rs,
-            storage_seed_check,
-        )),
-        Payload::InitRequest(data) => Some(oskey_action::wallet_init_default(
-            data,
-            app_csrand_get_rs,
-            true,
-            storage_seed_write,
-        )?),
+        Payload::Unknown(_unknown) => Ok(oskey_action::wallet_unknown_req()),
+        Payload::VersionRequest(_) => app_wallet_version_req(),
+        Payload::InitRequest(data) => {
+            oskey_action::wallet_init_default(data, app_csrand_get_rs, true, storage_seed_write)
+        }
         Payload::InitCustomRequest(data) => {
-            Some(oskey_action::wallet_init_custom(data, storage_seed_write)?)
+            oskey_action::wallet_init_custom(data, storage_seed_write)
         }
-        Payload::DerivePublicKeyRequest(data) => Some(oskey_action::wallet_drive_public_key(
-            data,
-            storage_seed_read,
-        )?),
-        Payload::SignRequest(data) => {
-            let check = unsafe { app_check_support(CHECK_INPUT_DISPLAY) };
-            if !check {
-                Some(oskey_action::wallet_sign_msg(data, storage_seed_read)?)
-            } else {
-                unsafe {
-                    #[allow(static_mut_refs)]
-                    drop(GLOBAL_SIGN.take());
-                    GLOBAL_SIGN = Some(data.clone());
-                    let mut c_string = data.debug_text.unwrap_or_default();
-                    c_string.push('\0');
-                    app_display_sign(c_string.as_ptr() as *const c_char);
-                }
-                None
-            }
+        Payload::DerivePublicKeyRequest(data) => {
+            oskey_action::wallet_drive_public_key(data, storage_seed_read)
         }
-        Payload::SignEthRequest(data) => {
-            let check = unsafe { app_check_support(CHECK_INPUT_DISPLAY) };
-            if !check {
-                Some(oskey_action::wallet_sign_eth(data, storage_seed_read)?.0)
-            } else {
-                unsafe {
-                    #[allow(static_mut_refs)]
-                    drop(GLOBAL_ETH_SIGN.take());
-                    GLOBAL_ETH_SIGN = Some(data.clone());
-                    let mut c_string = "Eth Sign\n".to_string();
-                    c_string.push('\0');
-                    app_display_sign(c_string.as_ptr() as *const c_char);
-                }
-                None
-            }
-        }
+        Payload::SignEthRequest(data) => app_wallet_sign_eth_req(data),
     };
 
-    event_sent_res(payload)?;
+    app_event_sent_res(payload);
 
     Ok(())
 }
 
-pub fn event_sent_res(payload: Option<res_data::Payload>) -> Result<()> {
-    if payload.is_none() {
-        return Err(anyhow!("ERROR"));
-    }
+pub fn app_event_sent_res(payload: Result<res_data::Payload>) {
+    let data = payload.unwrap_or_else(|e| {
+        #[cfg(debug_assertions)]
+        let error_msg = format!("{:?}", e);
+        #[cfg(not(debug_assertions))]
+        let error_msg = format!("{:#}", e);
+        res_data::Payload::ErrorResponse(proto::ErrorResponse {
+            code: 0,
+            message: error_msg,
+        })
+    });
 
     let response = ResData {
-        payload: payload.into(),
+        payload: data.into(),
     };
 
     let bytes = response.encode_to_vec();
@@ -160,11 +194,57 @@ pub fn event_sent_res(payload: Option<res_data::Payload>) -> Result<()> {
     unsafe {
         app_uart_tx_push_array(pack.as_ptr(), pack.len());
     }
-    Ok(())
+}
+
+fn app_wallet_sign_eth_req(data: proto::SignEthRequest) -> Result<res_data::Payload> {
+    ETH_SIGN_CACHE.store(data)?;
+
+    let check_display = app_check_feature_rs(Feature::DisplayInput);
+    if !check_display {
+        return app_wallet_sign_eth();
+    }
+    unsafe {
+        app_display_sign(ETH_SIGN_CACHE.display()?.as_ptr() as *const c_char);
+    }
+    return Ok(res_data::Payload::WaitForUserActionResponse(
+        proto::WaitForUserActionResponse {},
+    ));
+}
+
+fn app_wallet_sign_eth() -> Result<res_data::Payload> {
+    let data = ETH_SIGN_CACHE.peek()?.ok_or(anyhow!("Cache Not found"))?;
+    let tx = data.tx.ok_or(anyhow!("Tx Not found"))?;
+
+    let hash = match tx {
+        proto::sign_eth_request::Tx::Eip2930(app_eth_tx_eip2930) => {
+            let tx = OSKeyTxEip2930::from_proto(app_eth_tx_eip2930)?;
+            tx.hash()
+        }
+        proto::sign_eth_request::Tx::Eip191(app_eth_msg_sign) => {
+            let message = app_eth_msg_sign.message;
+            let hash = oskey_chain::eth::OSKeyTxEip191::hash_message(message.as_bytes());
+            hash
+        }
+    };
+
+    oskey_action::wallet_sign_keccak256(data.id, data.path, hash, storage_seed_read)
+}
+
+fn app_wallet_version_req() -> Result<res_data::Payload> {
+    let mut buffer = [0u8; 16];
+
+    if !unsafe { app_check_feature(buffer.as_mut_ptr(), buffer.len()) } {
+        return Err(anyhow!("ERROR"));
+    }
+
+    let res =
+        oskey_action::wallet_version_req(buffer.to_vec(), app_version_get_rs, storage_seed_check);
+
+    return Ok(res);
 }
 
 #[no_mangle]
-extern "C" fn wallet_init_default_display(
+extern "C" fn wallet_init_default_from_display(
     mnemonic_length: usize,
     password: *const c_char,
     buffer: *mut c_char,
@@ -207,7 +287,10 @@ extern "C" fn wallet_init_default_display(
 }
 
 #[no_mangle]
-extern "C" fn wallet_init_custom_display(mnemonic: *const c_char, password: *const c_char) -> bool {
+extern "C" fn wallet_init_custom_from_display(
+    mnemonic: *const c_char,
+    password: *const c_char,
+) -> bool {
     let res = proto::InitWalletCustomRequest {
         words: unsafe {
             let c_str = core::ffi::CStr::from_ptr(mnemonic);
@@ -227,32 +310,9 @@ extern "C" fn wallet_init_custom_display(mnemonic: *const c_char, password: *con
 }
 
 #[no_mangle]
-#[allow(static_mut_refs)]
-extern "C" fn wallet_sign_display() -> bool {
-    let payload = unsafe {
-        match GLOBAL_SIGN.take() {
-            Some(payload) => payload,
-            None => return false,
-        }
-    };
-    let res = oskey_action::wallet_sign_msg(payload, storage_seed_read);
-
-    event_sent_res(res.ok()).is_ok()
-}
-
-#[no_mangle]
-#[allow(static_mut_refs)]
-extern "C" fn wallet_sign_eth_display() -> bool {
-    let payload = unsafe {
-        match GLOBAL_ETH_SIGN.take() {
-            Some(payload) => payload,
-            None => return false,
-        }
-    };
-    let res = match oskey_action::wallet_sign_eth(payload, storage_seed_read) {
-        Ok(v) => v.0,
-        Err(_) => return false,
-    };
-
-    event_sent_res(Some(res)).is_ok()
+extern "C" fn wallet_sign_eth_from_display() -> bool {
+    let res = app_wallet_sign_eth();
+    let check = res.is_ok();
+    app_event_sent_res(res);
+    check
 }

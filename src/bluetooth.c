@@ -213,13 +213,11 @@ int bt_start()
 
 int bt_init()
 {
-	printk("Bluetooth not support!\n");
 	return 0;
 }
 
 int bt_start()
 {
-	printk("Bluetooth not support!\n");
 	return 0;
 }
 

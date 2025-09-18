@@ -14,18 +14,6 @@ void app_version_get(void *ver, size_t len)
 	snprintf(ver, len, "0.1.0");
 }
 
-bool app_check_support(uint32_t number)
-{
-	if (number == CHECK_INPUT_DISPLAY) {
-#if defined(CONFIG_DISPLAY) && defined(CONFIG_INPUT)
-		return true;
-#else
-		return false;
-#endif
-	}
-	return false;
-}
-
 /**
  * @brief Get app supported features.
  *

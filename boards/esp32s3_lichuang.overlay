@@ -5,10 +5,13 @@
   chosen {
     zephyr,display = &st7789v;
     zephyr,touch = &ft6336;
+    zephyr,console = &usb_serial;
+		zephyr,shell-uart = &usb_serial;
   };
 
   aliases {
     backlight = &lcd_bk;
+    app-uart = &uart0;
   };
 
   mipi_dbi {
@@ -99,4 +102,8 @@
 
 &dma {
     status = "okay";
+};
+
+&usb_serial {
+	status = "okay";
 };

@@ -440,7 +440,6 @@ int mqtt_start(void)
 
 int mqtt_start()
 {
-	printk("MQTT not support!\n");
 	return 0;
 }
 

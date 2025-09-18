@@ -1178,11 +1178,13 @@ dependencies = [
  "anyhow",
  "bytes",
  "cbindgen",
- "heapless",
+ "const-hex",
  "once_cell",
  "oskey-action",
  "oskey-bus",
+ "oskey-chain",
  "portable-atomic",
+ "sha2",
  "zephyr",
 ]
 

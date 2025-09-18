@@ -373,7 +373,7 @@ void app_display_mnemonic(int legth)
 {
 	char buffer[256] = {0};
 
-	wallet_init_default_display(legth, "", buffer, sizeof(buffer));
+	wallet_init_default_from_display(legth, "", buffer, sizeof(buffer));
 
 	strcpy(check_mnemonic_buffer, buffer);
 
@@ -500,7 +500,7 @@ void app_display_mnemonic(int legth)
 
 void app_sign_cb()
 {
-	wallet_sign_display();
+	wallet_sign_eth_from_display();
 	app_display_index();
 }
 
@@ -747,7 +747,6 @@ static void keyboard_event_cb(lv_event_t *e)
 
 	if (code == LV_EVENT_CANCEL) {
 		lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
-		// printf("Keyboard hidden by close button\n");
 
 		if (cont) {
 			lv_obj_set_size(cont, lv_disp_get_hor_res(NULL),
@@ -756,7 +755,6 @@ static void keyboard_event_cb(lv_event_t *e)
 	}
 	if (code == LV_EVENT_READY) {
 		lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
-		// printf("Keyboard hidden by ready button\n");
 
 		lv_obj_t *ta = lv_keyboard_get_textarea(kb);
 
@@ -769,7 +767,7 @@ static void keyboard_event_cb(lv_event_t *e)
 
 		if (ta) {
 			if (action == 0) {
-				bool run = wallet_init_custom_display(text, "");
+				bool run = wallet_init_custom_from_display(text, "");
 
 				if (run) {
 					app_display_index();
@@ -781,7 +779,7 @@ static void keyboard_event_cb(lv_event_t *e)
 			if (action == 2) {
 				if (strcmp(check_mnemonic_buffer, text) == 0 ||
 				    strcmp(text, "oskey") == 0) {
-					wallet_init_custom_display(check_mnemonic_buffer, "");
+					wallet_init_custom_from_display(check_mnemonic_buffer, "");
 					app_display_index();
 				} else {
 					show_fail();
