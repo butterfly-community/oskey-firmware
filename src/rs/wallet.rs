@@ -8,14 +8,59 @@ use anyhow::{anyhow, Result};
 use core::ffi::c_char;
 use oskey_bus::proto;
 use oskey_bus::proto::{req_data::Payload, res_data, ReqData, ResData};
+use oskey_bus::FrameParser;
 use oskey_bus::Message;
 use oskey_chain::eth::OSKeyTxEip2930;
 use zephyr::sync::SpinMutex;
 
 static ETH_SIGN_CACHE: EthSignRequestCache = EthSignRequestCache::new();
 
+static APP_UART_REQ_PARSER: AppDataParser = AppDataParser::new();
+
 pub struct EthSignRequestCache {
     req: SpinMutex<Option<proto::SignEthRequest>>,
+}
+
+pub struct AppDataParser {
+    parser: SpinMutex<FrameParser>,
+}
+
+#[allow(unused)]
+impl AppDataParser {
+    pub const fn new() -> Self {
+        Self {
+            parser: SpinMutex::new(FrameParser::new()),
+        }
+    }
+    pub fn store(&self, parser: FrameParser) -> Result<()> {
+        *self.parser.lock()? = parser;
+        Ok(())
+    }
+
+    pub fn push(&self, data: &[u8]) -> Option<Result<ReqData>> {
+        match self.parser.lock() {
+            Ok(mut guard) => guard.push(data),
+            Err(e) => Some(Err(anyhow!(e))),
+        }
+    }
+
+    pub fn unpack(&self) -> Option<Result<ReqData>> {
+        match self.parser.lock() {
+            Ok(mut guard) => guard.unpack(),
+            Err(e) => Some(Err(anyhow!(e))),
+        }
+    }
+
+    pub fn push_check(&self, data: &[u8]) -> bool {
+        match self.parser.lock() {
+            Ok(mut guard) => guard.push_check(data),
+            Err(_) => false,
+        }
+    }
+
+    pub fn len(&self) -> Result<usize> {
+        Ok(self.parser.lock()?.buffer.len())
+    }
 }
 
 #[allow(unused)]
@@ -52,8 +97,8 @@ impl EthSignRequestCache {
                 OSKeyTxEip2930::from_proto(app_eth_tx_eip2930)?.to_string()
             }
             proto::sign_eth_request::Tx::Eip191(app_eth_msg_sign) => {
-                if app_eth_msg_sign.message.len() > 1024 {
-                    app_eth_msg_sign.message[..256].to_string() + "..."
+                if app_eth_msg_sign.message.len() > 10240 {
+                    app_eth_msg_sign.message[..10240].to_string() + "..."
                 } else {
                     app_eth_msg_sign.message
                 }
@@ -69,8 +114,11 @@ extern "C" {
     pub(crate) fn app_csrand_get(dst: *mut u8, len: usize) -> bool;
     pub(crate) fn app_uart_tx_push_array(data: *const u8, len: usize);
     pub(crate) fn app_version_get(data: *mut u8, len: usize) -> bool;
+    #[allow(dead_code)]
     pub(crate) fn app_check_feature(data: *mut u8, len: usize) -> bool;
+    #[allow(dead_code)]
     pub(crate) fn app_check_lock() -> bool;
+    #[allow(dead_code)]
     pub(crate) fn app_display_sign(text: *const c_char);
     pub(crate) fn storage_general_check(id: u16) -> bool;
     pub(crate) fn storage_general_read(data: *mut u8, len: usize, id: u16) -> bool;
@@ -93,13 +141,6 @@ extern "C" fn app_csrand_get_rs(bytes: *mut u8, len: usize) -> bool {
 }
 
 #[no_mangle]
-extern "C" fn event_bytes_handle(bytes: *mut u8, len: usize) {
-    let bytes = unsafe { core::slice::from_raw_parts(bytes, len) };
-    let _event = event_parser(bytes);
-    return;
-}
-
-#[no_mangle]
 extern "C" fn storage_seed_check() -> bool {
     let check = unsafe { storage_general_check(STORAGE_ID_SEED) };
     return check;
@@ -117,6 +158,17 @@ extern "C" fn storage_seed_write(data: *const u8, len: usize, _phrase_len: usize
     return check;
 }
 
+#[no_mangle]
+extern "C" fn app_uart_event_rs(data: *mut u8, len: usize) -> bool {
+    return APP_UART_REQ_PARSER.push_check(unsafe { core::slice::from_raw_parts(data, len) });
+}
+
+#[no_mangle]
+extern "C" fn app_event_bytes_handle() {
+    let _event = app_event_trans();
+    return;
+}
+
 #[allow(dead_code)]
 enum Feature {
     SecureBoot = 0,
@@ -128,6 +180,7 @@ enum Feature {
     UserKey = 6,
 }
 
+#[allow(dead_code)]
 fn app_check_feature_rs(mask: Feature) -> bool {
     let mut buffer = [0u8; 16];
 
@@ -139,14 +192,14 @@ fn app_check_feature_rs(mask: Feature) -> bool {
     index < buffer.len() && buffer[index] != 0
 }
 
-pub fn event_parser(bytes: &[u8]) -> Result<()> {
-    let parser = oskey_bus::FrameParser::unpack(bytes)?;
-    let payload_bytes = parser.ok_or(anyhow!("Waiting"))?;
-    let req_data = ReqData::decode(payload_bytes.as_slice()).map_err(|e| anyhow!(e))?;
-    let _res = event_hub(req_data)?;
-    Ok(())
+// Not irq, should be called in main loop or work thread
+pub fn app_event_trans() -> Result<()> {
+    let test = APP_UART_REQ_PARSER.unpack();
+    let req_data = test.ok_or(anyhow!("Waiting"))??;
+    event_hub(req_data)
 }
 
+#[allow(dead_code)]
 pub fn event_hub(req: ReqData) -> Result<()> {
     if unsafe { app_check_lock() } {
         return Err(anyhow!("Device Locked"));
@@ -202,12 +255,15 @@ pub fn app_event_sent_res(payload: Result<res_data::Payload>) {
     }
 }
 
+#[allow(dead_code)]
 fn app_wallet_sign_eth_req(data: proto::SignEthRequest) -> Result<res_data::Payload> {
     ETH_SIGN_CACHE.store(data)?;
 
     let check_display = app_check_feature_rs(Feature::DisplayInput);
     if !check_display {
-        return app_wallet_sign_eth();
+        let sign = app_wallet_sign_eth();
+        ETH_SIGN_CACHE.clear()?;
+        return sign;
     }
     unsafe {
         app_display_sign(ETH_SIGN_CACHE.display()?.as_ptr() as *const c_char);
@@ -236,6 +292,7 @@ fn app_wallet_sign_eth() -> Result<res_data::Payload> {
     oskey_action::wallet_sign_keccak256(data.id, data.path, hash, storage_seed_read)
 }
 
+#[allow(dead_code)]
 fn app_wallet_version_req() -> Result<res_data::Payload> {
     let mut buffer = [0u8; 16];
 
@@ -319,6 +376,7 @@ extern "C" fn wallet_init_custom_from_display(
 extern "C" fn wallet_sign_eth_from_display() -> bool {
     let res = app_wallet_sign_eth();
     let check = res.is_ok();
+    ETH_SIGN_CACHE.clear().ok();
     app_event_sent_res(res);
     check
 }
