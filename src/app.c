@@ -1,4 +1,5 @@
 #include <zephyr/random/random.h>
+#include <zephyr/drivers/hwinfo.h>
 #include "gpio.h"
 #include "app.h"
 #include "storage.h"
@@ -43,8 +44,8 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 #endif
 
 #if defined(CONFIG_NVS) && defined(CONFIG_FLASH)
-  if (storage_initd) {
-	  buffer[3] = true;
+	if (storage_initd) {
+		buffer[3] = true;
 	}
 #endif
 
@@ -63,6 +64,16 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 #endif
 
 	return true;
+}
+
+int app_device_euid_get(uint8_t *id, size_t len)
+{
+	if (len < 8) {
+		return -1;
+	}
+	memset(id, 0, len);
+	hwinfo_get_device_eui64(id);
+	return 0;
 }
 
 bool app_check_lock()
