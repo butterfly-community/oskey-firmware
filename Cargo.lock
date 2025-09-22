@@ -845,16 +845,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 
 [[package]]
-name = "oskey-action"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "oskey-bus",
- "oskey-chain",
- "oskey-wallet",
-]
-
-[[package]]
 name = "oskey-bus"
 version = "0.0.1"
 dependencies = [
@@ -1180,9 +1170,9 @@ dependencies = [
  "cbindgen",
  "const-hex",
  "once_cell",
- "oskey-action",
  "oskey-bus",
  "oskey-chain",
+ "oskey-wallet",
  "portable-atomic",
  "sha2",
  "zephyr",

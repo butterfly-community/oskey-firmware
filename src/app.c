@@ -12,7 +12,7 @@ bool app_csrand_get(void *dst, size_t len)
 
 void app_version_get(void *ver, size_t len)
 {
-	snprintf(ver, len, "0.3.0");
+	snprintf(ver, len, "0.4.0");
 }
 
 /**
@@ -24,7 +24,7 @@ void app_version_get(void *ver, size_t len)
  * - buffer[0]: Secure Boot
  * - buffer[1]: Flash Encryption
  * - buffer[2]: Bootloader
- * - buffer[3]: Storage Init
+ * - buffer[3]: Storage
  * - buffer[4]: Hardware Rng support
  * - buffer[5]: Display & Input support
  * - buffer[6]: User Key support
@@ -44,9 +44,7 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 #endif
 
 #if defined(CONFIG_NVS) && defined(CONFIG_FLASH)
-	if (storage_initd) {
-		buffer[3] = true;
-	}
+	buffer[3] = true;
 #endif
 
 #if defined(CONFIG_ENTROPY_DEVICE_RANDOM_GENERATOR) && defined(CONFIG_ENTROPY_HAS_DRIVER)
@@ -66,6 +64,29 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	return true;
 }
 
+/**
+ * @brief Get app runing status.
+ *
+ * @param [out] buffer buffer to fill with status.
+ *
+ * The buffer content represents:
+ * - buffer[0]: Storage Init
+ * - buffer[1]: Lock status
+ *
+ * @return true if success, false error.
+ *
+ */
+bool app_check_status(uint8_t *buffer, size_t len)
+{
+	if (len < 3) {
+		return false;
+	}
+	memset(buffer, 0, len);
+	buffer[0] = storage_initd;
+	buffer[1] = lock_mark_get();
+	return true;
+}
+
 int app_device_euid_get(uint8_t *id, size_t len)
 {
 	if (len < 8) {
@@ -78,7 +99,7 @@ int app_device_euid_get(uint8_t *id, size_t len)
 
 bool app_check_lock()
 {
-	return lock_mark;
+	return lock_mark_get();
 }
 
 bool app_check_storage()

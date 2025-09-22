@@ -10,4 +10,5 @@ bool app_check_lock();
 bool app_check_feature(uint8_t *buffer, size_t len);
 bool app_check_storage();
 int app_device_euid_get(uint8_t *id, size_t len);
+bool app_check_status(uint8_t *buffer, size_t len);
 #endif

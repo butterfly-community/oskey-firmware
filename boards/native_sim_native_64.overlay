@@ -22,8 +22,8 @@
 
 	sdl_dc {
 		compatible = "zephyr,sdl-dc";
-		height = < 240 >;
-		width = < 320 >;
+		height = < 480 >;
+		width = < 640 >;
 	};
 };
 

@@ -1,3 +1,5 @@
+#include "lvgl.h"
+
 #ifdef CONFIG_DISPLAY
 
 #include <zephyr/drivers/display.h>
@@ -67,13 +69,13 @@ void app_display_hello()
 
 static void app_display_init_cb(lv_event_t *e)
 {
-	int check = (intptr_t)lv_event_get_user_data(e);
-	if (check == 1) {
+	app_init_action_t action = (app_init_action_t)(intptr_t)lv_event_get_user_data(e);
+	if (action == INIT_ACTION_GENERATE) {
 		app_display_init_show_select_length();
 	}
 
-	if (check == 2) {
-		app_display_input("Import", 0);
+	if (action == INIT_ACTION_IMPORT) {
+		app_display_input("Import", INPUT_ACTION_IMPORT, BACK_ACTION_TO_INIT);
 	}
 }
 
@@ -173,6 +175,25 @@ void app_display_init()
 	lv_obj_update_layout(title);
 	lv_coord_t title_height = lv_obj_get_height(title);
 
+	lv_obj_t *back_btn = lv_btn_create(screen);
+	lv_obj_set_size(back_btn, 40, 40);
+	lv_obj_set_pos(back_btn, 10, (title_height - 40) / 2);
+	lv_obj_align(back_btn, LV_ALIGN_TOP_LEFT, 10, (lv_obj_get_height(title) - 40) / 2);
+	lv_obj_set_style_bg_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_outline_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_shadow_opa(back_btn, LV_OPA_TRANSP, 0);
+	lv_obj_move_foreground(back_btn);
+
+	lv_obj_t *back_label = lv_label_create(back_btn);
+	lv_label_set_text(back_label, LV_SYMBOL_LEFT);
+	lv_obj_set_style_text_color(back_label, lv_color_white(), 0);
+	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
+	lv_obj_center(back_label);
+
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
+			    (void *)BACK_ACTION_TO_CHECK_FEATURES);
+
 	lv_obj_t *cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
 	lv_obj_set_pos(cont, 0, title_height);
@@ -192,7 +213,8 @@ void app_display_init()
 	lv_obj_set_style_text_font(label_generate, &lv_font_montserrat_18, 0);
 	lv_obj_center(label_generate);
 	lv_obj_set_style_text_color(label_generate, lv_color_black(), 0);
-	lv_obj_add_event_cb(btn_generate, app_display_init_cb, LV_EVENT_CLICKED, (void *)1);
+	lv_obj_add_event_cb(btn_generate, app_display_init_cb, LV_EVENT_CLICKED,
+			    (void *)INIT_ACTION_GENERATE);
 
 	lv_obj_t *btn_import = lv_btn_create(cont);
 	lv_obj_t *label_import = lv_label_create(btn_import);
@@ -200,13 +222,14 @@ void app_display_init()
 	lv_obj_set_style_text_font(label_import, &lv_font_montserrat_18, 0);
 	lv_obj_set_style_text_color(label_import, lv_color_black(), 0);
 	lv_obj_center(label_import);
-	lv_obj_add_event_cb(btn_import, app_display_init_cb, LV_EVENT_CLICKED, (void *)2);
+	lv_obj_add_event_cb(btn_import, app_display_init_cb, LV_EVENT_CLICKED,
+			    (void *)INIT_ACTION_IMPORT);
 }
 
 static void app_display_tools_cb(lv_event_t *e)
 {
-	int action = (intptr_t)lv_event_get_user_data(e);
-	if (action == 1) {
+	app_tools_action_t action = (app_tools_action_t)(intptr_t)lv_event_get_user_data(e);
+	if (action == TOOLS_ACTION_ERASE_DATA) {
 		if (app_check_storage()) {
 			storage_erase_nvs();
 		}
@@ -214,36 +237,40 @@ static void app_display_tools_cb(lv_event_t *e)
 		sys_reboot(SYS_REBOOT_COLD);
 	}
 
-	if (action == 2) {
+	if (action == TOOLS_ACTION_RESTART) {
 		sys_reboot(SYS_REBOOT_COLD);
 	}
 
-	if (action == 3) {
-		app_display_input("Change PIN", 300);
+	if (action == TOOLS_ACTION_PIN_SETTING) {
+		app_display_input("Change PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_INDEX);
 	}
 }
 
-static void back_button_event_handler(lv_event_t *e)
+void back_button_event_handler(lv_event_t *e)
 {
-	int action = (intptr_t)lv_event_get_user_data(e);
+	app_back_action_t action = (app_back_action_t)(intptr_t)lv_event_get_user_data(e);
 
-	if (action == 1 || action == 100) {
+	if (action == BACK_ACTION_TO_INIT) {
 		app_display_init();
 	}
 
-	if (action == 102) {
+	if (action == BACK_ACTION_TO_CHECK_FEATURES) {
+		app_display_features();
+	}
+
+	if (action == BACK_ACTION_TO_SELECT_LENGTH) {
 		app_display_init_show_select_length();
 	}
 
-	if (action == 2) {
+	if (action == BACK_ACTION_TO_INDEX) {
 		app_display_index();
 	}
 
-	if (action == 3) {
+	if (action == BACK_ACTION_TO_SELECT_LENGTH) {
 		app_display_init_show_select_length();
 	}
 
-	if (action == 400 || action == 401) {
+	if (action == BACK_ACTION_TO_TOOLS) {
 		app_display_tools();
 	}
 }
@@ -290,7 +317,8 @@ void app_display_tools()
 	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
 	lv_obj_center(back_label);
 
-	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED, (void *)2);
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
+			    (void *)BACK_ACTION_TO_INDEX);
 
 	lv_obj_t *cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -332,7 +360,8 @@ void app_display_tools()
 	lv_obj_set_style_text_color(label_pin, lv_color_white(), 0);
 	lv_obj_align(label_pin, LV_ALIGN_LEFT_MID, 16, 0);
 
-	lv_obj_add_event_cb(btn_pin, app_display_tools_cb, LV_EVENT_CLICKED, (void *)3);
+	lv_obj_add_event_cb(btn_pin, app_display_tools_cb, LV_EVENT_CLICKED,
+			    (void *)TOOLS_ACTION_PIN_SETTING);
 
 	lv_obj_t *btn_1 = lv_btn_create(cont);
 	lv_obj_add_style(btn_1, &btn_style, 0);
@@ -346,7 +375,8 @@ void app_display_tools()
 	lv_obj_set_style_text_color(label_1, lv_color_white(), 0);
 	lv_obj_align(label_1, LV_ALIGN_LEFT_MID, 16, 0);
 
-	lv_obj_add_event_cb(btn_1, app_display_tools_cb, LV_EVENT_CLICKED, (void *)1);
+	lv_obj_add_event_cb(btn_1, app_display_tools_cb, LV_EVENT_CLICKED,
+			    (void *)TOOLS_ACTION_ERASE_DATA);
 
 	lv_obj_t *btn_2 = lv_btn_create(cont);
 	lv_obj_add_style(btn_2, &btn_style, 0);
@@ -360,20 +390,21 @@ void app_display_tools()
 	lv_obj_set_style_text_color(label_2, lv_color_white(), 0);
 	lv_obj_align(label_2, LV_ALIGN_LEFT_MID, 16, 0);
 
-	lv_obj_add_event_cb(btn_2, app_display_tools_cb, LV_EVENT_CLICKED, (void *)2);
+	lv_obj_add_event_cb(btn_2, app_display_tools_cb, LV_EVENT_CLICKED,
+			    (void *)TOOLS_ACTION_RESTART);
 }
 
 static void app_display_mnemonic_cb()
 {
 	// app_display_index();
-	app_display_input("Check", 2);
+	app_display_input("Check", INPUT_ACTION_CHECK_MNEMONIC, BACK_ACTION_TO_SELECT_LENGTH);
 }
 
 void app_display_mnemonic(int legth)
 {
 	char buffer[256] = {0};
 
-	wallet_init_default_from_display(legth, "", buffer, sizeof(buffer));
+	wallet_mnemonic_generate_from_display(legth, buffer, sizeof(buffer));
 
 	strcpy(check_mnemonic_buffer, buffer);
 
@@ -430,7 +461,8 @@ void app_display_mnemonic(int legth)
 	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
 	lv_obj_center(back_label);
 
-	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED, (void *)3);
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
+			    (void *)BACK_ACTION_TO_SELECT_LENGTH);
 
 	lv_obj_t *cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -550,7 +582,8 @@ void app_display_sign_x()
 	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
 	lv_obj_center(back_label);
 
-	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED, (void *)1);
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
+			    (void *)BACK_ACTION_TO_INIT);
 
 	lv_obj_t *cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -605,7 +638,8 @@ void app_display_sign(char *text)
 
 static void app_display_init_show_select_length_cb(lv_event_t *e)
 {
-	int word_count = (intptr_t)lv_event_get_user_data(e);
+	app_mnemonic_length_t word_count =
+		(app_mnemonic_length_t)(intptr_t)lv_event_get_user_data(e);
 	app_display_mnemonic(word_count);
 }
 
@@ -652,7 +686,8 @@ void app_display_init_show_select_length()
 	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
 	lv_obj_center(back_label);
 
-	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED, (void *)1);
+	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
+			    (void *)BACK_ACTION_TO_INIT);
 
 	lv_obj_t *cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -674,7 +709,7 @@ void app_display_init_show_select_length()
 	lv_obj_center(label1);
 	lv_obj_set_style_text_color(label1, lv_color_black(), 0);
 	lv_obj_add_event_cb(btn1, app_display_init_show_select_length_cb, LV_EVENT_CLICKED,
-			    (void *)12);
+			    (void *)MNEMONIC_LENGTH_12);
 
 	lv_obj_t *btn2 = lv_btn_create(cont);
 	lv_obj_t *label2 = lv_label_create(btn2);
@@ -683,7 +718,7 @@ void app_display_init_show_select_length()
 	lv_obj_set_style_text_color(label2, lv_color_black(), 0);
 	lv_obj_set_style_text_font(label2, &lv_font_montserrat_18, 0);
 	lv_obj_add_event_cb(btn2, app_display_init_show_select_length_cb, LV_EVENT_CLICKED,
-			    (void *)18);
+			    (void *)MNEMONIC_LENGTH_18);
 
 	lv_obj_t *btn3 = lv_btn_create(cont);
 	lv_obj_t *label3 = lv_label_create(btn3);
@@ -692,7 +727,7 @@ void app_display_init_show_select_length()
 	lv_obj_set_style_text_color(label3, lv_color_black(), 0);
 	lv_obj_set_style_text_font(label3, &lv_font_montserrat_18, 0);
 	lv_obj_add_event_cb(btn3, app_display_init_show_select_length_cb, LV_EVENT_CLICKED,
-			    (void *)24);
+			    (void *)MNEMONIC_LENGTH_24);
 }
 
 void app_display_logo()
@@ -724,11 +759,15 @@ void hide_error_label(lv_timer_t *timer)
 	lv_timer_del(timer);
 }
 
-void show_fail()
+void show_fail(char *msg)
 {
 	lv_obj_t *error_label = lv_label_create(lv_scr_act());
 
-	lv_label_set_text(error_label, "Verification failed!");
+	if (msg) {
+		lv_label_set_text(error_label, msg);
+	} else {
+		lv_label_set_text(error_label, "Verification failed!");
+	}
 	lv_obj_set_style_text_color(error_label, lv_palette_main(LV_PALETTE_RED), 0);
 	lv_obj_align(error_label, LV_ALIGN_BOTTOM_MID, 0, -20);
 	lv_timer_t *timer = lv_timer_create(hide_error_label, 2000, error_label);
@@ -738,12 +777,39 @@ void show_fail()
 
 char pin_buffer[30] = {0};
 
+static bool validate_pin_complexity(const char *pin)
+{
+	if (!pin || strlen(pin) < 8) {
+		return false;
+	}
+
+	bool has_digit = false;
+	bool has_lower = false;
+	bool has_upper = false;
+	bool has_symbol = false;
+
+	for (int i = 0; pin[i] != '\0'; i++) {
+		char c = pin[i];
+		if (c >= '0' && c <= '9') {
+			has_digit = true;
+		} else if (c >= 'a' && c <= 'z') {
+			has_lower = true;
+		} else if (c >= 'A' && c <= 'Z') {
+			has_upper = true;
+		} else if (c >= 32 && c <= 126) {
+			has_symbol = true;
+		}
+	}
+
+	return has_digit && has_lower && has_upper && has_symbol;
+}
+
 static void keyboard_event_cb(lv_event_t *e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	lv_obj_t *kb = lv_event_get_target(e);
 	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
-	int action = (intptr_t)lv_event_get_user_data(e);
+	app_input_action_t action = (app_input_action_t)(intptr_t)lv_event_get_user_data(e);
 
 	if (code == LV_EVENT_CANCEL) {
 		lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
@@ -766,51 +832,50 @@ static void keyboard_event_cb(lv_event_t *e)
 		const char *text = lv_textarea_get_text(ta);
 
 		if (ta) {
-			if (action == 0) {
-				bool run = wallet_init_custom_from_display(text, "");
+			if (action == INPUT_ACTION_IMPORT) {
+				bool run = wallet_init_custom_from_display(text);
 
 				if (run) {
 					app_display_index();
 				} else {
-					show_fail();
+					show_fail(NULL);
 				}
 			}
 
-			if (action == 2) {
+			if (action == INPUT_ACTION_CHECK_MNEMONIC) {
 				if (strcmp(check_mnemonic_buffer, text) == 0 ||
 				    strcmp(text, "oskey") == 0) {
-					wallet_init_custom_from_display(check_mnemonic_buffer, "");
+					wallet_init_custom_from_display(check_mnemonic_buffer);
 					app_display_index();
 				} else {
-					show_fail();
+					show_fail(NULL);
 				}
 			}
 
-			if (action == 300) {
+			if (action == INPUT_ACTION_PIN_SET) {
+				if (!validate_pin_complexity(text)) {
+					show_fail("Need 8+ chars: A-Z,a-z,0-9,!@#");
+					return;
+				}
+
 				strcpy(pin_buffer, text);
-				app_display_input("Check", 301);
+				app_display_input("Check", INPUT_ACTION_PIN_CONFIRM,
+						  BACK_ACTION_TO_CHECK_FEATURES);
 			}
-
-			if (action == 301) {
+			if (action == INPUT_ACTION_PIN_CONFIRM) {
 				if (strcmp(pin_buffer, text) == 0) {
-					storage_general_write(pin_buffer, strlen(pin_buffer) + 1,
-							      STORAGE_ID_PIN);
-					app_display_index();
+					wallet_set_pin_cache_from_display(pin_buffer);
+					app_display_init();
 				} else {
-					show_fail();
+					show_fail(NULL);
 				}
 			}
 
-			if (action == 310) {
-				char pin[20] = {0};
-				size_t len = sizeof(pin);
-				if (storage_general_read(pin, len, STORAGE_ID_PIN) > 0) {
-					if (strcmp(pin, text) == 0) {
-						lock_mark = false;
-						app_display_index();
-					} else {
-						show_fail();
-					}
+			if (action == INPUT_ACTION_PIN_VERIFY) {
+				if (wallet_unlock_from_display(text)) {
+					app_display_index();
+				} else {
+					show_fail(NULL);
 				}
 			}
 		}
@@ -833,7 +898,7 @@ static void textarea_event_cb(lv_event_t *e)
 	}
 }
 
-void app_display_input(char *title_text, uintptr_t action)
+void app_display_input(char *title_text, uintptr_t action, uintptr_t back_action)
 {
 	lv_obj_t *screen = lv_scr_act();
 	lv_obj_clean(screen);
@@ -862,24 +927,26 @@ void app_display_input(char *title_text, uintptr_t action)
 
 	title_height = lv_obj_get_height(title);
 
-	lv_obj_t *back_btn = lv_btn_create(screen);
-	lv_obj_set_size(back_btn, 40, 40);
-	lv_obj_set_pos(back_btn, 10, (title_height - 40) / 2);
-	lv_obj_align(back_btn, LV_ALIGN_TOP_LEFT, 10, (lv_obj_get_height(title) - 40) / 2);
-	lv_obj_set_style_bg_opa(back_btn, LV_OPA_TRANSP, 0);
-	lv_obj_set_style_border_opa(back_btn, LV_OPA_TRANSP, 0);
-	lv_obj_set_style_outline_opa(back_btn, LV_OPA_TRANSP, 0);
-	lv_obj_set_style_shadow_opa(back_btn, LV_OPA_TRANSP, 0);
-	lv_obj_move_foreground(back_btn);
+	if (back_action != BACK_ACTION_NONE) {
+		lv_obj_t *back_btn = lv_btn_create(screen);
+		lv_obj_set_size(back_btn, 40, 40);
+		lv_obj_set_pos(back_btn, 10, (title_height - 40) / 2);
+		lv_obj_align(back_btn, LV_ALIGN_TOP_LEFT, 10, (lv_obj_get_height(title) - 40) / 2);
+		lv_obj_set_style_bg_opa(back_btn, LV_OPA_TRANSP, 0);
+		lv_obj_set_style_border_opa(back_btn, LV_OPA_TRANSP, 0);
+		lv_obj_set_style_outline_opa(back_btn, LV_OPA_TRANSP, 0);
+		lv_obj_set_style_shadow_opa(back_btn, LV_OPA_TRANSP, 0);
+		lv_obj_move_foreground(back_btn);
 
-	lv_obj_t *back_label = lv_label_create(back_btn);
-	lv_label_set_text(back_label, LV_SYMBOL_LEFT);
-	lv_obj_set_style_text_color(back_label, lv_color_white(), 0);
-	lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
-	lv_obj_center(back_label);
+		lv_obj_t *back_label = lv_label_create(back_btn);
+		lv_label_set_text(back_label, LV_SYMBOL_LEFT);
+		lv_obj_set_style_text_color(back_label, lv_color_white(), 0);
+		lv_obj_set_style_text_font(back_label, &lv_font_montserrat_16, 0);
+		lv_obj_center(back_label);
 
-	lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
-			    (void *)(action + 100));
+		lv_obj_add_event_cb(back_btn, back_button_event_handler, LV_EVENT_CLICKED,
+				    (void *)back_action);
+	}
 
 	cont = lv_obj_create(screen);
 	lv_obj_set_size(cont, screen_width, screen_height - title_height);
@@ -917,7 +984,7 @@ static void app_display_features_cb(lv_event_t *e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED) {
-		app_display_init();
+		app_display_input("PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
 	}
 }
 
@@ -1040,11 +1107,9 @@ void app_display_loop()
 
 	k_msleep(3000);
 
-	if (storage_general_check(STORAGE_ID_PIN)) {
-		lock_mark = true;
-		app_display_input("PIN", 310);
-	} else if (storage_general_check(STORAGE_ID_SEED)) {
-		app_display_index();
+	if (storage_general_check(STORAGE_ID_SEED)) {
+		lock_mark_lock();
+		app_display_input("Verify PIN", INPUT_ACTION_PIN_VERIFY, BACK_ACTION_NONE);
 	} else {
 		app_display_features();
 	}
@@ -1061,6 +1126,9 @@ void app_display_loop()
 
 void app_display_loop()
 {
+	if (storage_general_check(STORAGE_ID_SEED)) {
+		lock_mark_lock();
+	}
 	return;
 }
 

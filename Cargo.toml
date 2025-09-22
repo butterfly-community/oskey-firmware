@@ -15,11 +15,11 @@ alloy-consensus = { git = "https://github.com/vincent-forks/alloy", branch = "v1
 [dependencies]
 zephyr = "^0.1.0"
 anyhow = { version = "1.0", default-features = false }
-oskey-action = { path = "./lib/core/action", default-features = false, features = [
-  "crypto-psa",
-] }
 oskey-bus = { path = "./lib/core/bus" }
 oskey-chain = { path = "./lib/core/chain" }
+oskey-wallet = { path = "./lib/core/wallet",  default-features = false, features = [
+  "crypto-psa",
+]  }
 
 # The following dependencies are configured for platform compatibility
 # and may cause errors on certain platforms
