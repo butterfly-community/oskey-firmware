@@ -240,10 +240,6 @@ static void app_display_tools_cb(lv_event_t *e)
 	if (action == TOOLS_ACTION_RESTART) {
 		sys_reboot(SYS_REBOOT_COLD);
 	}
-
-	if (action == TOOLS_ACTION_PIN_SETTING) {
-		app_display_input("Change PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_INDEX);
-	}
 }
 
 void back_button_event_handler(lv_event_t *e)
@@ -347,21 +343,6 @@ void app_display_tools()
 	lv_style_init(&btn_pressed_style);
 	lv_style_set_bg_opa(&btn_pressed_style, LV_OPA_20);
 	lv_style_set_bg_color(&btn_pressed_style, lv_palette_main(LV_PALETTE_BLUE));
-
-	lv_obj_t *btn_pin = lv_btn_create(cont);
-	lv_obj_add_style(btn_pin, &btn_style, 0);
-	lv_obj_add_style(btn_pin, &btn_pressed_style, LV_STATE_PRESSED);
-	lv_obj_set_size(btn_pin, screen_width, 40);
-	lv_obj_set_style_text_color(btn_pin, lv_color_white(), 0);
-
-	lv_obj_t *label_pin = lv_label_create(btn_pin);
-	lv_label_set_text(label_pin, "PIN Setting");
-	lv_obj_set_style_text_font(label_pin, &lv_font_montserrat_16, 0);
-	lv_obj_set_style_text_color(label_pin, lv_color_white(), 0);
-	lv_obj_align(label_pin, LV_ALIGN_LEFT_MID, 16, 0);
-
-	lv_obj_add_event_cb(btn_pin, app_display_tools_cb, LV_EVENT_CLICKED,
-			    (void *)TOOLS_ACTION_PIN_SETTING);
 
 	lv_obj_t *btn_1 = lv_btn_create(cont);
 	lv_obj_add_style(btn_1, &btn_style, 0);
