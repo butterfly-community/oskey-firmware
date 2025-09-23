@@ -1038,6 +1038,10 @@ void app_display_features()
 	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
 
 	for (int i = 0; i < sizeof(features) / sizeof(features[0]); i++) {
+		if (i == 1) {
+			continue;
+		}
+
 		lv_obj_t *feature_cont = lv_obj_create(cont);
 		lv_obj_set_size(feature_cont, LV_PCT(100), LV_SIZE_CONTENT);
 		lv_obj_set_flex_flow(feature_cont, LV_FLEX_FLOW_ROW);
