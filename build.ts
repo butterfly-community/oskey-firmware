@@ -13,6 +13,12 @@ const config = {
       extra: "-D CONFIG_HEAP_MEM_POOL_SIZE=40960"
     },
     {
+      name: "esp32c2_devkitm",
+      target: "esp8684_devkitm",
+      conf: ["boards/conf/enable_storage.conf"],
+      overlay: [],
+    },
+    {
       name: "esp32c3_devkitm",
       target: "esp32c3_devkitm",
       conf: ["boards/conf/enable_storage.conf"],
