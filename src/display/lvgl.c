@@ -1080,6 +1080,111 @@ void app_display_features()
 	lv_obj_add_event_cb(ok_btn, app_display_features_cb, LV_EVENT_CLICKED, NULL);
 }
 
+void app_display_storage_error()
+{
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
+
+	lv_obj_t *title = lv_label_create(screen);
+	lv_label_set_text(title, "Storage Error");
+	lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+	lv_obj_set_style_text_color(title, lv_color_white(), 0);
+	lv_obj_set_style_bg_color(title, lv_color_black(), 0);
+	lv_obj_set_style_pad_all(title, 8, 0);
+	lv_obj_set_size(title, screen_width, LV_SIZE_CONTENT);
+	lv_obj_set_pos(title, 0, 0);
+	lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+
+	lv_obj_set_style_border_side(title, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(title, lv_palette_main(LV_PALETTE_RED), 0);
+	lv_obj_set_style_border_width(title, 2, 0);
+	lv_obj_set_style_border_opa(title, LV_OPA_50, 0);
+	lv_obj_set_style_bg_opa(title, LV_OPA_COVER, 0);
+
+	lv_obj_update_layout(title);
+	lv_coord_t title_height = lv_obj_get_height(title);
+
+	lv_obj_t *cont = lv_obj_create(screen);
+	lv_obj_set_size(cont, screen_width, screen_height - title_height);
+	lv_obj_set_pos(cont, 0, title_height);
+	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_style_border_width(cont, 0, 0);
+	lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+	lv_obj_set_style_radius(cont, 0, 0);
+	lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+	lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_set_style_pad_row(cont, 20, 0);
+
+	lv_obj_t *error_icon = lv_label_create(cont);
+	lv_label_set_text(error_icon, LV_SYMBOL_WARNING);
+	lv_obj_set_style_text_font(error_icon, &lv_font_montserrat_32, 0);
+	lv_obj_set_style_text_color(error_icon, lv_palette_main(LV_PALETTE_RED), 0);
+
+	lv_obj_t *error_msg = lv_label_create(cont);
+	lv_label_set_text(error_msg, "Storage initialization failed!\n\n"
+				     "Storage is supported but cannot be initialized properly. "
+				     "This may be caused by corrupted data or hardware issues.");
+	lv_obj_set_style_text_font(error_msg, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_color(error_msg, lv_color_white(), 0);
+	lv_obj_set_style_text_align(error_msg, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_set_width(error_msg, screen_width - 40);
+	lv_label_set_long_mode(error_msg, LV_LABEL_LONG_WRAP);
+
+	lv_obj_t *solution_msg = lv_label_create(cont);
+	lv_label_set_text(solution_msg, "Try erasing the flash storage to fix this issue.");
+	lv_obj_set_style_text_font(solution_msg, &lv_font_montserrat_14, 0);
+	lv_obj_set_style_text_color(solution_msg, lv_palette_main(LV_PALETTE_YELLOW), 0);
+	lv_obj_set_style_text_align(solution_msg, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_set_width(solution_msg, screen_width - 40);
+	lv_label_set_long_mode(solution_msg, LV_LABEL_LONG_WRAP);
+
+	lv_obj_t *btn_cont = lv_obj_create(cont);
+	lv_obj_set_size(btn_cont, LV_PCT(100), LV_SIZE_CONTENT);
+	lv_obj_set_style_border_width(btn_cont, 0, 0);
+	lv_obj_set_style_bg_opa(btn_cont, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_pad_all(btn_cont, 0, 0);
+	lv_obj_set_flex_flow(btn_cont, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_flex_align(btn_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_style_pad_row(btn_cont, 15, 0);
+
+	lv_obj_t *erase_btn = lv_btn_create(btn_cont);
+	lv_obj_set_size(erase_btn, 180, 40);
+	lv_obj_set_style_bg_color(erase_btn, lv_palette_main(LV_PALETTE_RED), 0);
+	lv_obj_set_style_radius(erase_btn, 8, 0);
+	lv_obj_t *erase_label = lv_label_create(erase_btn);
+	lv_label_set_text(erase_label, "Erase Flash Storage");
+	lv_obj_set_style_text_color(erase_label, lv_color_white(), 0);
+	lv_obj_set_style_text_font(erase_label, &lv_font_montserrat_16, 0);
+	lv_obj_center(erase_label);
+	lv_obj_add_event_cb(erase_btn, app_display_tools_cb, LV_EVENT_CLICKED,
+			    (void *)TOOLS_ACTION_ERASE_DATA);
+
+	lv_obj_t *restart_btn = lv_btn_create(btn_cont);
+	lv_obj_set_size(restart_btn, 120, 40);
+	lv_obj_set_style_bg_color(restart_btn, lv_palette_main(LV_PALETTE_GREY), 0);
+	lv_obj_set_style_radius(restart_btn, 8, 0);
+	lv_obj_t *restart_label = lv_label_create(restart_btn);
+	lv_label_set_text(restart_label, "Restart");
+	lv_obj_set_style_text_color(restart_label, lv_color_white(), 0);
+	lv_obj_set_style_text_font(restart_label, &lv_font_montserrat_16, 0);
+	lv_obj_center(restart_label);
+	lv_obj_add_event_cb(restart_btn, app_display_tools_cb, LV_EVENT_CLICKED,
+			    (void *)TOOLS_ACTION_RESTART);
+
+	lv_obj_t *warning_msg = lv_label_create(cont);
+	lv_label_set_text(warning_msg, "Erasing flash will delete all data!");
+	lv_obj_set_style_text_font(warning_msg, &lv_font_montserrat_14, 0);
+	lv_obj_set_style_text_color(warning_msg, lv_palette_main(LV_PALETTE_RED), 0);
+	lv_obj_set_style_text_align(warning_msg, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_set_width(warning_msg, screen_width - 40);
+}
+
 void app_display_loop()
 {
 	lv_timer_handler();
@@ -1092,11 +1197,18 @@ void app_display_loop()
 
 	k_msleep(3000);
 
-	if (storage_general_check(STORAGE_ID_SEED)) {
-		lock_mark_lock();
-		app_display_input("Verify PIN", INPUT_ACTION_PIN_VERIFY, BACK_ACTION_NONE);
+	uint8_t features[7];
+	app_check_feature(features, sizeof(features));
+
+	if (features[3] == true && !app_check_storage()) {
+		app_display_storage_error();
 	} else {
-		app_display_features();
+		if (storage_general_check(STORAGE_ID_SEED)) {
+			lock_mark_lock();
+			app_display_input("Verify PIN", INPUT_ACTION_PIN_VERIFY, BACK_ACTION_NONE);
+		} else {
+			app_display_features();
+		}
 	}
 
 	lv_timer_handler();

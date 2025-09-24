@@ -1,3 +1,22 @@
-&ft5336 {
-  reg = <0x2a>;
+/delete-node/ &ft5336;
+/delete-node/ &mt25ql512ab2;
+/delete-node/ &storage_partition;
+
+&i2c4 {
+  ft5336: ft5336@2a {
+    compatible = "focaltech,ft5336";
+    int-gpios = <&dsi_lcd_qsh_030 0x4 0x1>;
+    status = "okay";
+    reg = <0x2a>;
+    phandle = <0x88>;
+  };
+};
+
+&flash0 {
+    partitions {
+        storage_partition: partition@e0000 {
+            label = "storage";
+            reg = < 0xE0000 DT_SIZE_K(128) >;
+        };
+    };
 };

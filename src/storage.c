@@ -40,12 +40,12 @@ int storage_init()
 		return res;
 	}
 
+	if (info.size > UINT16_MAX || info.size == 0 || NVS_PARTITION_SIZE < 1024) {
+		return -EINVAL;
+	}
+
 	fs.sector_size = info.size;
 	fs.sector_count = (NVS_PARTITION_SIZE / fs.sector_size);
-	res = nvs_mount(&fs);
-	if (res < 0) {
-		return res;
-	}
 
 	// printk("NVS Configuration:\n");
 	// printk("  Flash device: %p (%s)\n", fs.flash_device, fs.flash_device->name);
@@ -53,6 +53,11 @@ int storage_init()
 	// printk("  Sector size: %d bytes\n", fs.sector_size);
 	// printk("  Sector count: %d\n", fs.sector_count);
 	// printk("  Total size: %d bytes\n", fs.sector_size * fs.sector_count);
+
+	res = nvs_mount(&fs);
+	if (res < 0) {
+		return res;
+	}
 
 #ifdef CONFIG_SOC_SERIES_ESP32C3
 
@@ -127,7 +132,7 @@ int storage_erase_flash()
 
 #else
 
-static uint8_t storage_seed_buffer[64] = {0};
+static uint8_t storage_seed_buffer[256] = {0};
 static uint8_t storage_pin_buffer[22] = {0};
 
 int storage_init()

@@ -6,6 +6,7 @@
 #include "bluetooth.h"
 #include "storage.h"
 #include "boot.h"
+#include "app.h"
 #include "net/wifi.h"
 #include "net/mqtt.h"
 #include "display/lvgl.h"
@@ -20,7 +21,7 @@ int main(void)
 
 	bt_init();
 
-	if (IS_ENABLED(CONFIG_SETTINGS)) {
+	if (IS_ENABLED(CONFIG_SETTINGS) && app_check_storage()) {
 		settings_load();
 	}
 
@@ -35,7 +36,9 @@ int main(void)
 
 	app_init_display();
 
-	confirm_mcuboot_img();
+	if (IS_ENABLED(CONFIG_BOOTLOADER_MCUBOOT)) {
+		confirm_mcuboot_img();
+	}
 
 	app_display_loop();
 
@@ -46,4 +49,3 @@ void rust_panic_wrap(void)
 {
 	k_panic();
 }
-

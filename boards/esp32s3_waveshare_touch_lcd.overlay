@@ -1,0 +1,100 @@
+#include <zephyr/dt-bindings/mipi_dbi/mipi_dbi.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+  chosen {
+    zephyr,display = &st7796s;
+    zephyr,touch = &ft5336;
+  };
+
+  aliases {
+    backlight = &lcd_bk;
+  };
+
+  mipi_dbi {
+    compatible = "zephyr,mipi-dbi-spi";
+    dc-gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+    reset-gpios = <&pca9554 1 GPIO_ACTIVE_HIGH>;
+    spi-dev = <&spi2>;
+    write-only;
+    #address-cells = <1>;
+    #size-cells = <0>;
+
+    st7796s: st7796s@0 {
+      compatible = "sitronix,st7796s";
+      reg = <0>;
+      mipi-max-frequency = <DT_FREQ_M(20)>;
+      mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
+      height = <480>;
+      width = <320>;
+      // colmod = <0x05>; // 0x3A
+      invert-mode = "1-dot"; // 0xB4 (dic)
+      dfc = [ 80 22 3B  ]; // 0xB6
+      doca = [ 40 8A 00 00 29 19 A5 33  ]; // 0xE8
+      pwr2 = <0x06>; // 0xC1
+      pwr3 = <0xA7>; // 0xC2
+      vcmpctl = <0x18>; // 0xC5
+      pgc = [ F0 09 0B 06 04 15 2F 54 42 3C 17 14 18 1B  ]; // 0xE0
+      ngc = [ E0 09 0B 06 04 03 2B 43 42 3B 16 14 17 1B  ]; // 0xE1
+    };
+  };
+
+  leds {
+    compatible = "gpio-leds";
+    status = "okay";
+    lcd_bk: led_0 {
+      gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+    };
+  };
+};
+
+&spim2_default {
+  group1 {
+    pinmux = <SPIM2_MISO_GPIO2>,
+             <SPIM2_SCLK_GPIO5>;
+  };
+  group2 {
+    pinmux = <SPIM2_MOSI_GPIO1>;
+    output-low;
+  };
+};
+
+&spi2 {
+  #address-cells = <1>;
+  #size-cells = <0>;
+  status = "okay";
+  pinctrl-0 = <&spim2_default>;
+  cs-gpios = <&pca9554 2 GPIO_ACTIVE_LOW>;
+  pinctrl-names = "default";
+};
+
+&i2c0 {
+  status = "okay";
+  pca9554: pca9554@20 {
+    compatible = "nxp,pca9554";
+    reg = <0x20>;
+    gpio-controller;
+    #gpio-cells = <2>;
+    ngpios = <8>;
+  };
+
+  ft5336: ft5336@38 {
+    status = "okay";
+    compatible = "focaltech,ft5336";
+    reg = <0x38>;
+  };
+};
+
+&i2c0_default {
+  group1 {
+    pinmux = <I2C0_SDA_GPIO8>,
+             <I2C0_SCL_GPIO7>;
+    bias-pull-up;
+    drive-open-drain;
+    output-high;
+  };
+};
+
+&dma {
+  status = "okay";
+};
