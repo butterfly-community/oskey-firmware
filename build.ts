@@ -63,6 +63,16 @@ const config = {
       overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/esp32_usb_jtag_serial.overlay"],
     },
     {
+      name: "waveshare_s3_touch_lcd_3.5",
+      target: "esp32s3_devkitm/esp32s3/procpu",
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/esp32s3_waveshare_3.5.conf",
+      ],
+      overlay: ["boards/esp32s3_waveshare_3.5.overlay", "boards/overlay/esp32_usb_jtag_serial.overlay"],
+    },
+    {
       name: "stm32h747i_disco",
       target: "stm32h747i_disco/stm32h747xx/m7",
       conf: ["boards/conf/enable_storage.conf", "boards/conf/enable_lvgl.conf"],
