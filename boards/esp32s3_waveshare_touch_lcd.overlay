@@ -1,5 +1,6 @@
 #include <zephyr/dt-bindings/mipi_dbi/mipi_dbi.h>
 #include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/spi/spi.h>
 
 / {
   chosen {
@@ -14,7 +15,7 @@
   mipi_dbi {
     compatible = "zephyr,mipi-dbi-spi";
     dc-gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
-    reset-gpios = <&pca9554 1 GPIO_ACTIVE_HIGH>;
+    reset-gpios = <&pca9554 1 GPIO_ACTIVE_LOW>;
     spi-dev = <&spi2>;
     write-only;
     #address-cells = <1>;
@@ -23,19 +24,21 @@
     st7796s: st7796s@0 {
       compatible = "sitronix,st7796s";
       reg = <0>;
-      mipi-max-frequency = <DT_FREQ_M(20)>;
+      mipi-max-frequency = <DT_FREQ_M(30)>;
       mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
-      height = <480>;
-      width = <320>;
+      height = <320>;
+      width = <480>;
+      madctl = <0x68>; // 0x36 0x08 0x68 0xC8 0xA8
       // colmod = <0x05>; // 0x3A
       invert-mode = "1-dot"; // 0xB4 (dic)
       dfc = [ 80 22 3B  ]; // 0xB6
       doca = [ 40 8A 00 00 29 19 A5 33  ]; // 0xE8
-      pwr2 = <0x06>; // 0xC1
+      pwr2 = <0x13>; // 0xC1
       pwr3 = <0xA7>; // 0xC2
       vcmpctl = <0x18>; // 0xC5
-      pgc = [ F0 09 0B 06 04 15 2F 54 42 3C 17 14 18 1B  ]; // 0xE0
-      ngc = [ E0 09 0B 06 04 03 2B 43 42 3B 16 14 17 1B  ]; // 0xE1
+      pgc = [ D0 08 0F 06 06 33 30 33 47 17 13 13 2B 31  ]; // 0xE0
+      ngc = [ D0 0A 11 0B 09 07 2F 33 47 38 15 16 2C 32  ]; // 0xE1
+      color-invert;
     };
   };
 
@@ -45,6 +48,12 @@
     lcd_bk: led_0 {
       gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
     };
+  };
+
+  lvgl_pointer {
+    compatible = "zephyr,lvgl-pointer-input";
+    input = <&ft5336>;
+    invert-y;
   };
 };
 
@@ -64,7 +73,6 @@
   #size-cells = <0>;
   status = "okay";
   pinctrl-0 = <&spim2_default>;
-  cs-gpios = <&pca9554 2 GPIO_ACTIVE_LOW>;
   pinctrl-names = "default";
 };
 
@@ -82,6 +90,7 @@
     status = "okay";
     compatible = "focaltech,ft5336";
     reg = <0x38>;
+    // int-gpios = <&pca9554 2 GPIO_ACTIVE_LOW>;
   };
 };
 
