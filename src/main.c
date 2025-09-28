@@ -10,6 +10,7 @@
 #include "net/wifi.h"
 #include "net/mqtt.h"
 #include "display/lvgl.h"
+#include "gpio.h"
 
 int main(void)
 {
@@ -18,6 +19,8 @@ int main(void)
 	k_work_init(&app_uart_work, app_uart_work_handler);
 
 	app_uart_irq_register();
+
+	user_button_init();
 
 	bt_init();
 
