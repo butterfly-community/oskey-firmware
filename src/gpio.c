@@ -1,6 +1,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/logging/log.h>
+#include "wrapper.h"
 
 LOG_MODULE_REGISTER(app_gpio);
 
@@ -15,6 +16,7 @@ static struct gpio_callback button_cb_data;
 
 static void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
+	k_work_submit(&app_sign_work);
 	LOG_INF("User button pressed!");
 }
 

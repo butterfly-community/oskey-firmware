@@ -16,7 +16,7 @@ int main(void)
 {
 	storage_init();
 
-	k_work_init(&app_uart_work, app_uart_work_handler);
+	app_sign_trigger();
 
 	app_uart_irq_register();
 

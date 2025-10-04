@@ -83,7 +83,7 @@ bool app_check_status(uint8_t *buffer, size_t len)
 	}
 	memset(buffer, 0, len);
 	buffer[0] = storage_initd;
-	buffer[1] = lock_mark_get();
+	buffer[1] = wallet_check_lock();
 	return true;
 }
 
@@ -97,12 +97,17 @@ int app_device_euid_get(uint8_t *id, size_t len)
 	return 0;
 }
 
-bool app_check_lock()
-{
-	return lock_mark_get();
-}
-
 bool app_check_storage()
 {
 	return storage_initd;
+}
+
+
+void app_sign_work_handler(struct k_work *work)
+{
+	wallet_sign_eth_from_trigger();
+}
+
+void app_sign_trigger() {
+	k_work_init(&app_sign_work, app_sign_work_handler);
 }

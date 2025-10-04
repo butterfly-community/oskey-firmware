@@ -513,7 +513,7 @@ void app_display_mnemonic(int legth)
 
 void app_sign_cb()
 {
-	wallet_sign_eth_from_display();
+	k_work_submit(&app_sign_work);
 	app_display_index();
 }
 
@@ -1204,7 +1204,7 @@ void app_display_loop()
 		app_display_storage_error();
 	} else {
 		if (storage_general_check(STORAGE_ID_SEED)) {
-			lock_mark_lock();
+			wallet_lock();
 			app_display_input("Verify PIN", INPUT_ACTION_PIN_VERIFY, BACK_ACTION_NONE);
 		} else {
 			app_display_features();
@@ -1224,7 +1224,7 @@ void app_display_loop()
 void app_display_loop()
 {
 	if (storage_general_check(STORAGE_ID_SEED)) {
-		lock_mark_lock();
+		wallet_lock();
 	}
 	return;
 }

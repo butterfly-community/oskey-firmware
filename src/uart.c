@@ -28,6 +28,8 @@ void app_uart_tx_push_array(const uint8_t *data, size_t len)
 
 int app_uart_irq_register()
 {
+	k_work_init(&app_uart_work, app_uart_work_handler);
+
 	if (!device_is_ready(DEV_CONSOLE)) {
 		return -1;
 	}
