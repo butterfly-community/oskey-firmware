@@ -9,13 +9,6 @@
 #include <lvgl.h>
 #include <zephyr/kernel.h>
 
-void app_mnemonic_generate_work_handler(struct k_work *work);
-void app_mnemonic_generate_trigger(void);
-void app_display_mnemonic_process(void *param);
-void app_wallet_init_custom_work_handler(struct k_work *work);
-void app_wallet_init_custom_trigger(void);
-void back_button_event_handler(lv_event_t *e);
-
 typedef enum {
 	INIT_ACTION_GENERATE = 1,
 	INIT_ACTION_IMPORT = 2
@@ -50,23 +43,29 @@ typedef enum {
 	MNEMONIC_LENGTH_24 = 24
 } app_mnemonic_length_t;
 
-typedef struct {
-	int action_type;
-	int action_value;
-} app_event_data_t;
+void hide_error_label(lv_timer_t *timer);
+void app_display_init_cb(lv_event_t *e);
+void app_display_tools_cb(lv_event_t *e);
+void app_display_mnemonic_cb();
+void app_display_index_cb(lv_event_t *e);
 
-void app_display_init_show_select_length();
+void app_mnemonic_generate_work_handler(struct k_work *work);
+void app_mnemonic_generate_trigger(void);
+void app_display_mnemonic_process(void *param);
+void app_wallet_init_custom_work_handler(struct k_work *work);
+void app_wallet_init_custom_trigger(void);
 
+void back_button_event_handler(lv_event_t *e);
+
+void app_display_init_show_select_length(void);
 void app_display_input(char *title_text, uintptr_t action, uintptr_t back_action);
+void app_display_tools(void);
+void app_display_features(void);
 
-void app_display_tools();
+#endif /* CONFIG_DISPLAY */
 
-void app_display_features();
 
-#endif // CONFIG_DISPLAY
+int app_init_display(void);
+void app_display_loop(void);
 
-int app_init_display();
-
-void app_display_loop();
-
-#endif
+#endif /* APP_SCREEN_H */
