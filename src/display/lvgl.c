@@ -20,10 +20,43 @@
 
 static char check_mnemonic_buffer[256] = {0};
 
+struct k_work app_mnemonic_generate_work;
+int app_mnemonic_length = 0;
+char app_mnemonic_buffer[256] = {0};
+
+void app_mnemonic_generate_work_handler(struct k_work *work)
+{
+	wallet_mnemonic_generate_from_display(app_mnemonic_length, app_mnemonic_buffer, sizeof(app_mnemonic_buffer));
+}
+
+void app_mnemonic_generate_trigger(void)
+{
+	k_work_init(&app_mnemonic_generate_work, app_mnemonic_generate_work_handler);
+}
+
+struct k_work app_wallet_init_custom_work;
+char app_wallet_init_mnemonic[256] = {0};
+bool app_wallet_init_result = false;
+volatile bool app_wallet_init_done = false;
+
+void app_wallet_init_custom_work_handler(struct k_work *work)
+{
+	app_wallet_init_result = wallet_init_custom_from_display(app_wallet_init_mnemonic);
+	app_wallet_init_done = true;
+}
+
+void app_wallet_init_custom_trigger(void)
+{
+	k_work_init(&app_wallet_init_custom_work, app_wallet_init_custom_work_handler);
+}
+
 const struct device *display_dev;
 
 int app_init_display()
 {
+	app_mnemonic_generate_trigger();
+	app_wallet_init_custom_trigger();
+
 	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 	if (!device_is_ready(display_dev)) {
 		return 0;
@@ -383,15 +416,27 @@ static void app_display_mnemonic_cb()
 
 void app_display_mnemonic(int legth)
 {
-	char buffer[256] = {0};
+	app_mnemonic_length = legth;
+	memset(app_mnemonic_buffer, 0, sizeof(app_mnemonic_buffer));
 
-	wallet_mnemonic_generate_from_display(legth, buffer, sizeof(buffer));
+	k_work_submit(&app_mnemonic_generate_work);
 
-	strcpy(check_mnemonic_buffer, buffer);
+	while (app_mnemonic_buffer[0] == '\0') {
+		k_sleep(K_MSEC(100));
+	}
+
+	lv_async_call(app_display_mnemonic_process, NULL);
+}
+
+void app_display_mnemonic_process(void *param)
+{
+	(void)param;
+
+	strcpy(check_mnemonic_buffer, app_mnemonic_buffer);
 
 	char words[24][12];
 	int word_count = 0;
-	char *token = strtok(buffer, " ");
+	char *token = strtok(app_mnemonic_buffer, " ");
 
 	while (token != NULL && word_count < 24) {
 		snprintf(words[word_count], sizeof(words[word_count]), "%d. %s", word_count + 1,
@@ -814,9 +859,17 @@ static void keyboard_event_cb(lv_event_t *e)
 
 		if (ta) {
 			if (action == INPUT_ACTION_IMPORT) {
-				bool run = wallet_init_custom_from_display(text);
+				strncpy(app_wallet_init_mnemonic, text, sizeof(app_wallet_init_mnemonic) - 1);
+				app_wallet_init_result = false;
+				app_wallet_init_done = false;
 
-				if (run) {
+				k_work_submit(&app_wallet_init_custom_work);
+
+				while (!app_wallet_init_done) {
+					k_sleep(K_MSEC(100));
+				}
+
+				if (app_wallet_init_result) {
 					app_display_index();
 				} else {
 					show_fail(NULL);
@@ -826,7 +879,16 @@ static void keyboard_event_cb(lv_event_t *e)
 			if (action == INPUT_ACTION_CHECK_MNEMONIC) {
 				if (strcmp(check_mnemonic_buffer, text) == 0 ||
 				    strcmp(text, "oskey") == 0) {
-					wallet_init_custom_from_display(check_mnemonic_buffer);
+					strncpy(app_wallet_init_mnemonic, check_mnemonic_buffer, sizeof(app_wallet_init_mnemonic) - 1);
+					app_wallet_init_result = false;
+					app_wallet_init_done = false;
+
+					k_work_submit(&app_wallet_init_custom_work);
+
+					while (!app_wallet_init_done) {
+						k_sleep(K_MSEC(100));
+					}
+
 					app_display_index();
 				} else {
 					show_fail(NULL);
@@ -965,7 +1027,7 @@ static void app_display_features_cb(lv_event_t *e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED) {
-		app_display_input("PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
+		app_display_input("Set PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
 	}
 }
 

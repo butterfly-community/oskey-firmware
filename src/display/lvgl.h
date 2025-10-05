@@ -7,7 +7,13 @@
 #ifdef CONFIG_DISPLAY
 
 #include <lvgl.h>
+#include <zephyr/kernel.h>
 
+void app_mnemonic_generate_work_handler(struct k_work *work);
+void app_mnemonic_generate_trigger(void);
+void app_display_mnemonic_process(void *param);
+void app_wallet_init_custom_work_handler(struct k_work *work);
+void app_wallet_init_custom_trigger(void);
 void back_button_event_handler(lv_event_t *e);
 
 typedef enum {
