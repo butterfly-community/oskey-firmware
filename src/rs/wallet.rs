@@ -12,7 +12,8 @@ use crate::rs::chain::eth::ETH_SIGN_CACHE;
 use crate::rs::storage::{STORAGE_ID_SEED, WALLET_STORAGE};
 use crate::rs::warpper::{
     app_check_feature_rs, app_check_feature_vec, app_check_status_rs, app_check_status_vec,
-    app_csrand_get_rs, app_display_sign, storage_general_check, Feature, Status,
+    app_csrand_get_rs, app_display_sign, app_get_device_info_rs, storage_general_check, Feature,
+    Status,
 };
 
 pub struct OSKeyHWCallbacks;
@@ -20,6 +21,10 @@ pub struct OSKeyHWCallbacks;
 impl WalletCallbacks for OSKeyHWCallbacks {
     fn version(&self) -> String {
         crate::rs::warpper::app_version_get_rs()
+    }
+
+    fn sn(&self) -> String {
+        app_get_device_info_rs()
     }
 
     fn initialized(&self) -> bool {

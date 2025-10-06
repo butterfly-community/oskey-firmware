@@ -87,14 +87,20 @@ bool app_check_status(uint8_t *buffer, size_t len)
 	return true;
 }
 
-int app_device_euid_get(uint8_t *id, size_t len)
+int app_get_chip_model(char *buffer, size_t len)
 {
-	if (len < 8) {
-		return -1;
-	}
-	memset(id, 0, len);
-	hwinfo_get_device_eui64(id);
+	snprintf(buffer, len, "%s", CONFIG_SOC);
 	return 0;
+}
+
+int app_get_eui64(uint8_t *buffer, size_t len)
+{
+	return hwinfo_get_device_eui64(buffer);
+}
+
+int app_get_device_id(uint8_t *buffer, size_t len)
+{
+	return hwinfo_get_device_id(buffer, len);
 }
 
 bool app_check_storage()
