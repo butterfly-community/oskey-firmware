@@ -1,6 +1,9 @@
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
 / {
 	aliases {
 		app-uart = &uart0;
+		sw0 = &button0;
 	};
 	chosen {
 		zephyr,console = &uart1;
@@ -13,7 +16,7 @@
 		status = "okay";
 		compatible = "zephyr,native-tty-uart";
 		current-speed = <115200>;
-		serial-port = "/dev/ttyOSKey";
+		serial-port = "/dev/ttyACM0";
 	};
 
 	uart_1 {
@@ -24,6 +27,23 @@
 		compatible = "zephyr,sdl-dc";
 		height = < 480 >;
 		width = < 640 >;
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+			label = "User button";
+			zephyr,code = <INPUT_KEY_ENTER>;
+		};
+	};
+};
+
+&gpio0 {
+	ngpios = <1>;
+	sdl_gpio {
+		compatible = "zephyr,gpio-emul-sdl";
+		scancodes = <40>;
 	};
 };
 
