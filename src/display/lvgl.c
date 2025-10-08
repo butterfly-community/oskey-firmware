@@ -32,6 +32,7 @@ static volatile bool app_wallet_init_done = false;
 static char sign_buffer[1024] = {0};
 
 static char pin_buffer[30] = {0};
+static int pin_failed_attempts = 0;
 
 static lv_obj_t *cont = NULL;
 static int title_height = 0;
@@ -653,9 +654,20 @@ static void keyboard_event_cb(lv_event_t *e)
 
 		case INPUT_ACTION_PIN_VERIFY:
 			if (wallet_unlock_from_display(text)) {
+				pin_failed_attempts = 0;
 				app_display_index();
 			} else {
-				show_fail(NULL);
+				pin_failed_attempts++;
+				if (pin_failed_attempts >= 10) {
+					if (app_check_storage()) {
+						storage_erase_nvs();
+					}
+					storage_erase_flash();
+					sys_reboot(SYS_REBOOT_COLD);
+				}
+				char error_msg[50];
+				snprintf(error_msg, sizeof(error_msg), "Failed! %d/10 attempts", pin_failed_attempts);
+				show_fail(error_msg);
 			}
 			break;
 		}
@@ -762,6 +774,11 @@ void app_display_features()
 	lv_obj_t *btn_cont = create_button_container(container);
 	create_centered_button(btn_cont, "Checked", lv_palette_main(LV_PALETTE_BLUE), 100,
 			       app_display_features_cb, NULL);
+
+	lv_obj_t *spacer = lv_obj_create(container);
+	lv_obj_set_size(spacer, LV_PCT(100), 50);
+	lv_obj_set_style_bg_opa(spacer, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_width(spacer, 0, 0);
 }
 
 void app_display_storage_error()

@@ -36,7 +36,6 @@ target_sources_ifdef(CONFIG_LV_USE_DEMO_WIDGETS app PRIVATE
     ${LVGL_DIR}/demos/widgets/lv_demo_widgets.c
 )
 
-
 # FILE(GLOB app_sources src/*.c)
 # target_sources(app PRIVATE ${app_sources})
 
@@ -60,6 +59,12 @@ target_sources(app PRIVATE
   src/usb/webusb.c
   src/input/touch.c
   src/app.c
+  src/usb/webusb.c
+)
+
+target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
+  src/usb/bulk.c
+  src/usb/init.c
 )
 
 target_compile_options(crypto PRIVATE)

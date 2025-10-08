@@ -12,8 +12,13 @@
 #include "display/lvgl.h"
 #include "gpio.h"
 
+LOG_MODULE_REGISTER(main);
+#include "usb/webusb.h"
+
 int main(void)
 {
+	init_usb_stack();
+
 	storage_init();
 
 	app_sign_trigger();

@@ -1,3 +1,5 @@
 #ifndef WEBUSB_H
 #define WEBUSB_H
-#endif
+
+int init_usb_stack(void);
+#endif /* WEBUSB_H */

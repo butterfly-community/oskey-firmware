@@ -4,16 +4,17 @@
 / {
   chosen {
     zephyr,display = &st7789v;
-    zephyr,touch = &ft6336;
+    zephyr,touch = &xpt2046;
   };
 
   aliases {
     backlight = &lcd_bk;
+    app-uart = &uart0;
   };
 
   mipi_dbi {
     compatible = "zephyr,mipi-dbi-spi";
-    dc-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+    dc-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
     spi-dev = <&spi2>;
     write-only;
     #address-cells = <1>;
@@ -27,9 +28,9 @@
       height = <240>;
       x-offset = <0>;    // 0x2a
       y-offset = <0>;    // 0x2b
-      vcom = <0x32>;     // 0xbb
-      gctrl = <0x35>;
-      vrhs = <0x15>;     // 0xc3
+      vcom = <0x1d>;     // 0xbb
+      gctrl = <0x55>;    // 0xb7
+      vrhs = <0x0f>;     // 0xc3
       vdvs = <0x20>;     // 0xc4
       mdac = <0x60>;     // 0x36 horizontal 0x00 0xc0 0x70 0xa0 0x60
       gamma = <0x01>;    // no gamma
@@ -38,11 +39,12 @@
       porch-param = [ 0c 0c 00 33 33  ];   // 0xb2
       cmd2en-param = [ 5a 69 02 01  ];     // 0xdf
       pwctrl1-param = [ a4 a1  ];          // 0xd0
-      pvgam-param = [ d0 08 0e 09 09 05 31 33 48 17 14 15 31 34  ]; // 0xe0
-      nvgam-param = [ d0 08 0e 09 09 15 31 33 48 17 14 15 31 34  ]; // 0xe1
+      pvgam-param = [ f0 06 12 15 15 1e 3e 44 4e 09 11 10 1a 1d  ]; // 0xe0
+      nvgam-param = [ f0 04 0e 0d 0e 27 3f 54 4e 3f 1d 1d 22 27  ]; // 0xe1
       ram-param = [ 00 F0  ];
       rgb-param = [ CD 08 14  ];
       mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
+      inversion-off;
     };
   };
 
@@ -50,57 +52,40 @@
     compatible = "gpio-leds";
     status = "okay";
     lcd_bk: led_0 {
-      gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+      gpios = <&gpio0 21 GPIO_ACTIVE_HIGH>;
     };
   };
 
   lvgl_pointer {
     compatible = "zephyr,lvgl-pointer-input";
-    input = <&ft6336>;
-    invert-y;
+    input = <&xpt2046>;
+    swap-xy;
   };
 };
 
-&i2c0 {
-  status = "okay";
-  pca9557: pca9557@19 {
-    compatible = "nxp,pca9554";
-    reg = <0x19>;
-    gpio-controller;
-    #gpio-cells = <2>;
-    ngpios = <8>;
-  };
-
-  ft6336: ft5336@38 {
-    status = "okay";
-    compatible = "focaltech,ft5336";
-    reg = <0x38>;
-  };
-};
-
-&spim2_default {
+&spim3_default {
   group1 {
-    pinmux = <SPIM2_SCLK_GPIO41>;
+    pinmux = <SPIM3_MISO_GPIO39>,
+             <SPIM3_SCLK_GPIO25>,
+             <SPIM3_CSEL_GPIO33>;
   };
   group2 {
-    pinmux = <SPIM2_MOSI_GPIO40>;
+    pinmux = <SPIM3_MOSI_GPIO32>;
     output-low;
   };
 };
 
-&spi2 {
-  #address-cells = <1>;
-  #size-cells = <0>;
-  status = "okay";
-  pinctrl-0 = <&spim2_default>;
-  cs-gpios = <&pca9557 0 GPIO_ACTIVE_LOW>;
-  pinctrl-names = "default";
-};
-
-&dma {
-  status = "okay";
-};
-
-&psram0 {
-	size = <DT_SIZE_M(8)>;
+&spi3 {
+  xpt2046: xpt2046@0 {
+    compatible = "xptek,xpt2046";
+    spi-max-frequency = <DT_FREQ_M(2)>;
+    reg = <0x0>;
+    int-gpios = <&gpio1 36 GPIO_ACTIVE_LOW>;
+    touchscreen-size-x = <240>;
+    touchscreen-size-y = <320>;
+    min-x = <400>;
+    max-x = <3800>;
+    min-y = <300>;
+    max-y = <3600>;
+  };
 };

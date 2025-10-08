@@ -6,6 +6,51 @@ config LV_Z_DEMO_BENCHMARK
 	help
 	  Build benchmarking demo application.
 
+menu "USB options"
+	depends on USB_DEVICE_STACK_NEXT
 
+config OSKEY_USBD_MANUFACTURER
+	string "USB device manufacturer string"
+	default "Zephyr Project"
+	help
+	  USB device sample manufacturer string.
+
+config OSKEY_USBD_PRODUCT
+	string "USB device product string"
+	default "USBD"
+	help
+	  USB device sample product stringa.
+
+config OSKEY_USBD_PID
+	hex "USB device Product ID"
+	default 0x0001
+	help
+	  USB device sample Product ID.
+
+config OSKEY_USBD_SELF_POWERED
+	bool "USB device Self-powered attribute"
+	default n
+	help
+	  Set the Self-powered attribute in the sample configuration.
+
+config OSKEY_USBD_REMOTE_WAKEUP
+	bool "USB device Remote Wakeup attribute"
+	help
+	  Set the Remote Wakeup attribute in the sample configuration.
+
+config OSKEY_USBD_MAX_POWER
+	int "USB device bMaxPower value"
+	default 125
+	range 0 250
+	help
+	  bMaxPower value in the sample configuration in 2 mA units.
+
+config OSKEY_USBD_20_EXTENSION_DESC
+	bool "Use default USB 2.0 Extension Descriptor"
+	depends on USBD_BOS_SUPPORT
+	help
+	  Set bcdUSB value to 0201 and use default USB 2.0 Extension Descriptor.
+
+endmenu
 
 source "Kconfig.zephyr"

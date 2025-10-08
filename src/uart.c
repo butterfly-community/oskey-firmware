@@ -12,6 +12,7 @@ void app_uart_rx_handler(const struct device *dev, void *user_data)
 	uint32_t len = 0;
 	if (uart_irq_update(dev) && uart_irq_rx_ready(dev)) {
 		len = uart_fifo_read(dev, buf, sizeof(buf));
+		printf("uart rx %u bytes\n", len);
 		if (app_uart_event_rs(buf, len)) {
 			k_work_submit(&app_uart_work);
 		}
