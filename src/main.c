@@ -44,7 +44,7 @@ int main(void)
 
 	app_init_display();
 
-	if (IS_ENABLED(CONFIG_BOOTLOADER_MCUBOOT)) {
+	if (IS_ENABLED(CONFIG_MCUBOOT_BOOTLOADER_MODE_DIRECT_XIP_WITH_REVERT)) {
 		confirm_mcuboot_img();
 	}
 

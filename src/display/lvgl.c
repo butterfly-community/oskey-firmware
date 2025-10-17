@@ -39,7 +39,8 @@ static int title_height = 0;
 
 void app_mnemonic_generate_work_handler(struct k_work *work)
 {
-	wallet_mnemonic_generate_from_display(app_mnemonic_length, app_mnemonic_buffer, sizeof(app_mnemonic_buffer));
+	wallet_mnemonic_generate_from_display(app_mnemonic_length, app_mnemonic_buffer,
+					      sizeof(app_mnemonic_buffer));
 }
 
 void app_mnemonic_generate_trigger(void)
@@ -66,12 +67,13 @@ static lv_obj_t *create_button_container(lv_obj_t *parent)
 	lv_obj_set_style_bg_opa(btn_cont, LV_OPA_TRANSP, 0);
 	lv_obj_set_style_pad_all(btn_cont, 0, 0);
 	lv_obj_set_flex_flow(btn_cont, LV_FLEX_FLOW_ROW);
-	lv_obj_set_flex_align(btn_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_flex_align(btn_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
 	return btn_cont;
 }
 
 static lv_obj_t *create_centered_button(lv_obj_t *parent, const char *text, lv_color_t bg_color,
-					 int width, lv_event_cb_t event_cb, void *user_data)
+					int width, lv_event_cb_t event_cb, void *user_data)
 {
 	lv_obj_t *btn = lv_btn_create(parent);
 	lv_obj_set_size(btn, width, 40);
@@ -92,12 +94,13 @@ static lv_obj_t *create_centered_button(lv_obj_t *parent, const char *text, lv_c
 
 static void resize_container_for_keyboard(bool show_keyboard)
 {
-	if (!cont) return;
+	if (!cont) {
+		return;
+	}
 
 	lv_coord_t screen_height = lv_disp_get_ver_res(NULL);
-	lv_coord_t new_height = show_keyboard ?
-		screen_height - title_height - (screen_height / 2) :
-		screen_height - title_height;
+	lv_coord_t new_height = show_keyboard ? screen_height - title_height - (screen_height / 2)
+					      : screen_height - title_height;
 	lv_obj_set_size(cont, lv_disp_get_hor_res(NULL), new_height);
 }
 
@@ -214,15 +217,19 @@ static bool validate_pin_complexity(const char *pin)
 
 	for (int i = 0; pin[i] != '\0'; i++) {
 		char c = pin[i];
-		if (c >= '0' && c <= '9') has_digit = true;
-		else if (c >= 'a' && c <= 'z') has_lower = true;
-		else if (c >= 'A' && c <= 'Z') has_upper = true;
-		else if (c >= 32 && c <= 126) has_symbol = true;
+		if (c >= '0' && c <= '9') {
+			has_digit = true;
+		} else if (c >= 'a' && c <= 'z') {
+			has_lower = true;
+		} else if (c >= 'A' && c <= 'Z') {
+			has_upper = true;
+		} else if (c >= 32 && c <= 126) {
+			has_symbol = true;
+		}
 	}
 
 	return has_digit && has_lower && has_upper && has_symbol;
 }
-
 
 int app_init_display()
 {
@@ -369,7 +376,8 @@ void app_display_tools()
 		lv_obj_set_style_text_color(label, lv_color_white(), 0);
 		lv_obj_align(label, LV_ALIGN_LEFT_MID, 16, 0);
 
-		lv_obj_add_event_cb(btn, app_display_tools_cb, LV_EVENT_CLICKED, (void *)actions[i]);
+		lv_obj_add_event_cb(btn, app_display_tools_cb, LV_EVENT_CLICKED,
+				    (void *)actions[i]);
 	}
 }
 
@@ -398,7 +406,8 @@ void app_display_mnemonic_process(void *param)
 	char *token = strtok(app_mnemonic_buffer, " ");
 
 	while (token != NULL && word_count < 24) {
-		snprintf(words[word_count], sizeof(words[word_count]), "%d. %s", word_count + 1, token);
+		snprintf(words[word_count], sizeof(words[word_count]), "%d. %s", word_count + 1,
+			 token);
 		word_count++;
 		token = strtok(NULL, " ");
 	}
@@ -412,7 +421,8 @@ void app_display_mnemonic_process(void *param)
 
 	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_START);
 	lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
-	lv_obj_set_flex_align(container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+	lv_obj_set_flex_align(container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START,
+			      LV_FLEX_ALIGN_START);
 	lv_obj_set_style_pad_all(container, 10, 0);
 	lv_obj_set_style_pad_row(container, 10, 0);
 	lv_obj_set_style_pad_column(container, 10, 0);
@@ -434,9 +444,9 @@ void app_display_mnemonic_process(void *param)
 	}
 
 	lv_obj_t *hint_label = lv_label_create(container);
-	lv_label_set_text(hint_label,
-		"Please write it down on a reliable medium such as paper.\n\n"
-		"Please note that the mnemonic phrase will only be displayed once, so check it carefully.");
+	lv_label_set_text(hint_label, "Please write it down on a reliable medium such as paper.\n\n"
+				      "Please note that the mnemonic phrase will only be displayed "
+				      "once, so check it carefully.");
 	lv_obj_set_style_text_font(hint_label, &lv_font_montserrat_16, 0);
 	lv_obj_set_style_text_color(hint_label, lv_color_white(), 0);
 	lv_obj_set_width(hint_label, LV_PCT(100));
@@ -527,7 +537,6 @@ static void app_display_features_cb()
 	app_display_input("Set PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
 }
 
-
 void app_display_sign_x()
 {
 	lv_obj_clean(lv_scr_act());
@@ -548,8 +557,8 @@ void app_display_sign_x()
 	lv_obj_set_style_pad_top(msg_label, 20, 0);
 
 	lv_obj_t *btn_cont = create_button_container(container);
-	create_centered_button(btn_cont, "Sign", lv_palette_main(LV_PALETTE_RED), 100,
-			       app_sign_cb, NULL);
+	create_centered_button(btn_cont, "Sign", lv_palette_main(LV_PALETTE_RED), 100, app_sign_cb,
+			       NULL);
 }
 
 void app_display_sign(char *text)
@@ -569,7 +578,8 @@ void app_display_init_show_select_length()
 	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_CENTER);
 
 	const char *labels[] = {"12 words", "18 words", "24 words"};
-	app_mnemonic_length_t lengths[] = {MNEMONIC_LENGTH_12, MNEMONIC_LENGTH_18, MNEMONIC_LENGTH_24};
+	app_mnemonic_length_t lengths[] = {MNEMONIC_LENGTH_12, MNEMONIC_LENGTH_18,
+					   MNEMONIC_LENGTH_24};
 
 	for (int i = 0; i < 3; i++) {
 		lv_obj_t *btn = lv_btn_create(container);
@@ -613,7 +623,9 @@ static void keyboard_event_cb(lv_event_t *e)
 		resize_container_for_keyboard(false);
 
 		const char *text = lv_textarea_get_text(ta);
-		if (!ta) return;
+		if (!ta) {
+			return;
+		}
 
 		switch (action) {
 		case INPUT_ACTION_IMPORT:
@@ -625,7 +637,8 @@ static void keyboard_event_cb(lv_event_t *e)
 			break;
 
 		case INPUT_ACTION_CHECK_MNEMONIC:
-			if (strcmp(check_mnemonic_buffer, text) == 0 || strcmp(text, "oskey") == 0) {
+			if (strcmp(check_mnemonic_buffer, text) == 0 ||
+			    strcmp(text, "oskey") == 0) {
 				wallet_init_and_wait(check_mnemonic_buffer);
 				app_display_index();
 			} else {
@@ -666,7 +679,8 @@ static void keyboard_event_cb(lv_event_t *e)
 					sys_reboot(SYS_REBOOT_COLD);
 				}
 				char error_msg[50];
-				snprintf(error_msg, sizeof(error_msg), "Failed! %d/10 attempts", pin_failed_attempts);
+				snprintf(error_msg, sizeof(error_msg), "Failed! %d/10 attempts",
+					 pin_failed_attempts);
 				show_fail(error_msg);
 			}
 			break;
@@ -737,12 +751,15 @@ void app_display_features()
 	lv_obj_set_style_pad_column(container, 0, 0);
 
 	for (int i = 0; i < sizeof(features) / sizeof(features[0]); i++) {
-		if (i == 1) continue;
+		if (i == 1) {
+			continue;
+		}
 
 		lv_obj_t *feature_cont = lv_obj_create(container);
 		lv_obj_set_size(feature_cont, LV_PCT(100), LV_SIZE_CONTENT);
 		lv_obj_set_flex_flow(feature_cont, LV_FLEX_FLOW_ROW);
-		lv_obj_set_flex_align(feature_cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+		lv_obj_set_flex_align(feature_cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
+				      LV_FLEX_ALIGN_CENTER);
 		lv_obj_set_style_pad_top(feature_cont, 6, 0);
 		lv_obj_set_style_pad_bottom(feature_cont, 6, 0);
 		lv_obj_set_style_bg_opa(feature_cont, LV_OPA_TRANSP, 0);
@@ -753,7 +770,9 @@ void app_display_features()
 		lv_obj_set_width(symbol, 30);
 		lv_obj_set_style_text_align(symbol, LV_TEXT_ALIGN_CENTER, 0);
 		lv_obj_set_style_text_color(symbol,
-			features[i] ? lv_palette_main(LV_PALETTE_GREEN) : lv_palette_main(LV_PALETTE_RED), 0);
+					    features[i] ? lv_palette_main(LV_PALETTE_GREEN)
+							: lv_palette_main(LV_PALETTE_RED),
+					    0);
 		lv_obj_set_style_text_font(symbol, &lv_font_montserrat_14, 0);
 
 		lv_obj_t *desc = lv_label_create(feature_cont);
@@ -821,7 +840,8 @@ void app_display_storage_error()
 	lv_obj_set_style_bg_opa(btn_cont, LV_OPA_TRANSP, 0);
 	lv_obj_set_style_pad_all(btn_cont, 0, 0);
 	lv_obj_set_flex_flow(btn_cont, LV_FLEX_FLOW_COLUMN);
-	lv_obj_set_flex_align(btn_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+	lv_obj_set_flex_align(btn_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
 	lv_obj_set_style_pad_row(btn_cont, 15, 0);
 
 	lv_obj_t *erase_btn = lv_btn_create(btn_cont);

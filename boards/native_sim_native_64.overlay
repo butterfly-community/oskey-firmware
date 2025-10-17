@@ -2,8 +2,7 @@
 
 / {
 	aliases {
-		// app-uart = &uart0;
-		app-uart = &cdc_acm_uart0;
+		app-uart = &uart0;
 		sw0 = &button0;
 	};
 	chosen {
@@ -45,11 +44,5 @@
 	sdl_gpio {
 		compatible = "zephyr,gpio-emul-sdl";
 		scancodes = <40>;
-	};
-};
-
-&zephyr_udc0 {
-	cdc_acm_uart0: cdc_acm_uart0 {
-		compatible = "zephyr,cdc-acm-uart";
 	};
 };

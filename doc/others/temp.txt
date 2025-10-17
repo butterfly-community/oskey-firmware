@@ -35,3 +35,5 @@ west build -b rpi_pico -- -DEXTRA_CONF_FILE="boards/conf/enable_test_rng.conf" -
 
 # erase flash
 /usr/local/bin/openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "init; reset init; flash erase_sector 0 0 last; reset; exit"
+
+west build -b native_sim/native/64 -- -DSNIPPET=usbip-native-sim -DEXTRA_CONF_FILE="boards/conf/enable_lvgl.conf;boards/conf/enable_storage.conf;boards/conf/enable_debug.conf;boards/conf/enable_usb.conf" -DEXTRA_DTC_OVERLAY_FILE="boards/native_sim_native_64.overlay"

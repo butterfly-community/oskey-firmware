@@ -64,7 +64,6 @@ void app_display_features(void);
 
 #endif /* CONFIG_DISPLAY */
 
-
 int app_init_display(void);
 void app_display_loop(void);
 
