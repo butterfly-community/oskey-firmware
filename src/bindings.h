@@ -21,6 +21,10 @@ bool wallet_unlock_from_display(const char *pin);
 
 bool wallet_sign_eth_from_trigger(void);
 
-bool wallet_mnemonic_generate_from_display(uintptr_t mnemonic_length, char *buffer, uintptr_t len);
+bool wallet_mnemonic_generate_from_display(uintptr_t mnemonic_length,
+                                           char *buffer,
+                                           uintptr_t len,
+                                           const uint8_t *entry,
+                                           bool custom_mode);
 
 bool wallet_init_custom_from_display(const char *mnemonic);

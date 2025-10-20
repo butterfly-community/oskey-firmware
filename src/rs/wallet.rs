@@ -139,19 +139,41 @@ extern "C" fn wallet_mnemonic_generate_from_display(
     mnemonic_length: usize,
     buffer: *mut c_char,
     len: usize,
+    entry: *const u8,
+    custom_mode: bool,
 ) -> bool {
-    let callbacks = OSKeyHWCallbacks;
+    let mnemonic = if !custom_mode {
+        let callbacks = OSKeyHWCallbacks;
 
-    let mnemonic = oskey_action::handle_init_wallet(
-        InitWalletRequest {
+        oskey_action::handle_init_wallet(
+            InitWalletRequest {
+                length: mnemonic_length as u32,
+                pin: vec![],
+                password: "".to_string(),
+                seed: None,
+            },
+            &callbacks,
+            false,
+        )
+    } else {
+        oskey_action::handle_init_wallet_custom_entropy(InitWalletRequest {
             length: mnemonic_length as u32,
             pin: vec![],
             password: "".to_string(),
-            seed: None,
-        },
-        &callbacks,
-        false,
-    );
+            seed: Some(unsafe {
+                let entropy_len = match mnemonic_length {
+                    12 => 16,
+                    15 => 20,
+                    18 => 24,
+                    21 => 28,
+                    24 => 32,
+                    _ => 16,
+                };
+                let slice = core::slice::from_raw_parts(entry, entropy_len);
+                slice.to_vec()
+            }),
+        })
+    };
 
     let mnemonic = match mnemonic {
         Ok(res_data::Payload::InitWalletResponse(resp)) => match resp.mnemonic {

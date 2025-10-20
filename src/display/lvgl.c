@@ -36,11 +36,21 @@ static int pin_failed_attempts = 0;
 
 static lv_obj_t *cont = NULL;
 static int title_height = 0;
+static bool custom_mode = false;
+uint8_t entropy_bytes[32];
 
 void app_mnemonic_generate_work_handler(struct k_work *work)
 {
-	wallet_mnemonic_generate_from_display(app_mnemonic_length, app_mnemonic_buffer,
-					      sizeof(app_mnemonic_buffer));
+	if (!custom_mode) {
+		wallet_mnemonic_generate_from_display(app_mnemonic_length, app_mnemonic_buffer,
+						      sizeof(app_mnemonic_buffer), NULL, false);
+	} else {
+		wallet_mnemonic_generate_from_display(app_mnemonic_length, app_mnemonic_buffer,
+						      sizeof(app_mnemonic_buffer), entropy_bytes,
+						      true);
+		memset(entropy_bytes, 0, sizeof(entropy_bytes));
+		custom_mode = false;
+	}
 }
 
 void app_mnemonic_generate_trigger(void)
@@ -527,6 +537,12 @@ static void app_display_init_show_select_length_cb(lv_event_t *e)
 	app_display_mnemonic(word_count);
 }
 
+void app_display_init_show_custom_entropy_length_cb(lv_event_t *e)
+{
+	int custom_length = (int)(intptr_t)lv_event_get_user_data(e);
+	app_display_entropy_collection(custom_length);
+}
+
 void app_display_mnemonic_cb()
 {
 	app_display_input("Check", INPUT_ACTION_CHECK_MNEMONIC, BACK_ACTION_TO_SELECT_LENGTH);
@@ -567,6 +583,18 @@ void app_display_sign(char *text)
 	lv_async_call(app_display_sign_x, NULL);
 }
 
+static void custom_button_toggle_cb(lv_event_t *e)
+{
+	custom_mode = true;
+	app_display_init_show_select_length();
+}
+
+static void standard_button_toggle_cb(lv_event_t *e)
+{
+	custom_mode = false;
+	app_display_init_show_select_length();
+}
+
 void app_display_init_show_select_length()
 {
 	lv_obj_clean(lv_scr_act());
@@ -577,19 +605,55 @@ void app_display_init_show_select_length()
 	create_back_button(th, BACK_ACTION_TO_INIT);
 	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_CENTER);
 
-	const char *labels[] = {"12 words", "18 words", "24 words"};
-	app_mnemonic_length_t lengths[] = {MNEMONIC_LENGTH_12, MNEMONIC_LENGTH_18,
-					   MNEMONIC_LENGTH_24};
+	if (!custom_mode) {
+		const char *labels[] = {"12 words", "18 words", "24 words"};
+		app_mnemonic_length_t lengths[] = {MNEMONIC_LENGTH_12, MNEMONIC_LENGTH_18,
+						   MNEMONIC_LENGTH_24};
 
-	for (int i = 0; i < 3; i++) {
-		lv_obj_t *btn = lv_btn_create(container);
-		lv_obj_t *label = lv_label_create(btn);
-		lv_label_set_text(label, labels[i]);
-		lv_obj_set_style_text_font(label, &lv_font_montserrat_18, 0);
-		lv_obj_set_style_text_color(label, lv_color_black(), 0);
-		lv_obj_center(label);
-		lv_obj_add_event_cb(btn, app_display_init_show_select_length_cb, LV_EVENT_CLICKED,
-				    (void *)lengths[i]);
+		for (int i = 0; i < 3; i++) {
+			lv_obj_t *btn = lv_btn_create(container);
+			lv_obj_t *label = lv_label_create(btn);
+			lv_label_set_text(label, labels[i]);
+			lv_obj_set_style_text_font(label, &lv_font_montserrat_18, 0);
+			lv_obj_set_style_text_color(label, lv_color_black(), 0);
+			lv_obj_center(label);
+			lv_obj_add_event_cb(btn, app_display_init_show_select_length_cb,
+					    LV_EVENT_CLICKED, (void *)lengths[i]);
+		}
+
+		lv_obj_t *custom_btn = lv_btn_create(container);
+		lv_obj_t *custom_label = lv_label_create(custom_btn);
+		lv_label_set_text(custom_label, "Custom");
+		lv_obj_set_style_text_font(custom_label, &lv_font_montserrat_18, 0);
+		lv_obj_set_style_text_color(custom_label, lv_color_black(), 0);
+		lv_obj_center(custom_label);
+		lv_obj_add_event_cb(custom_btn, custom_button_toggle_cb, LV_EVENT_CLICKED, NULL);
+	} else {
+		lv_obj_t *btn2 = lv_btn_create(container);
+		lv_obj_t *label2 = lv_label_create(btn2);
+		lv_label_set_text(label2, "Custom Entropy 12 words");
+		lv_obj_set_style_text_font(label2, &lv_font_montserrat_18, 0);
+		lv_obj_set_style_text_color(label2, lv_color_black(), 0);
+		lv_obj_center(label2);
+		lv_obj_add_event_cb(btn2, app_display_init_show_custom_entropy_length_cb,
+				    LV_EVENT_CLICKED, (void *)1);
+
+		lv_obj_t *btn3 = lv_btn_create(container);
+		lv_obj_t *label3 = lv_label_create(btn3);
+		lv_label_set_text(label3, "Custom Entropy 24 words");
+		lv_obj_set_style_text_font(label3, &lv_font_montserrat_18, 0);
+		lv_obj_set_style_text_color(label3, lv_color_black(), 0);
+		lv_obj_center(label3);
+		lv_obj_add_event_cb(btn3, app_display_init_show_custom_entropy_length_cb,
+				    LV_EVENT_CLICKED, (void *)2);
+
+		lv_obj_t *btn4 = lv_btn_create(container);
+		lv_obj_t *label4 = lv_label_create(btn4);
+		lv_label_set_text(label4, "Back to standard");
+		lv_obj_set_style_text_font(label4, &lv_font_montserrat_18, 0);
+		lv_obj_set_style_text_color(label4, lv_color_black(), 0);
+		lv_obj_center(label4);
+		lv_obj_add_event_cb(btn4, standard_button_toggle_cb, LV_EVENT_CLICKED, NULL);
 	}
 }
 
@@ -874,6 +938,218 @@ void app_display_storage_error()
 	lv_obj_set_style_text_color(warning_msg, lv_palette_main(LV_PALETTE_RED), 0);
 	lv_obj_set_style_text_align(warning_msg, LV_TEXT_ALIGN_CENTER, 0);
 	lv_obj_set_width(warning_msg, screen_width - 40);
+}
+
+static uint8_t entropy_bits[8][32] = {0};
+static int current_page = 0;
+static int total_pages = 1;
+
+static lv_obj_t *entropy_buttons[32] = {NULL};
+static lv_obj_t *prev_button = NULL;
+static lv_obj_t *next_button = NULL;
+static lv_obj_t *confirm_button = NULL;
+static lv_obj_t *progress_label = NULL;
+
+static void update_entropy_button(int button_index)
+{
+	if (button_index < 0 || button_index >= 32) {
+		return;
+	}
+
+	lv_obj_t *btn = entropy_buttons[button_index];
+	if (!btn) {
+		return;
+	}
+
+	lv_obj_t *label = lv_obj_get_child(btn, 0);
+	if (!label) {
+		return;
+	}
+
+	uint8_t bit_value = entropy_bits[current_page][button_index];
+	lv_label_set_text(label, bit_value ? "1" : "0");
+	lv_obj_set_style_bg_color(
+		btn,
+		bit_value ? lv_palette_main(LV_PALETTE_BLUE) : lv_palette_main(LV_PALETTE_GREY), 0);
+}
+
+static void entropy_button_event_cb(lv_event_t *e)
+{
+	int button_index = (int)(intptr_t)lv_event_get_user_data(e);
+	entropy_bits[current_page][button_index] = !entropy_bits[current_page][button_index];
+	update_entropy_button(button_index);
+}
+
+static void entropy_ui_update(void)
+{
+	if (progress_label) {
+		char progress_text[32];
+		snprintf(progress_text, sizeof(progress_text), "Page %d/%d", current_page + 1,
+			 total_pages);
+		lv_label_set_text(progress_label, progress_text);
+	}
+
+	for (int i = 0; i < 32; i++) {
+		update_entropy_button(i);
+	}
+
+	bool is_first_page = (current_page == 0);
+	bool is_last_page = (current_page == total_pages - 1);
+
+	lv_obj_add_flag(prev_button, is_first_page ? LV_OBJ_FLAG_HIDDEN : 0);
+	lv_obj_clear_flag(prev_button, is_first_page ? 0 : LV_OBJ_FLAG_HIDDEN);
+
+	lv_obj_add_flag(next_button, is_last_page ? LV_OBJ_FLAG_HIDDEN : 0);
+	lv_obj_clear_flag(next_button, is_last_page ? 0 : LV_OBJ_FLAG_HIDDEN);
+
+	lv_obj_add_flag(confirm_button, is_last_page ? 0 : LV_OBJ_FLAG_HIDDEN);
+	lv_obj_clear_flag(confirm_button, is_last_page ? LV_OBJ_FLAG_HIDDEN : 0);
+}
+
+static void entropy_previous_event_cb(lv_event_t *e)
+{
+	if (current_page > 0) {
+		current_page--;
+		entropy_ui_update();
+	}
+}
+
+static void entropy_next_event_cb(lv_event_t *e)
+{
+	if (current_page < total_pages - 1) {
+		current_page++;
+		entropy_ui_update();
+	}
+}
+
+static void entropy_confirm_event_cb(lv_event_t *e)
+{
+	int total_bits = (int)(intptr_t)lv_event_get_user_data(e);
+	int total_bytes = (total_bits + 7) / 8;
+
+	memset(entropy_bytes, 0, sizeof(entropy_bytes));
+
+	for (int page = 0; page < total_pages; page++) {
+		for (int bit_idx = 0; bit_idx < 32; bit_idx++) {
+			int global_bit_idx = page * 32 + bit_idx;
+			if (global_bit_idx >= total_bits) {
+				break;
+			}
+
+			int byte_idx = global_bit_idx / 8;
+			int bit_offset = global_bit_idx % 8;
+
+			if (entropy_bits[page][bit_idx]) {
+				entropy_bytes[byte_idx] |= (1 << (7 - bit_offset));
+			}
+		}
+	}
+
+	app_display_mnemonic(total_bytes / 4 * 3);
+
+	current_page = 0;
+}
+
+void app_display_entropy_collection(int page_param)
+{
+	memset(entropy_bits, 0, sizeof(entropy_bits));
+	current_page = 0;
+	total_pages = page_param * 4;
+
+	lv_obj_clean(lv_scr_act());
+
+	lv_obj_t *title = create_title_bar("Custom Entropy", lv_palette_main(LV_PALETTE_BLUE));
+	lv_coord_t th = lv_obj_get_height(title);
+
+	create_back_button(th, BACK_ACTION_TO_SELECT_LENGTH);
+
+	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_START);
+	lv_obj_set_style_pad_all(container, 10, 0);
+	lv_obj_set_style_pad_row(container, 5, 0);
+
+	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
+	lv_coord_t button_size = (screen_width - 100) / 8;
+
+	for (int row = 0; row < 4; row++) {
+		lv_obj_t *row_cont = lv_obj_create(container);
+		lv_obj_set_size(row_cont, LV_PCT(100), button_size);
+		lv_obj_set_flex_flow(row_cont, LV_FLEX_FLOW_ROW);
+		lv_obj_set_flex_align(row_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+				      LV_FLEX_ALIGN_CENTER);
+		lv_obj_set_style_border_width(row_cont, 0, 0);
+		lv_obj_set_style_bg_opa(row_cont, LV_OPA_TRANSP, 0);
+		lv_obj_set_style_pad_all(row_cont, 0, 0);
+
+		for (int col = 0; col < 8; col++) {
+			int button_index = row * 8 + col;
+
+			lv_obj_t *btn = lv_btn_create(row_cont);
+			entropy_buttons[button_index] = btn;
+
+			lv_obj_set_size(btn, button_size, button_size);
+			lv_obj_set_style_bg_color(btn, lv_palette_main(LV_PALETTE_GREY), 0);
+			lv_obj_set_style_radius(btn, 4, 0);
+
+			lv_obj_t *label = lv_label_create(btn);
+			lv_label_set_text(label, "0");
+			lv_obj_set_style_text_font(label, &lv_font_montserrat_14, 0);
+			lv_obj_set_style_text_color(label, lv_color_black(), 0);
+			lv_obj_center(label);
+
+			lv_obj_add_event_cb(btn, entropy_button_event_cb, LV_EVENT_CLICKED,
+					    (void *)(intptr_t)button_index);
+		}
+	}
+
+	lv_obj_t *nav_btn_cont = create_button_container(container);
+
+	prev_button = lv_btn_create(nav_btn_cont);
+	lv_obj_set_size(prev_button, 80, 40);
+	lv_obj_set_style_bg_color(prev_button, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_radius(prev_button, 8, 0);
+
+	lv_obj_t *prev_label = lv_label_create(prev_button);
+	lv_label_set_text(prev_label, "Previous");
+	lv_obj_set_style_text_color(prev_label, lv_color_black(), 0);
+	lv_obj_center(prev_label);
+
+	lv_obj_add_event_cb(prev_button, entropy_previous_event_cb, LV_EVENT_CLICKED, NULL);
+
+	next_button = lv_btn_create(nav_btn_cont);
+	lv_obj_set_size(next_button, 80, 40);
+	lv_obj_set_style_bg_color(next_button, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_radius(next_button, 8, 0);
+
+	lv_obj_t *next_label = lv_label_create(next_button);
+	lv_label_set_text(next_label, "Next");
+	lv_obj_set_style_text_color(next_label, lv_color_black(), 0);
+	lv_obj_center(next_label);
+
+	lv_obj_add_event_cb(next_button, entropy_next_event_cb, LV_EVENT_CLICKED, NULL);
+
+	confirm_button = lv_btn_create(nav_btn_cont);
+	lv_obj_set_size(confirm_button, 80, 40);
+	lv_obj_set_style_bg_color(confirm_button, lv_palette_main(LV_PALETTE_BLUE), 0);
+	lv_obj_set_style_radius(confirm_button, 8, 0);
+
+	lv_obj_t *confirm_label = lv_label_create(confirm_button);
+	lv_label_set_text(confirm_label, "Confirm");
+	lv_obj_set_style_text_color(confirm_label, lv_color_black(), 0);
+	lv_obj_center(confirm_label);
+
+	int entropy_length = total_pages * 32;
+	lv_obj_add_event_cb(confirm_button, entropy_confirm_event_cb, LV_EVENT_CLICKED,
+			    (void *)(intptr_t)entropy_length);
+
+	progress_label = lv_label_create(container);
+	lv_obj_set_style_text_font(progress_label, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_color(progress_label, lv_color_white(), 0);
+	lv_obj_set_style_text_align(progress_label, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_set_width(progress_label, LV_PCT(100));
+	lv_obj_set_style_pad_top(progress_label, 15, 0);
+	lv_obj_set_style_pad_bottom(progress_label, 10, 0);
+
+	entropy_ui_update();
 }
 
 void app_display_loop()

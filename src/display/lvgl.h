@@ -61,6 +61,7 @@ void app_display_init_show_select_length(void);
 void app_display_input(char *title_text, uintptr_t action, uintptr_t back_action);
 void app_display_tools(void);
 void app_display_features(void);
+void app_display_entropy_collection(int page_count);
 
 #endif /* CONFIG_DISPLAY */
 
