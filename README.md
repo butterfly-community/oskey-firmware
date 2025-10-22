@@ -30,9 +30,27 @@ We are building core infrastructure connecting digital world with real world. No
 
 [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) All [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/wallets.rs) completed successfully.
 
-### Demo Video:
+### Feature Demo
 
-[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
+#### Init
+
+<img src="doc/image/demo/demo-1a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-1b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+
+#### Generate mnemonic
+
+<img src="doc/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-2b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-2c.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+
+#### Custom generate mnemonic
+
+<img src="doc/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-3a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-3b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+
+#### Import mnemonic
+
+<img src="doc/image/demo/demo-4a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+
+#### Index
+
+<img src="doc/image/demo/demo-4b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 ## How to Use the Firmware
 
@@ -64,7 +82,6 @@ We carefully selected 4 development boards representing 3 different architecture
 | Manufacturer |                                                  Espressif                                                   |                                                   Raspberry Pi                                                   |                                      STMicroelectronics                                       |                                        Nordic Semiconductor                                         |
 |     Chip     |                                                   ESP32C3                                                    |                                                      RP2040                                                      |                                            STM32F4                                            |                                              nRF52840                                               |
 | Architecture |                                                    RISC-V                                                    |                                                  Arm Cortex-M0                                                   |                                         ARM Cortex-M4                                         |                                            ARM Cortex-M4                                            |
-|  MCU Price   |                                                    \$0.5                                                     |                                                      \$0.8                                                       |                                              \$2                                              |                                                 \$3                                                 |
 
 ### Fully experience
 
@@ -76,7 +93,6 @@ These models have screens and touch support, giving them full functionality as h
 | :-----: | :-----------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------: |
 |  Image  | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-c3-devkitm" width="220" style="max-width:100%; height:auto;"> |      <img src="doc/image/board/stm32h747i_disco.jpg" alt="stm32" width="220" style="max-width:100%; height:auto;">       |
 | Display |                                                          2-inch                                                           |                                                          4-inch                                                          |
-|  Price  |                                                           \$20                                                            |                                                          \$100                                                           |
 
 By default, the chip on the development board is not security-locked and has no security features enabled.
 

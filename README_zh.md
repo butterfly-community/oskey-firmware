@@ -28,9 +28,23 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) 完成所有 [unit tests](https://github.com/butterfly-community/oskey-lib-wallets/blob/main/src/wallets.rs).
 
-#### 演示视频:
+### 功能展示
 
-[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
+#### 初始化选择
+
+<img src="doc/image/demo/demo-1a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-1b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+
+#### 生成助记词
+
+<img src="doc/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-2b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-2c.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+
+#### 自定义生成助记词
+
+<img src="doc/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-3a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-3b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+
+#### 导入助记词
+
+<img src="doc/image/demo/demo-4a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 ## 如何使用固件
 
@@ -62,7 +76,6 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 |   厂商   |                                                           Espressif                                                           |                                                    RaspberryPi                                                     |                                      STMicroelectronics                                       |                                        Nordic Semiconductor                                         |
 |   芯片   |                                                          ESP32-C3FH4                                                          |                                                       RP2040                                                       |                                         STM32F401RET6                                         |                                              nRF52840                                               |
 |   架构   |                                                            RISC-V                                                             |                                                   Arm Cortex-M0                                                    |                                         ARM Cortex-M4                                         |                                            ARM Cortex-M4                                            |
-| 芯片价格 |                                                             \$0.5                                                             |                                                       \$0.8                                                        |                                              \$2                                              |                                                 \$3                                                 |
 
 ### 完整体验
 
@@ -72,7 +85,6 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 | :------: | :------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------: |
 |   图片   | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-c3-devkitm" width="200" style="max-width:100%; height:auto;">` | <img src="doc/image/board/stm32h747i_disco.jpg" alt="stm32" width="200" style="max-width:100%; height:auto;"> |
 | 屏幕尺寸 |                                                           2-inch                                                           |                                                    4-inch                                                     |
-|   价格   |                                                            \$20                                                            |                                                     \$100                                                     |
 
 默认情况下开发板的芯片未经过安全锁定，不具备任何安全功能。如何锁定芯片请查询对应芯片的文档。
 
