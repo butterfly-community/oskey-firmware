@@ -496,7 +496,7 @@ void app_display_tools_cb(lv_event_t *e)
 	app_tools_action_t action = (app_tools_action_t)(intptr_t)lv_event_get_user_data(e);
 	if (action == TOOLS_ACTION_ERASE_DATA) {
 		if (app_check_storage()) {
-			storage_erase_nvs();
+			storage_erase_zms();
 		}
 		storage_erase_flash();
 		sys_reboot(SYS_REBOOT_COLD);
@@ -550,7 +550,7 @@ void app_display_mnemonic_cb()
 
 static void app_display_features_cb()
 {
-	app_display_input("Set PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
+	app_display_input("Set Init PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
 }
 
 void app_display_sign_x()
@@ -737,7 +737,7 @@ static void keyboard_event_cb(lv_event_t *e)
 				pin_failed_attempts++;
 				if (pin_failed_attempts >= 10) {
 					if (app_check_storage()) {
-						storage_erase_nvs();
+						storage_erase_zms();
 					}
 					storage_erase_flash();
 					sys_reboot(SYS_REBOOT_COLD);
@@ -922,7 +922,7 @@ void app_display_storage_error()
 
 	lv_obj_t *restart_btn = lv_btn_create(btn_cont);
 	lv_obj_set_size(restart_btn, 120, 40);
-	lv_obj_set_style_bg_color(restart_btn, lv_palette_main(LV_PALETTE_GREY), 0);
+	lv_obj_set_style_bg_color(restart_btn, lv_palette_main(LV_PALETTE_BLUE), 0);
 	lv_obj_set_style_radius(restart_btn, 8, 0);
 	lv_obj_t *restart_label = lv_label_create(restart_btn);
 	lv_label_set_text(restart_label, "Restart");

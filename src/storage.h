@@ -9,7 +9,7 @@ int storage_init();
 bool storage_general_check(uint16_t id);
 bool storage_general_write(const uint8_t *data, int len, uint16_t id);
 int storage_general_read(uint8_t *data, size_t len, uint16_t id);
-int storage_erase_nvs();
+int storage_erase_zms();
 int storage_erase_flash();
 
 #endif

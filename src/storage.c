@@ -103,7 +103,7 @@ int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 	return zms_read(&fs, id, data, len);
 }
 
-int storage_erase_nvs()
+int storage_erase_zms()
 {
 	return zms_clear(&fs);
 }
@@ -192,7 +192,7 @@ int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 	return false;
 }
 
-int storage_erase_nvs()
+int storage_erase_zms()
 {
 	return 0;
 }
