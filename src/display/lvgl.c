@@ -291,12 +291,14 @@ void app_display_index()
 	lv_obj_t *title = create_title_bar("Welcome", lv_palette_main(LV_PALETTE_BLUE));
 	lv_coord_t th = lv_obj_get_height(title);
 
-	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_CENTER);
+	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_START);
 
 	lv_obj_t *hint_label = lv_label_create(container);
-	lv_label_set_text(hint_label, "OSKey (Open Source Key) is a fully open-source, "
-				      "non-commercial hardware wallet project. ");
-	lv_obj_set_style_text_font(hint_label, &lv_font_montserrat_16, 0);
+	lv_label_set_text(hint_label,
+			      "OSKey (Open Source Key) is a fully open-source, "
+			      "non-commercial hardware wallet project.\n\n"
+			      "Please open \nhttps://oskey.xyz/settings \nin Chrome to connect.");
+	lv_obj_set_style_text_font(hint_label, &lv_font_montserrat_14, 0);
 	lv_obj_set_style_text_color(hint_label, lv_palette_main(LV_PALETTE_GREY), 0);
 	lv_obj_set_style_text_align(hint_label, LV_TEXT_ALIGN_CENTER, 0);
 	lv_obj_set_width(hint_label, lv_disp_get_hor_res(NULL) - 40);
@@ -606,6 +608,12 @@ void app_display_init_show_select_length()
 	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_CENTER);
 
 	if (!custom_mode) {
+		lv_obj_t *spacer = lv_obj_create(container);
+		lv_obj_set_size(spacer, LV_PCT(100), 40);
+		lv_obj_set_style_bg_opa(spacer, LV_OPA_TRANSP, 0);
+		lv_obj_set_style_border_width(spacer, 0, 0);
+		lv_obj_clear_flag(spacer, LV_OBJ_FLAG_SCROLLABLE);
+
 		const char *labels[] = {"12 words", "18 words", "24 words"};
 		app_mnemonic_length_t lengths[] = {MNEMONIC_LENGTH_12, MNEMONIC_LENGTH_18,
 						   MNEMONIC_LENGTH_24};

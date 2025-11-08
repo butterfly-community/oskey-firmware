@@ -43,7 +43,7 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	buffer[2] = true;
 #endif
 
-#if defined(CONFIG_NVS) && defined(CONFIG_FLASH)
+#if defined(CONFIG_ZMS) && defined(CONFIG_FLASH)
 	buffer[3] = true;
 #endif
 
