@@ -12,6 +12,7 @@
 #include "wrapper.h"
 #include "storage.h"
 #include "app.h"
+#include "logo.h"
 
 #ifdef CONFIG_LV_Z_DEMO_BENCHMARK
 #include <lv_demos.h>
@@ -373,10 +374,12 @@ void app_display_tools()
 		tools_styles_initialized = true;
 	}
 
-	const char *labels[] = {"Erase data", "Restart"};
-	app_tools_action_t actions[] = {TOOLS_ACTION_ERASE_DATA, TOOLS_ACTION_RESTART};
+	const char *labels[] = {"Erase data", "Restart", "GCC Logo"};
+	app_tools_action_t actions[] = {TOOLS_ACTION_ERASE_DATA, TOOLS_ACTION_RESTART,
+					TOOLS_ACTION_SHOW_GCC_LOGO};
+	int item_count = sizeof(labels) / sizeof(labels[0]);
 
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < item_count; i++) {
 		lv_obj_t *btn = lv_btn_create(container);
 		lv_obj_add_style(btn, &tools_btn_style, 0);
 		lv_obj_add_style(btn, &tools_btn_pressed_style, LV_STATE_PRESSED);
@@ -504,6 +507,8 @@ void app_display_tools_cb(lv_event_t *e)
 		sys_reboot(SYS_REBOOT_COLD);
 	} else if (action == TOOLS_ACTION_RESTART) {
 		sys_reboot(SYS_REBOOT_COLD);
+	} else if (action == TOOLS_ACTION_SHOW_GCC_LOGO) {
+		app_display_gcc_logo();
 	}
 }
 
@@ -670,12 +675,38 @@ void app_display_logo()
 	lv_obj_t *screen = lv_scr_act();
 	lv_obj_clean(screen);
 	lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
+	lv_obj_set_scrollbar_mode(screen, LV_SCROLLBAR_MODE_OFF);
 
 	lv_obj_t *label = lv_label_create(screen);
 	lv_label_set_text(label, "OSKey");
 	lv_obj_set_style_text_font(label, &lv_font_montserrat_32, 0);
 	lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 	lv_obj_set_style_text_color(label, lv_color_white(), LV_PART_MAIN);
+}
+
+void app_display_gcc_logo()
+{
+	lv_obj_t *screen = lv_scr_act();
+	lv_obj_clean(screen);
+	lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
+	lv_obj_set_scrollbar_mode(screen, LV_SCROLLBAR_MODE_OFF);
+
+	lv_obj_t *logo = lv_image_create(screen);
+	lv_image_set_src(logo, &logo);
+
+	lv_coord_t img_w = logo.header.w;
+	lv_coord_t img_h = logo.header.h;
+
+	if (img_w > 0 && img_h > 0) {
+		lv_image_set_pivot(logo, img_w / 2, img_h / 2);
+	}
+
+	if (img_h > 150) {
+		uint32_t scale = (LV_SCALE_NONE * 150U) / img_h;
+		lv_image_set_scale(logo, scale);
+	}
+
+	lv_obj_center(logo);
 }
 
 static void keyboard_event_cb(lv_event_t *e)
@@ -1170,7 +1201,7 @@ void app_display_loop()
 
 	lv_timer_handler();
 
-	k_msleep(3000);
+	k_msleep(5000);
 
 	uint8_t features[7];
 	app_check_feature(features, sizeof(features));

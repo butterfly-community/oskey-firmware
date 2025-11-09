@@ -17,7 +17,8 @@ typedef enum {
 typedef enum {
 	TOOLS_ACTION_ERASE_DATA = 1,
 	TOOLS_ACTION_RESTART = 2,
-	TOOLS_ACTION_PIN_SETTING = 3
+	TOOLS_ACTION_PIN_SETTING = 3,
+	TOOLS_ACTION_SHOW_GCC_LOGO = 4
 } app_tools_action_t;
 
 typedef enum {
@@ -60,6 +61,7 @@ void back_button_event_handler(lv_event_t *e);
 void app_display_init_show_select_length(void);
 void app_display_input(char *title_text, uintptr_t action, uintptr_t back_action);
 void app_display_tools(void);
+void app_display_gcc_logo(void);
 void app_display_features(void);
 void app_display_entropy_collection(int page_count);
 
