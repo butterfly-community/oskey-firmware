@@ -692,10 +692,10 @@ void app_display_gcc_logo()
 	lv_obj_set_scrollbar_mode(screen, LV_SCROLLBAR_MODE_OFF);
 
 	lv_obj_t *logo = lv_image_create(screen);
-	lv_image_set_src(logo, &logo);
+	lv_image_set_src(logo, &logo_image);
 
-	lv_coord_t img_w = logo.header.w;
-	lv_coord_t img_h = logo.header.h;
+	lv_coord_t img_w = logo_image.header.w;
+	lv_coord_t img_h = logo_image.header.h;
 
 	if (img_w > 0 && img_h > 0) {
 		lv_image_set_pivot(logo, img_w / 2, img_h / 2);
