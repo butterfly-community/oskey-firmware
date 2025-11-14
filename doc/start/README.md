@@ -102,6 +102,10 @@ After confirmation, wait 5-10 seconds to log into OpenBuild. At this point, you 
 
 OSKey's client is still under development. For now, you can choose to use OneKey. OneKey is a well-known wallet manufacturer, and OSKey can integrate with OneKey to provide a complete experience. Thanks to OneKey's openness and provision of an easy-to-use wallet client. [Click to open OneKey official website](https://onekey.so).
 
+Alternatively, you can choose a Trezor client and select to connect using walletconnect.  [Click to open Trezor official website](https://trezor.io/trezor-suite)
+
+The following example shows a client using OneKey.
+
 ### Establish Connection
 
 It has clients for all platforms. Here we use the browser extension wallet as an example to explain how to integrate and conduct transactions. After installing the wallet extension in your browser, click the extension, open this page, and select **Connect Wallet**.

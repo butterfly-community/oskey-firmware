@@ -85,13 +85,13 @@
 
 ---
 
-1. 点击页面上的 Connect 按钮，并选择硬件钱包连接。**[点击此处查看快速使用文档](https://github.com/butterfly-community/ohw-elf-firmware/tree/master/doc/start)**
+1. 点击页面上的 Connect 按钮，并选择硬件钱包连接。**[点击此处查看快速使用文档](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/start)**
 
 <br />
 
 <img src="../image/start/start-7.png" alt="wechat" width="500" style="max-width:100%; height:auto;">
 
-连接后即可开始使用 ohw 硬件钱包，我们还为您准备了一份详细的 **[快速使用文档](https://github.com/butterfly-community/ohw-elf-firmware/tree/master/doc/start)**。
+连接后即可开始使用 OSKey。
 
 ### 注意
 

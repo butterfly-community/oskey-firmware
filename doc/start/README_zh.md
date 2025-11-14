@@ -102,6 +102,10 @@ OSKey 支持导入或者生成助记词。
 
 OSKey 的客户端还在开发中，暂时可以选择使用 OneKey，OneKey 是一家知名的钱包厂商，OSKey 可以接入OneKey 提供完整体验。感谢 OneKey 的开放和提供了易用的钱包客户端 [点击打开 OneKey 官网](https://onekey.so)。
 
+您也可以选择使用 Trezor 的客户端，[点击打开 Trezor 官网](https://trezor.io/trezor-suite)。
+
+接下来的示例使用 OneKey 客户端。
+
 ### 建立连接
 
 拥有全平台客户端，此处以浏览器插件钱包为例讲解如何接入以及进行交易。浏览器安装钱包插件后点击扩展，打开此页，选择**连接钱包**。
