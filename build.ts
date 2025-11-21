@@ -45,21 +45,33 @@ const config = {
     {
       name: "lichuang_szpi_s3",
       target: "esp32s3_devkitm/esp32s3/procpu",
-      conf: ["boards/conf/enable_storage.conf", "boards/conf/enable_lvgl.conf"],
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/conf/fix_rgb565.conf",
+      ],
       overlay: ["boards/esp32s3_lichuang.overlay"],
       extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
     },
     {
       name: "lichuang_szpi_s3_usb_jtag_serial",
       target: "esp32s3_devkitm/esp32s3/procpu",
-      conf: ["boards/conf/enable_storage.conf", "boards/conf/enable_lvgl.conf"],
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/conf/fix_rgb565.conf",
+      ],
       overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/esp32_usb_jtag_serial.overlay"],
       extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
     },
     {
       name: "waveshare_s3_touch_lcd_3.5",
       target: "esp32s3_devkitm/esp32s3/procpu",
-      conf: ["boards/conf/enable_storage.conf", "boards/conf/enable_lvgl.conf"],
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/conf/fix_rgb565.conf",
+      ],
       overlay: [
         "boards/esp32s3_waveshare_3.5.overlay",
         "boards/overlay/esp32_usb_jtag_serial.overlay",
