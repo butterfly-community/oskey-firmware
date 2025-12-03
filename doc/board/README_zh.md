@@ -4,13 +4,9 @@
 
 ## 开发板
 
-如果您的开发板外观符合以下图片，则适用这个使用指南。开发板适用于多种用途，适合 [butterfly-community](https://github.com/butterfly-community) 开源的绝大多数项目。开发板写入对应固件就可以执行对应的功能，比如写入 [OSKey](https://github.com/butterfly-community/oskey-firmware) 就可以变为数字货币硬件钱包，写入 [water-heater](https://github.com/butterfly-community/water-heater) 就可以变为一个热水器控制器。
+如果您的开发板属于 ESP32 系列芯片，则适用这个使用指南。开发板适用于多种用途，适合 [butterfly-community](https://github.com/butterfly-community) 开源的绝大多数项目。开发板写入对应固件就可以执行对应的功能，比如写入 [OSKey](https://github.com/butterfly-community/oskey-firmware) 就可以变为数字货币硬件钱包，写入 [water-heater](https://github.com/butterfly-community/water-heater) 就可以变为一个热水器控制器。
 
 默认情况下除非特殊说明，自带的固件为测试固件，非硬件钱包 [OSKey](https://github.com/butterfly-community/ohw-elf-firmware) 固件。
-
-<img src="../image/board/esp32-c3-core-usb.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
-
-这个开发板有两个版本，如果您购买的是有 USB 转 UART 芯片的版本，需要下载驱动并安装 https://www.wch.cn/downloads/category/67.html 并后续使用 `esp32c3_devkitm` 版本。
 
 ## 硬件钱包
 
