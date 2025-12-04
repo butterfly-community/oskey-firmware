@@ -19,7 +19,7 @@ index 75ece41..6614dda 100644
 +    set(RUST_TARGET "xtensa-esp32s3-none-elf" PARENT_SCOPE)
 +  elseif(CONFIG_SOC_ESP32S2)
 +    set(RUST_TARGET "xtensa-esp32s2-none-elf" PARENT_SCOPE)
-+  elseif(CONFIGCONFIG_SOC_FAMILY_ESPRESSIF_ESP32_SOC_ESP32)
++  elseif(CONFIG_SOC_ESP32)
 +    set(RUST_TARGET "xtensa-esp32-none-elf" PARENT_SCOPE)
    else()
      message(FATAL_ERROR "Rust: Add support for other target")

@@ -24,7 +24,7 @@ Additional application patches are also required.
 ```bash
 cd <YOUR_ZEPHYR_PATH>/modules/lang/rust
 
-wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/rust.patch
+wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/rust.patch
 
 git apply rust.patch
 ```
