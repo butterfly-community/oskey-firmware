@@ -1,3 +1,5 @@
+You can directly use the Dockerfile, which provides a tested compilation and debugging environment. This project does not recommend native compilation on Windows. Windows users are advised to use WSL.
+
 ## Getting Started
 
 [https://docs.zephyrproject.org/latest/develop/getting_started/index.html](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
@@ -47,10 +49,7 @@ Also refer to [Docker](../../Dockerfile)
 
 2. Set environment variables
 
-   > Please refer to [here](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts) for the Windows environment.
-
    ```bash
-   # Mac or Linux environment
    source ~/zephyrproject/zephyr/zephyr-env.sh
    ```
 

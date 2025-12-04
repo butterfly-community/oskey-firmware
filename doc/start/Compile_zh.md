@@ -1,3 +1,5 @@
+您可以直接使用 Dockerfile，这是经过测试的编译和调试环境。本项目不建议使用 Windows 原生编译，Windows 用户请使用 WSL。
+
 ## 环境配置
 
 务必仔细阅读
@@ -51,10 +53,7 @@ git apply rust.patch
 
 2. 设置环境变量
 
-   > Please refer to [here](https://docs.zephyrproject.org/latest/develop/env_vars.html#zephyr-environment-scripts) for the Windows environment.
-
    ```bash
-   # Mac or Linux environment
    source ~/zephyrproject/zephyr/zephyr-env.sh
    ```
 
