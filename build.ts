@@ -54,6 +54,26 @@ const config = {
       extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
     },
     {
+      name: "generic_esp32e_2.8_ili9341",
+      target: "esp32_devkitc/esp32/procpu",
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/conf/fix_rgb565.conf",
+      ],
+      overlay: ["boards/esp32_32e_2.8_led_display_ili9341.overlay"],
+    },
+    {
+      name: "generic_esp32e_2.8_st7789",
+      target: "esp32_devkitc/esp32/procpu",
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/conf/fix_rgb565.conf",
+      ],
+      overlay: ["boards/esp32_32e_2.8_led_display_st7789.overlay"],
+    },
+    {
       name: "lichuang_szpi_s3_usb_jtag_serial",
       target: "esp32s3_devkitm/esp32s3/procpu",
       conf: [
