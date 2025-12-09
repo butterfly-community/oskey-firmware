@@ -1,4 +1,4 @@
-FROM docker.io/zephyrprojectrtos/ci:v0.28.6
+FROM docker.io/zephyrprojectrtos/ci:v0.28.7
 
 WORKDIR /workdir
 
