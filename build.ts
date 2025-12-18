@@ -54,6 +54,29 @@ const config = {
       extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
     },
     {
+      name: "lichuang_szpi_s3_usb_jtag_serial",
+      target: "esp32s3_devkitm/esp32s3/procpu",
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/conf/fix_rgb565.conf",
+      ],
+      overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/esp32_usb_jtag_serial.overlay"],
+      extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
+    },
+      {
+      name: "lichuang_szpi_s3_webusb",
+      target: "esp32s3_devkitm/esp32s3/procpu",
+      conf: [
+        "boards/conf/enable_storage.conf",
+        "boards/conf/enable_lvgl.conf",
+        "boards/conf/enable_usb.conf",
+        "boards/conf/fix_rgb565.conf",
+      ],
+      overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/cdc_acm.overlay"],
+      extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
+    },
+    {
       name: "generic_esp32e_2.8_ili9341",
       target: "esp32_devkitc/esp32/procpu",
       conf: [
@@ -72,17 +95,6 @@ const config = {
         "boards/conf/fix_rgb565.conf",
       ],
       overlay: ["boards/esp32_32e_2.8_led_display_st7789.overlay"],
-    },
-    {
-      name: "lichuang_szpi_s3_usb_jtag_serial",
-      target: "esp32s3_devkitm/esp32s3/procpu",
-      conf: [
-        "boards/conf/enable_storage.conf",
-        "boards/conf/enable_lvgl.conf",
-        "boards/conf/fix_rgb565.conf",
-      ],
-      overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/esp32_usb_jtag_serial.overlay"],
-      extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
     },
     {
       name: "waveshare_s3_touch_lcd_3.5",
