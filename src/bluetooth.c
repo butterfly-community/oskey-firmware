@@ -3,7 +3,7 @@
 #ifdef CONFIG_BT
 
 #include <zephyr/types.h>
-#include <zephyr/sys/printk.h>
+#include <errno.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
@@ -13,9 +13,13 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/services/nus.h>
 #include <zephyr/mgmt/mcumgr/transport/smp_bt.h>
-#include "display/screen.h"
+#include "display/lvgl.h"
 
 #define STR_LEN(str) (sizeof(str) - 1)
+
+extern struct k_work app_uart_work;
+
+LOG_MODULE_REGISTER(bluetooth);
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -33,14 +37,14 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	if (err) {
-		printk("Failed to connect to %s %u %s\n", addr, err, bt_hci_err_to_str(err));
+		LOG_ERR("Failed to connect to %s %u %s", addr, err, bt_hci_err_to_str(err));
 		return;
 	}
 
-	printk("Connected %s\n", addr);
+	LOG_INF("Connected %s", addr);
 
 	if (bt_conn_set_security(conn, BT_SECURITY_L4)) {
-		printk("Failed to set security\n");
+		LOG_ERR("Failed to set security");
 	}
 }
 
@@ -50,16 +54,16 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	printk("Disconnected from %s, reason 0x%02x %s\n", addr, reason, bt_hci_err_to_str(reason));
+	LOG_INF("Disconnected from %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
 }
 
 static void start_adv(void)
 {
 	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 	if (err) {
-		printk("Advertising failed to start (err %d)\n", err);
+		LOG_ERR("Advertising failed to start (err %d)", err);
 	} else {
-		printk("Advertising successfully started\n");
+		LOG_INF("Advertising successfully started");
 	}
 }
 
@@ -72,7 +76,7 @@ static void identity_resolved(struct bt_conn *conn, const bt_addr_le_t *rpa,
 	bt_addr_le_to_str(identity, addr_identity, sizeof(addr_identity));
 	bt_addr_le_to_str(rpa, addr_rpa, sizeof(addr_rpa));
 
-	printk("Identity resolved %s -> %s\n", addr_rpa, addr_identity);
+	LOG_INF("Identity resolved %s -> %s", addr_rpa, addr_identity);
 }
 
 static void security_changed(struct bt_conn *conn, bt_security_t level, enum bt_security_err err)
@@ -82,10 +86,10 @@ static void security_changed(struct bt_conn *conn, bt_security_t level, enum bt_
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	if (!err) {
-		printk("Security changed: %s level %u\n", addr, level);
+		LOG_INF("Security changed: %s level %u", addr, level);
 	} else {
-		printk("Security failed: %s level %u err %s(%d)\n", addr, level,
-		       bt_security_err_to_str(err), err);
+		LOG_ERR("Security failed: %s level %u err %s(%d)", addr, level,
+			bt_security_err_to_str(err), err);
 	}
 }
 
@@ -103,9 +107,9 @@ static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	printf("Push PIN: %d, ret: %d\n", passkey, ret);
+	// printf("Push PIN: %d, ret: %d\n", passkey, ret);
 
-	printk("Passkey for %s: %06u\n", addr, passkey);
+	LOG_INF("Passkey for %s: %06u", addr, passkey);
 }
 
 static void auth_cancel(struct bt_conn *conn)
@@ -114,7 +118,7 @@ static void auth_cancel(struct bt_conn *conn)
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	printk("Pairing cancelled: %s\n", addr);
+	LOG_INF("Pairing cancelled: %s", addr);
 }
 
 static struct bt_conn_auth_cb auth_cb_display = {
@@ -125,12 +129,12 @@ static struct bt_conn_auth_cb auth_cb_display = {
 
 static void pairing_complete(struct bt_conn *conn, bool bonded)
 {
-	printk("Pairing Complete\n");
+	LOG_INF("Pairing Complete");
 }
 
 static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 {
-	printk("Pairing Failed (%d). Disconnecting.\n", reason);
+	LOG_ERR("Pairing Failed (%d). Disconnecting.", reason);
 	bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 }
 
@@ -143,7 +147,7 @@ static void notif_enabled(bool enabled, void *ctx)
 {
 	ARG_UNUSED(ctx);
 
-	printk("%s() - %s\n", __func__, (enabled ? "Enabled" : "Disabled"));
+	LOG_INF("%s() - %s", __func__, (enabled ? "Enabled" : "Disabled"));
 }
 
 static void received(struct bt_conn *conn, const void *data, uint16_t len, void *ctx)
@@ -153,8 +157,12 @@ static void received(struct bt_conn *conn, const void *data, uint16_t len, void 
 	ARG_UNUSED(conn);
 	ARG_UNUSED(ctx);
 
+	if (app_uart_event_rs(data, len)) {
+		k_work_submit(&app_uart_work);
+	}
+
 	memcpy(message, data, MIN(sizeof(message) - 1, len));
-	printk("%s() - Len: %d, Message: %s\n", __func__, len, message);
+	LOG_INF("%s() - Len: %d, Message: %s", __func__, len, message);
 }
 
 struct bt_nus_cb nus_listener = {
@@ -166,16 +174,16 @@ int bt_init()
 {
 	int err = bt_nus_cb_register(&nus_listener, NULL);
 	if (err) {
-		printk("Failed to register NUS callback: %d\n", err);
+		LOG_ERR("Failed to register NUS callback: %d", err);
 		return err;
 	}
 
 	err = bt_enable(NULL);
 	if (err) {
-		printk("Bluetooth init failed (err %d)\n", err);
+		LOG_ERR("Bluetooth init failed (err %d)", err);
 		return 0;
 	}
-	printk("Bluetooth initialized\n");
+	LOG_INF("Bluetooth initialized");
 
 	return 0;
 }
@@ -209,6 +217,21 @@ int bt_start()
 	return 0;
 }
 
+int bt_nus_send_bytes(const uint8_t *data, size_t len)
+{
+	if (!data) {
+		return -EINVAL;
+	}
+	if (len == 0) {
+		return 0;
+	}
+	if (len > UINT16_MAX) {
+		return -EMSGSIZE;
+	}
+
+	return bt_nus_send(NULL, data, (uint16_t)len);
+}
+
 #else
 
 int bt_init()
@@ -219,6 +242,14 @@ int bt_init()
 int bt_start()
 {
 	return 0;
+}
+
+int bt_nus_send_bytes(const uint8_t *data, size_t len)
+{
+	ARG_UNUSED(data);
+	ARG_UNUSED(len);
+
+	return -ENOTSUP;
 }
 
 #endif

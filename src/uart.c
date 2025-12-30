@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "bindings.h"
+#include "bluetooth.h"
 
 void app_uart_work_handler(struct k_work *work)
 {
@@ -21,6 +22,7 @@ void app_uart_rx_handler(const struct device *dev, void *user_data)
 
 void app_uart_tx_push_array(const uint8_t *data, size_t len)
 {
+	bt_nus_send_bytes(data, len);
 	// TODO: irq tx
 	for (int i = 0; i < len; i++) {
 		uart_poll_out(DEV_CONSOLE, data[i]);

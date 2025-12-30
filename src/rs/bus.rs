@@ -54,7 +54,7 @@ impl AppDataParser {
 }
 
 #[no_mangle]
-extern "C" fn app_uart_event_rs(data: *mut u8, len: usize) -> bool {
+extern "C" fn app_uart_event_rs(data: *const u8, len: usize) -> bool {
     return APP_UART_REQ_PARSER.push_check(unsafe { core::slice::from_raw_parts(data, len) });
 }
 

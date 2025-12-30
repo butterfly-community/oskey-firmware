@@ -7,7 +7,7 @@ extern const uint16_t STORAGE_ID_SEED;
 
 extern const uint16_t STORAGE_ID_PIN;
 
-bool app_uart_event_rs(uint8_t *data, uintptr_t len);
+bool app_uart_event_rs(const uint8_t *data, uintptr_t len);
 
 void app_event_bytes_handle(void);
 
