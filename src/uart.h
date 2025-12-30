@@ -16,7 +16,12 @@
 
 #endif
 
-struct k_work app_uart_work;
+enum app_uart_transport {
+	APP_UART_TRANSPORT_UART = 0,
+	APP_UART_TRANSPORT_BLE = 1,
+};
+
+extern struct k_work app_uart_work;
 
 void app_uart_rx_handler(const struct device *dev, void *user_data);
 
@@ -25,5 +30,7 @@ void app_uart_tx_push_array(const uint8_t *data, size_t len);
 int app_uart_irq_register();
 
 void app_uart_work_handler(struct k_work *work);
+
+bool app_uart_handle_rx(enum app_uart_transport transport, const uint8_t *data, size_t len);
 
 #endif

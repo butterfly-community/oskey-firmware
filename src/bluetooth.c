@@ -1,4 +1,5 @@
 #include "bluetooth.h"
+#include "uart.h"
 
 #ifdef CONFIG_BT
 
@@ -16,8 +17,6 @@
 #include "display/lvgl.h"
 
 #define STR_LEN(str) (sizeof(str) - 1)
-
-extern struct k_work app_uart_work;
 
 LOG_MODULE_REGISTER(bluetooth);
 
@@ -157,9 +156,7 @@ static void received(struct bt_conn *conn, const void *data, uint16_t len, void 
 	ARG_UNUSED(conn);
 	ARG_UNUSED(ctx);
 
-	if (app_uart_event_rs(data, len)) {
-		k_work_submit(&app_uart_work);
-	}
+	app_uart_handle_rx(APP_UART_TRANSPORT_BLE, data, len);
 
 	memcpy(message, data, MIN(sizeof(message) - 1, len));
 	LOG_INF("%s() - Len: %d, Message: %s", __func__, len, message);
