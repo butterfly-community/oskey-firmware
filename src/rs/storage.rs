@@ -14,12 +14,12 @@ use crate::rs::warpper::app_csrand_get_rs;
 use crate::rs::warpper::storage_general_read;
 use crate::rs::warpper::storage_general_write;
 
-pub static PASSWORD_SALT_FIRST: &[u8] = b"&%OSKey1$!@";
-
 #[no_mangle]
 pub static STORAGE_ID_SEED: u16 = 2;
 #[no_mangle]
 pub static STORAGE_ID_PIN: u16 = 10;
+#[no_mangle]
+pub static STORAGE_ID_SALT: u16 = 11;
 
 pub static WALLET_STORAGE: WalletStorage = WalletStorage::new();
 
@@ -41,13 +41,31 @@ impl WalletStorage {
         Ok(*self.pin_cache.lock()?)
     }
 
+    pub fn get_salt(&self) -> Result<Vec<u8>> {
+        let mut buffer = vec![0u8; 32];
+        let len = unsafe { storage_general_read(buffer.as_mut_ptr(), buffer.len(), STORAGE_ID_SALT) };
+
+        if len == 32 {
+            return Ok(buffer);
+        }
+
+        let mut salt = vec![0u8; 32];
+        app_csrand_get_rs(&mut salt);
+
+        if unsafe { storage_general_write(salt.as_ptr(), salt.len(), STORAGE_ID_SALT) } {
+            Ok(salt)
+        } else {
+            Err(anyhow::anyhow!("Failed to save salt"))
+        }
+    }
+
     pub fn pin_char_to_hash(pin: *const c_char) -> Result<[u8; 32]> {
         let password = unsafe {
             let c_str = core::ffi::CStr::from_ptr(pin);
             c_str.to_str()?.to_string()
         };
-        let salt = PASSWORD_SALT_FIRST;
-        let hash = crypto::Hash::sha256(&[password.as_bytes(), salt].concat())?;
+        let salt = WALLET_STORAGE.get_salt()?;
+        let hash = crypto::Hash::sha256(&[password.as_bytes(), &salt].concat())?;
         Ok(hash)
     }
 
