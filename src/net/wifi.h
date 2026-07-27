@@ -3,6 +3,6 @@
 
 #include "wrapper.h"
 
-int wifi_start();
+int wifi_start(void);
 
 #endif

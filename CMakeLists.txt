@@ -61,6 +61,10 @@ target_sources(app PRIVATE
   src/app.c
 )
 
+target_sources_ifdef(CONFIG_WIFI_USAGE_MODE_STA_AP app PRIVATE
+  src/net/wifi_portal.c
+)
+
 target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
   src/usb/bulk.c
   src/usb/init.c

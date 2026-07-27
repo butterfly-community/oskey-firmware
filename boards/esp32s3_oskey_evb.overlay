@@ -2,6 +2,11 @@
 #include <zephyr/dt-bindings/gpio/gpio.h>
 
 / {
+  wifi_ap: wifi_ap {
+    compatible = "espressif,esp32-wifi";
+    status = "okay";
+  };
+
   chosen {
     zephyr,display = &st7789v;
     zephyr,touch = &ft6336;
