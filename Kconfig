@@ -30,6 +30,19 @@ config OSKEY_WIFI_AP_NETMASK
 
 endmenu
 
+menu "MQTT options"
+	depends on MQTT_LIB
+
+config OSKEY_MQTT_BROKER_HOSTNAME
+	string "MQTT broker hostname"
+	default "bemfa.com"
+
+config OSKEY_MQTT_BROKER_PORT
+	string "MQTT broker port"
+	default "9501"
+
+endmenu
+
 menu "USB options"
 	depends on USB_DEVICE_STACK_NEXT
 

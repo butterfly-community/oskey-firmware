@@ -35,11 +35,17 @@ int main(void)
 
 	bt_start();
 
-	wifi_start();
+	int ret = wifi_start();
 
-	if (IS_ENABLED(CONFIG_MQTT)) {
-		k_msleep(10000);
-		mqtt_start();
+	if (ret < 0) {
+		LOG_ERR("Wi-Fi startup failed: %d", ret);
+	}
+
+	if (IS_ENABLED(CONFIG_MQTT_LIB)) {
+		ret = mqtt_start();
+		if (ret < 0) {
+			LOG_ERR("MQTT startup failed: %d", ret);
+		}
 	}
 
 	app_init_display();
