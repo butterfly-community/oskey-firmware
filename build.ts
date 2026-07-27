@@ -13,20 +13,20 @@ const config = {
       extra: "-D CONFIG_HEAP_MEM_POOL_SIZE=40960",
     },
     {
-      name: "esp32s3_devkitm",
-      target: "esp32s3_devkitm/esp32s3/procpu",
+      name: "esp32s3_devkitc",
+      target: "esp32s3_devkitc/esp32s3/procpu",
       conf: ["boards/conf/enable_storage.conf"],
       overlay: [],
     },
     {
       name: "esp32s3_core",
-      target: "esp32s3_devkitm/esp32s3/procpu",
+      target: "esp32s3_devkitc/esp32s3/procpu",
       conf: ["boards/conf/enable_storage.conf"],
       overlay: ["boards/overlay/esp32_usb_jtag_serial.overlay"],
     },
     {
       name: "lichuang_szpi_s3",
-      target: "esp32s3_devkitm/esp32s3/procpu",
+      target: "esp32s3_devkitc/esp32s3/procpu",
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
@@ -37,7 +37,7 @@ const config = {
     },
     {
       name: "lichuang_szpi_s3_usb_jtag_serial",
-      target: "esp32s3_devkitm/esp32s3/procpu",
+      target: "esp32s3_devkitc/esp32s3/procpu",
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
@@ -51,7 +51,7 @@ const config = {
     },
     {
       name: "lichuang_szpi_s3_webusb",
-      target: "esp32s3_devkitm/esp32s3/procpu",
+      target: "esp32s3_devkitc/esp32s3/procpu",
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
@@ -86,7 +86,7 @@ const config = {
     },
     {
       name: "waveshare_s3_touch_lcd_3.5",
-      target: "esp32s3_devkitm/esp32s3/procpu",
+      target: "esp32s3_devkitc/esp32s3/procpu",
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",

@@ -3,7 +3,7 @@
 #ifdef CONFIG_ZMS
 
 #include <zephyr/kernel.h>
-#include <zephyr/fs/zms.h>
+#include <zephyr/kvss/zms.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/flash.h>
@@ -16,9 +16,9 @@
 #endif
 
 #define ZMS_PARTITION        storage_partition
-#define ZMS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(ZMS_PARTITION)
-#define ZMS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(ZMS_PARTITION)
-#define ZMS_PARTITION_SIZE   FIXED_PARTITION_SIZE(ZMS_PARTITION)
+#define ZMS_PARTITION_DEVICE PARTITION_DEVICE(ZMS_PARTITION)
+#define ZMS_PARTITION_OFFSET PARTITION_OFFSET(ZMS_PARTITION)
+#define ZMS_PARTITION_SIZE   PARTITION_SIZE(ZMS_PARTITION)
 
 static struct zms_fs fs;
 
@@ -117,7 +117,7 @@ int storage_erase_flash()
 {
 	const struct flash_area *fa;
 
-	int ret = flash_area_open(FIXED_PARTITION_ID(storage_partition), &fa);
+	int ret = flash_area_open(PARTITION_ID(storage_partition), &fa);
 	if (ret != 0) {
 		return ret;
 	}

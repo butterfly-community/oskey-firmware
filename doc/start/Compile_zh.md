@@ -8,12 +8,12 @@
 
 ## 尝试编译示例
 
-`esp32s3_devkitm/esp32s3/procpu` 是我们推荐的开发板。OSKey 要求原生支持指针宽度 atomic，不再支持 ESP32-C2/C3、RP2040 等目标。
+`esp32s3_devkitc/esp32s3/procpu` 是我们推荐的开发板。OSKey 要求原生支持指针宽度 atomic，不再支持 ESP32-C2/C3、RP2040 等目标。
 
 如果您已完成上述链接中的步骤，请尝试使用此命令编译示例。
 
 ```bash
-west build -p always -b esp32s3_devkitm/esp32s3/procpu samples/hello_world
+west build -p always -b esp32s3_devkitc/esp32s3/procpu samples/hello_world
 ```
 
 ## Rust 配置
@@ -60,7 +60,7 @@ git apply rust.patch
 3. 尝试编译
 
    ```bash
-   west build -p always -b esp32s3_devkitm/esp32s3/procpu
+   west build -p always -b esp32s3_devkitc/esp32s3/procpu
    ```
 
 4. 写入芯片

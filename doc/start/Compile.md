@@ -6,12 +6,12 @@ You can directly use the Dockerfile, which provides a tested compilation and deb
 
 ## Try Compile Demo
 
-`esp32s3_devkitm/esp32s3/procpu` is our recommended development board. OSKey requires native pointer-width atomic operations; targets such as ESP32-C2/C3 and RP2040 are not supported.
+`esp32s3_devkitc/esp32s3/procpu` is our recommended development board. OSKey requires native pointer-width atomic operations; targets such as ESP32-C2/C3 and RP2040 are not supported.
 
 If you have completed the steps in the link above, try compiling the example with this command.
 
 ```bash
-west build -p always -b esp32s3_devkitm/esp32s3/procpu samples/hello_world
+west build -p always -b esp32s3_devkitc/esp32s3/procpu samples/hello_world
 ```
 ## Rust Support
 
@@ -56,7 +56,7 @@ Also refer to [Docker](../../Dockerfile)
 3. Compile OSKey source code
 
    ```bash
-   west build -p always -b esp32s3_devkitm/esp32s3/procpu
+   west build -p always -b esp32s3_devkitc/esp32s3/procpu
    ```
 
 4. Flash

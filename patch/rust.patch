@@ -58,3 +58,26 @@ diff --git a/Kconfig b/Kconfig
  				(ARCH_POSIX && 64BIT)) && \
  				!TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
  	help
+diff --git a/dt-rust.yaml b/dt-rust.yaml
+--- a/dt-rust.yaml
++++ b/dt-rust.yaml
+@@ -35,6 +35,7 @@
+       names:
+         - "nordic,nrf52-flash-controller"
+         - "nordic,nrf51-flash-controller"
++        - "espressif,esp32-flash-controller"
+         - "raspberrypi,pico-flash-controller"
+         - "zephyr,sim-flash"
+       level: 0
+diff --git a/zephyr-build/src/lib.rs b/zephyr-build/src/lib.rs
+--- a/zephyr-build/src/lib.rs
++++ b/zephyr-build/src/lib.rs
+@@ -66,7 +66,7 @@ pub fn build_kconfig_mod() {
+         let line = line.expect("reading line from dotconfig");
+         if let Some(caps) = config_hex.captures(&line) {
+             writeln!(&mut f, "#[allow(dead_code)]").unwrap();
+-            writeln!(&mut f, "pub const {}: usize = {};", &caps[1], &caps[2]).unwrap();
++            writeln!(&mut f, "pub const {}: u64 = {};", &caps[1], &caps[2]).unwrap();
+         } else if let Some(caps) = config_int.captures(&line) {
+             writeln!(&mut f, "#[allow(dead_code)]").unwrap();
+             writeln!(&mut f, "pub const {}: isize = {};", &caps[1], &caps[2]).unwrap();

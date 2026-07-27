@@ -1,8 +1,8 @@
-FROM docker.io/zephyrprojectrtos/ci:v0.28.7
+FROM docker.io/zephyrprojectrtos/ci:v0.29.2
 
 WORKDIR /workdir
 
-RUN west init --mr v4.3.0
+RUN west init --mr v4.4.1
 RUN west config manifest.group-filter -- +optional && west update
 
 ENV PATH="/root/.cargo/bin:${PATH}"
