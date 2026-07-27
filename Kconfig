@@ -11,39 +11,39 @@ menu "USB options"
 
 config OSKEY_USBD_MANUFACTURER
 	string "USB device manufacturer string"
-	default "Zephyr Project"
+	default "Butterfly"
 	help
-	  USB device sample manufacturer string.
+	  USB device manufacturer string.
 
 config OSKEY_USBD_PRODUCT
 	string "USB device product string"
-	default "USBD"
+	default "OSKey"
 	help
-	  USB device sample product stringa.
+	  USB device product string.
 
 config OSKEY_USBD_PID
 	hex "USB device Product ID"
-	default 0x0001
+	default 0x20BF
 	help
-	  USB device sample Product ID.
+	  USB device Product ID.
 
 config OSKEY_USBD_SELF_POWERED
 	bool "USB device Self-powered attribute"
 	default n
 	help
-	  Set the Self-powered attribute in the sample configuration.
+	  Set the Self-powered attribute in the USB configuration.
 
 config OSKEY_USBD_REMOTE_WAKEUP
 	bool "USB device Remote Wakeup attribute"
 	help
-	  Set the Remote Wakeup attribute in the sample configuration.
+	  Set the Remote Wakeup attribute in the USB configuration.
 
 config OSKEY_USBD_MAX_POWER
 	int "USB device bMaxPower value"
 	default 125
 	range 0 250
 	help
-	  bMaxPower value in the sample configuration in 2 mA units.
+	  bMaxPower value in the USB configuration in 2 mA units.
 
 config OSKEY_USBD_20_EXTENSION_DESC
 	bool "Use default USB 2.0 Extension Descriptor"

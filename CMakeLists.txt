@@ -59,7 +59,6 @@ target_sources(app PRIVATE
   src/usb/webusb.c
   src/input/touch.c
   src/app.c
-  src/usb/webusb.c
 )
 
 target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
