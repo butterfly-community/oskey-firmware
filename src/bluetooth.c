@@ -3,22 +3,20 @@
 
 #ifdef CONFIG_BT
 
-#include <zephyr/types.h>
 #include <errno.h>
-#include <zephyr/sys/byteorder.h>
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
-#include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/conn.h>
-#include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/gatt.h>
+#include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/services/nus.h>
-#include <zephyr/mgmt/mcumgr/transport/smp_bt.h>
-#include "display/lvgl.h"
 
 #define STR_LEN(str) (sizeof(str) - 1)
 
 LOG_MODULE_REGISTER(bluetooth);
+
+K_MUTEX_DEFINE(active_conn_lock);
+static struct bt_conn *active_conn;
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -28,6 +26,31 @@ static const struct bt_data sd[] = {
 	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, STR_LEN(CONFIG_BT_DEVICE_NAME)),
 	BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NUS_SRV_VAL),
 };
+
+static void set_active_conn(struct bt_conn *conn)
+{
+	struct bt_conn *old_conn;
+
+	k_mutex_lock(&active_conn_lock, K_FOREVER);
+	old_conn = active_conn;
+	active_conn = conn == NULL ? NULL : bt_conn_ref(conn);
+	k_mutex_unlock(&active_conn_lock);
+
+	if (old_conn != NULL) {
+		bt_conn_unref(old_conn);
+	}
+}
+
+static struct bt_conn *get_active_conn(void)
+{
+	struct bt_conn *conn;
+
+	k_mutex_lock(&active_conn_lock, K_FOREVER);
+	conn = active_conn == NULL ? NULL : bt_conn_ref(active_conn);
+	k_mutex_unlock(&active_conn_lock);
+
+	return conn;
+}
 
 static void connected(struct bt_conn *conn, uint8_t err)
 {
@@ -42,8 +65,12 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
 	LOG_INF("Connected %s", addr);
 
-	if (bt_conn_set_security(conn, BT_SECURITY_L4)) {
-		LOG_ERR("Failed to set security");
+	set_active_conn(conn);
+
+	err = bt_conn_set_security(conn, BT_SECURITY_L4);
+	if (err) {
+		LOG_ERR("Failed to set security (%d)", err);
+		(void)bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 	}
 }
 
@@ -54,11 +81,14 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	LOG_INF("Disconnected from %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
+
+	set_active_conn(NULL);
 }
 
 static void start_adv(void)
 {
 	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+
 	if (err) {
 		LOG_ERR("Advertising failed to start (err %d)", err);
 	} else {
@@ -89,6 +119,7 @@ static void security_changed(struct bt_conn *conn, bt_security_t level, enum bt_
 	} else {
 		LOG_ERR("Security failed: %s level %u err %s(%d)", addr, level,
 			bt_security_err_to_str(err), err);
+		(void)bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 	}
 }
 
@@ -105,8 +136,6 @@ static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	// printf("Push PIN: %d, ret: %d\n", passkey, ret);
 
 	LOG_INF("Passkey for %s: %06u", addr, passkey);
 }
@@ -128,7 +157,7 @@ static struct bt_conn_auth_cb auth_cb_display = {
 
 static void pairing_complete(struct bt_conn *conn, bool bonded)
 {
-	LOG_INF("Pairing Complete");
+	LOG_INF("Pairing complete%s", bonded ? " and bonded" : "");
 }
 
 static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
@@ -151,25 +180,27 @@ static void notif_enabled(bool enabled, void *ctx)
 
 static void received(struct bt_conn *conn, const void *data, uint16_t len, void *ctx)
 {
-	char message[CONFIG_BT_L2CAP_TX_MTU + 1] = "";
-
-	ARG_UNUSED(conn);
 	ARG_UNUSED(ctx);
+
+	if (bt_conn_get_security(conn) < BT_SECURITY_L4) {
+		LOG_WRN("Ignoring %u bytes received before L4 security", len);
+		return;
+	}
 
 	app_uart_handle_rx(APP_UART_TRANSPORT_BLE, data, len);
 
-	memcpy(message, data, MIN(sizeof(message) - 1, len));
-	LOG_INF("%s() - Len: %d, Message: %s", __func__, len, message);
+	LOG_DBG("Received %u bytes", len);
 }
 
-struct bt_nus_cb nus_listener = {
+static struct bt_nus_cb nus_listener = {
 	.notif_enabled = notif_enabled,
 	.received = received,
 };
 
-int bt_init()
+int bt_init(void)
 {
 	int err = bt_nus_cb_register(&nus_listener, NULL);
+
 	if (err) {
 		LOG_ERR("Failed to register NUS callback: %d", err);
 		return err;
@@ -185,58 +216,74 @@ int bt_init()
 	return 0;
 }
 
-int bt_start()
+int bt_start(void)
 {
-
 	bt_conn_auth_cb_register(&auth_cb_display);
 	bt_conn_auth_info_cb_register(&auth_cb_info);
 
-// If not display
-// CONFIG_BT_FIXED_PASSKEY=y
 #ifdef CONFIG_BT_FIXED_PASSKEY
 	bt_passkey_set(123456);
 #endif
+
 	start_adv();
-
-	// TODO: Add nus send
-	// while (true) {
-	// 	const char *hello_world = "Hello World!\n";
-
-	// 	k_sleep(K_SECONDS(3));
-
-	// 	err = bt_nus_send(NULL, hello_world, strlen(hello_world));
-
-	// 	if (err < 0 && (err != -EAGAIN) && (err != -ENOTCONN)) {
-	// 		return err;
-	// 	}
-	// }
 
 	return 0;
 }
 
 int bt_nus_send_bytes(const uint8_t *data, size_t len)
 {
-	if (!data) {
+	struct bt_conn *conn;
+	size_t max_payload;
+	int err = 0;
+
+	if (data == NULL) {
 		return -EINVAL;
 	}
 	if (len == 0) {
 		return 0;
 	}
-	if (len > UINT16_MAX) {
-		return -EMSGSIZE;
+
+	conn = get_active_conn();
+	if (conn == NULL) {
+		return -ENOTCONN;
 	}
 
-	return bt_nus_send(NULL, data, (uint16_t)len);
+	if (bt_conn_get_security(conn) < BT_SECURITY_L4) {
+		err = -EACCES;
+		goto out;
+	}
+
+	max_payload = bt_gatt_get_mtu(conn);
+	if (max_payload <= 3U) {
+		err = -EMSGSIZE;
+		goto out;
+	}
+	max_payload -= 3U;
+	while (len > 0) {
+		uint16_t chunk_len = (uint16_t)MIN(len, max_payload);
+
+		err = bt_nus_send(conn, data, chunk_len);
+		if (err) {
+			break;
+		}
+
+		data += chunk_len;
+		len -= chunk_len;
+	}
+
+out:
+	bt_conn_unref(conn);
+	return err;
 }
 
 #else
 
-int bt_init()
+int bt_init(void)
 {
 	return 0;
 }
 
-int bt_start()
+int bt_start(void)
 {
 	return 0;
 }

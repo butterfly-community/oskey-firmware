@@ -2,6 +2,8 @@
 #include "bindings.h"
 #include "bluetooth.h"
 
+LOG_MODULE_REGISTER(app_uart);
+
 struct k_work app_uart_work;
 static volatile enum app_uart_transport app_uart_resp_transport = APP_UART_TRANSPORT_UART;
 
@@ -35,11 +37,15 @@ void app_uart_rx_handler(const struct device *dev, void *user_data)
 void app_uart_tx_push_array(const uint8_t *data, size_t len)
 {
 	if (app_uart_resp_transport == APP_UART_TRANSPORT_BLE) {
-		bt_nus_send_bytes(data, len);
+		int err = bt_nus_send_bytes(data, len);
+
+		if (err) {
+			LOG_ERR("Bluetooth response failed (%d)", err);
+		}
 		return;
 	}
 	// TODO: irq tx
-	for (int i = 0; i < len; i++) {
+	for (size_t i = 0; i < len; i++) {
 		uart_poll_out(DEV_CONSOLE, data[i]);
 	}
 }
