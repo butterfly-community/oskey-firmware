@@ -108,12 +108,12 @@ bool app_check_storage()
 	return storage_initd;
 }
 
-
 void app_sign_work_handler(struct k_work *work)
 {
 	wallet_sign_eth_from_trigger();
 }
 
-void app_sign_trigger() {
+void app_sign_trigger()
+{
 	k_work_init(&app_sign_work, app_sign_work_handler);
 }
