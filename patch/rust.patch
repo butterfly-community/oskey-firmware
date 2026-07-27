@@ -21,6 +21,17 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
    elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64"))
      set(RUST_TARGET "x86_64-unknown-none" PARENT_SCOPE)
    elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64"))
+@@ -142,8 +155,8 @@ target-dir = \"${CARGO_TARGET_DIR}\"
+ BUILD_DIR = \"${CMAKE_CURRENT_BINARY_DIR}\"
+ DOTCONFIG = \"${DOTCONFIG}\"
+ ZEPHYR_DTS = \"${ZEPHYR_DTS}\"
+-INCLUDE_DIRS = \"${include_dirs}\"
+-INCLUDE_DEFINES = \"${include_defines}\"
++INCLUDE_DIRS = '${include_dirs}'
++INCLUDE_DEFINES = '${include_defines}'
+ WRAPPER_FILE = \"${WRAPPER_FILE}\"
+ BINARY_DIR_INCLUDE_GENERATED = \"${BINARY_DIR_INCLUDE_GENERATED}\"
+ DT_AUGMENTS = \"${DT_AUGMENTS}\"
 @@ -160,18 +173,24 @@ ${config_paths}
 +  if(CONFIG_XTENSA)
 +    set(rust_cargo_command cargo +esp build -Z build-std=core,alloc)
