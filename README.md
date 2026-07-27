@@ -72,16 +72,16 @@ Due to the wide variety of development board models available, only the chip pri
 
 ### Base experience
 
-We carefully selected 4 development boards representing 3 different architectures from 5 different chip manufacturers as our officially supported boards. This demonstrates our vendor-independent capability. Our developers actively develop and test on these boards.
+We carefully selected 2 development boards representing 1 architecture from 2 different chip manufacturers as our officially supported boards. This demonstrates our vendor-independent capability. Our developers actively develop and test on these boards.
 
 <br />
 
-|     Name     | [ESP32&nbsp;C3](https://docs.zephyrproject.org/latest/boards/espressif/esp32c3_devkitm/doc/index.html)&nbsp; | [Raspberry&nbsp;Pi&nbsp;Pico](https://docs.zephyrproject.org/latest/boards/raspberrypi/rpi_pico/doc/index.html)  | [Nucleo F401RE](https://docs.zephyrproject.org/latest/boards/st/nucleo_f401re/doc/index.html) | [nRF52840-MDK](https://docs.zephyrproject.org/latest/boards/makerdiary/nrf52840_mdk/doc/index.html) |
-| :----------: | :----------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------: |
-|    Image     |                   ![esp32-c3-devkitm](doc/image/board/esp32-c3-devkitm-1-v1-isometric.png)                   |                                   ![rpi-pico](doc/image/board/pico-board.png)                                    |                        ![stm32f401](doc/image/board/nucleo_f401re.jpg)                        |                         ![nrf52840-mdk](doc/image/board/mdk52840-cover.png)                         |
-| Manufacturer |                                                  Espressif                                                   |                                                   Raspberry Pi                                                   |                                      STMicroelectronics                                       |                                        Nordic Semiconductor                                         |
-|     Chip     |                                                   ESP32C3                                                    |                                                      RP2040                                                      |                                            STM32F4                                            |                                              nRF52840                                               |
-| Architecture |                                                    RISC-V                                                    |                                                  ARM Cortex-M0                                                   |                                         ARM Cortex-M4                                         |                                            ARM Cortex-M4                                            |
+|     Name     | [Nucleo F401RE](https://docs.zephyrproject.org/latest/boards/st/nucleo_f401re/doc/index.html) | [nRF52840-MDK](https://docs.zephyrproject.org/latest/boards/makerdiary/nrf52840_mdk/doc/index.html) |
+| :----------: | :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------: |
+|    Image     |                        ![stm32f401](doc/image/board/nucleo_f401re.jpg)                        |                         ![nrf52840-mdk](doc/image/board/mdk52840-cover.png)                         |
+| Manufacturer |                                      STMicroelectronics                                       |                                        Nordic Semiconductor                                         |
+|     Chip     |                                            STM32F4                                            |                                              nRF52840                                               |
+| Architecture |                                         ARM Cortex-M4                                         |                                            ARM Cortex-M4                                            |
 
 ### Fully experience
 
@@ -91,7 +91,7 @@ These models have screens and touch support, giving them full functionality as h
 
 |  Name   |                                [Lichuang ESP32-S3](https://item.szlcsc.com/43285221.html)                                 | [STM32H747I Discovery](https://docs.zephyrproject.org/latest/boards/st/stm32h747i_disco/doc/index.html#stm32h747i_disco) |
 | :-----: | :-----------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------: |
-|  Image  | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-c3-devkitm" width="220" style="max-width:100%; height:auto;"> |      <img src="doc/image/board/stm32h747i_disco.jpg" alt="stm32" width="220" style="max-width:100%; height:auto;">       |
+|  Image  | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-s3" width="220" style="max-width:100%; height:auto;"> |      <img src="doc/image/board/stm32h747i_disco.jpg" alt="stm32" width="220" style="max-width:100%; height:auto;">       |
 | Display |                                                          2-inch                                                           |                                                          4-inch                                                          |
 
 By default, the chip on the development board is not security-locked and has no security features enabled.

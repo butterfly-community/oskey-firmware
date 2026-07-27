@@ -13,24 +13,6 @@ const config = {
       extra: "-D CONFIG_HEAP_MEM_POOL_SIZE=40960",
     },
     {
-      name: "esp32c2_devkitm",
-      target: "esp8684_devkitm",
-      conf: ["boards/conf/enable_storage.conf"],
-      overlay: [],
-    },
-    {
-      name: "esp32c3_devkitm",
-      target: "esp32c3_devkitm",
-      conf: ["boards/conf/enable_storage.conf"],
-      overlay: [],
-    },
-    {
-      name: "esp32c3_core",
-      target: "esp32c3_devkitm",
-      conf: ["boards/conf/enable_storage.conf"],
-      overlay: ["boards/overlay/esp32_usb_jtag_serial.overlay"],
-    },
-    {
       name: "esp32s3_devkitm",
       target: "esp32s3_devkitm/esp32s3/procpu",
       conf: ["boards/conf/enable_storage.conf"],
@@ -61,10 +43,13 @@ const config = {
         "boards/conf/enable_lvgl.conf",
         "boards/conf/fix_rgb565.conf",
       ],
-      overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/esp32_usb_jtag_serial.overlay"],
+      overlay: [
+        "boards/esp32s3_lichuang.overlay",
+        "boards/overlay/esp32_usb_jtag_serial.overlay",
+      ],
       extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
     },
-      {
+    {
       name: "lichuang_szpi_s3_webusb",
       target: "esp32s3_devkitm/esp32s3/procpu",
       conf: [
@@ -73,7 +58,10 @@ const config = {
         "boards/conf/enable_usb.conf",
         "boards/conf/fix_rgb565.conf",
       ],
-      overlay: ["boards/esp32s3_lichuang.overlay", "boards/overlay/cdc_acm.overlay"],
+      overlay: [
+        "boards/esp32s3_lichuang.overlay",
+        "boards/overlay/cdc_acm.overlay",
+      ],
       extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
     },
     {
@@ -126,12 +114,6 @@ const config = {
       name: "nrf52840_mdk",
       target: "nrf52840_mdk",
       conf: ["boards/conf/enable_storage.conf"],
-      overlay: [],
-    },
-    {
-      name: "rpi_pico",
-      target: "rpi_pico",
-      conf: ["boards/conf/enable_test_rng.conf"],
       overlay: [],
     },
   ],

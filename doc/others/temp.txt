@@ -2,12 +2,6 @@ west build -b  nrf52840dk/nrf52840 ~/Develop/platform/zephyr-project/bootloader/
 
 west flash --hex-file build/mcuboot/zephyr.hex
 
-west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd)
-
-west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LOG=y && west flash
-
-west build -p always -b esp32c3_devkitm --sysbuild -- -DPATH=$(pwd) -D CONFIG_LOG=y && west flash --esp-device=/dev/ttyACM0 && west espressif monitor
-
 west build -p always -b esp32s3_devkitm/esp32s3/procpu --sysbuild --build-dir temp -- -DPATH=$(pwd) -DEXTRA_CONF_FILE="boards/conf/enable_mcuboot.conf;boards/conf/enable_lvgl.conf;boards/lichuang_esp32s3.conf;" -DEXTRA_DTC_OVERLAY_FILE="boards/lichuang_esp32s3.overlay" && west flash --build-dir temp --esp-device=/dev/ttyACM0 && west espressif monitor -p /dev/ttyACM0
 
 
@@ -18,22 +12,11 @@ west build -b native_sim/native/64 -p always  -- -DEXTRA_CONF_FILE=boards/conf/e
 cargo +esp build -Z build-std=core,alloc
 
 
-espsecure.py sign_data --version 2 --keyfile BOOTLOADER_SIGNING_KEY.pem -o boot_sign.bin ./build/mcuboot_esp32c3.bin
-
 --encrypt if flash
 
 imgtool sign -k /home/life/Develop/platform/zephyr-project/bootloader/mcuboot/root-ec-p256.pem --pad --pad-sig --align 32 --max-align 32 -v 0 -H 32 -S 0x1c0000 ./build/zephyr/zephyr.bin ./build/sign.bin
 
-esptool.py -p /dev/ttyUSB0 -b 800000 --no-stub --after no_reset --chip esp32c3 write_flash_encrypted --flash_mode dio --flash_size 4MB --flash_freq 40m 0x0 boot_sign.bin --force --encrypt
-
-esptool.py -p /dev/ttyUSB0 -b 400000 --no-stub   --after no_reset --chip esp32c3 write_flash --flash_mode dio --flash_size 4MB --flash_freq 40m 0x20000 ./build/sign.bin --force --encrypt
-
 
 west build -p always -b  native_sim/native/64 --  -DEXTRA_CONF_FILE="boards/conf/enable_lvgl.conf;boards/conf/enable_lvgl_benchmark.conf" 
-
-west build -b rpi_pico -- -DEXTRA_CONF_FILE="boards/conf/enable_test_rng.conf" -DOPENOCD=/usr/local/bin/openocd -DOPENOCD_DEFAULT_PATH=/usr/local/share/openocd/scripts -DRPI_PICO_DEBUG_ADAPTER=cmsis-dap
-
-# erase flash
-/usr/local/bin/openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "init; reset init; flash erase_sector 0 0 last; reset; exit"
 
 west build -b native_sim/native/64 -- -DSNIPPET=usbip-native-sim -DEXTRA_CONF_FILE="boards/conf/enable_lvgl.conf;boards/conf/enable_storage.conf;boards/conf/enable_debug.conf;boards/conf/enable_usb.conf" -DEXTRA_DTC_OVERLAY_FILE="boards/native_sim_native_64.overlay"

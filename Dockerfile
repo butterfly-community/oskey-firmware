@@ -6,7 +6,6 @@ RUN west init --mr v4.3.0
 RUN west config manifest.group-filter -- +optional && west update
 
 ENV PATH="/root/.cargo/bin:${PATH}"
-RUN rustup target install riscv32imc-unknown-none-elf
 RUN rustup target install thumbv7em-none-eabihf
 
 RUN cargo install espup --locked

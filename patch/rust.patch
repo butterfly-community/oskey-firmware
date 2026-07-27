@@ -1,16 +1,6 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 75ece41..6614dda 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -45,7 +45,7 @@ function(_rust_map_target)
-       set(RUST_TARGET "riscv64imac-unknown-none-elf" PARENT_SCOPE)
-     elseif(CONFIG_RISCV_ISA_RV32I)
-       # TODO: We have multiple choices, try to pick the best.
--      set(RUST_TARGET "riscv32i-unknown-none-elf" PARENT_SCOPE)
-+      set(RUST_TARGET "riscv32imc-unknown-none-elf" PARENT_SCOPE)
-     else()
-       message(FATAL_ERROR "Rust: Unsupported riscv ISA")
-     endif()
 @@ -53,6 +53,12 @@ function(_rust_map_target)
      set(RUST_TARGET "x86_64-unknown-none" PARENT_SCOPE)
    elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64"))
