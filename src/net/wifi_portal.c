@@ -117,21 +117,23 @@ static int configure_handler(struct http_client_ctx *client, enum http_transacti
 }
 
 static struct http_resource_detail_static portal_resource_detail = {
-	.common = {
-		.type = HTTP_RESOURCE_TYPE_STATIC,
-		.bitmask_of_supported_http_methods = BIT(HTTP_GET),
-		.content_type = "text/html",
-	},
+	.common =
+		{
+			.type = HTTP_RESOURCE_TYPE_STATIC,
+			.bitmask_of_supported_http_methods = BIT(HTTP_GET),
+			.content_type = "text/html",
+		},
 	.static_data = portal_page,
 	.static_data_len = sizeof(portal_page) - 1,
 };
 
 static struct http_resource_detail_dynamic configure_resource_detail = {
-	.common = {
-		.type = HTTP_RESOURCE_TYPE_DYNAMIC,
-		.bitmask_of_supported_http_methods = BIT(HTTP_POST),
-		.content_type = "text/html",
-	},
+	.common =
+		{
+			.type = HTTP_RESOURCE_TYPE_DYNAMIC,
+			.bitmask_of_supported_http_methods = BIT(HTTP_POST),
+			.content_type = "text/html",
+		},
 	.cb = configure_handler,
 };
 

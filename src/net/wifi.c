@@ -6,12 +6,18 @@
 #include "wifi.h"
 
 #include <errno.h>
+#include <string.h>
 
 #if defined(CONFIG_WIFI) && defined(CONFIG_WIFI_USAGE_MODE_STA_AP)
 
 #include <zephyr/logging/log.h>
 #include <zephyr/net/conn_mgr_monitor.h>
+#include <zephyr/net/http/client.h>
 #include <zephyr/net/wifi_mgmt.h>
+#include <zephyr/posix/arpa/inet.h>
+#include <zephyr/posix/netdb.h>
+#include <zephyr/posix/sys/socket.h>
+#include <zephyr/posix/unistd.h>
 
 #include "wifi_portal.h"
 
@@ -20,6 +26,8 @@
 LOG_MODULE_REGISTER(wifi);
 
 #define MACSTR "%02X:%02X:%02X:%02X:%02X:%02X"
+
+#define PUBLIC_IP_HOST "ifconfig.me"
 
 #define NET_EVENT_WIFI_MASK                                                                        \
 	(NET_EVENT_WIFI_CONNECT_RESULT | NET_EVENT_WIFI_DISCONNECT_RESULT |                        \
@@ -30,6 +38,7 @@ enum app_wifi_state {
 	APP_WIFI_IDLE,
 	APP_WIFI_AP_STARTING,
 	APP_WIFI_AP_ACTIVE,
+	APP_WIFI_STA_CONNECTING,
 	APP_WIFI_AP_STOPPING,
 	APP_WIFI_STA_ACTIVE,
 };
@@ -44,6 +53,76 @@ static size_t sta_password_len;
 
 static void wifi_work_handler(struct k_work *work);
 static K_WORK_DEFINE(wifi_work, wifi_work_handler);
+
+static int public_ip_response_cb(struct http_response *response, enum http_final_call final_data,
+				 void *user_data)
+{
+	ARG_UNUSED(final_data);
+	ARG_UNUSED(user_data);
+
+	if (response->http_status_code == 200 && response->body_frag_start != NULL) {
+		LOG_INF("Public IP: %.*s", (int)response->body_frag_len,
+			(char *)response->body_frag_start);
+	}
+
+	return 0;
+}
+
+static void log_public_ip(void)
+{
+	const struct addrinfo hints = {
+		.ai_family = AF_INET,
+		.ai_socktype = SOCK_STREAM,
+	};
+	struct addrinfo *address;
+	uint8_t receive_buffer[256];
+	int ret = getaddrinfo(PUBLIC_IP_HOST, "80", &hints, &address);
+
+	if (ret != 0) {
+		LOG_WRN("Cannot resolve %s: %d", PUBLIC_IP_HOST, ret);
+		return;
+	}
+
+	int sock = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
+
+	if (sock < 0) {
+		LOG_WRN("Cannot create HTTP socket: %d", errno);
+		goto free_address;
+	}
+
+	if (connect(sock, address->ai_addr, address->ai_addrlen) < 0) {
+		LOG_WRN("Cannot connect to %s: %d", PUBLIC_IP_HOST, errno);
+		goto close_socket;
+	}
+
+	struct http_request request = {
+		.method = HTTP_GET,
+		.url = "/ip",
+		.host = PUBLIC_IP_HOST,
+		.protocol = "HTTP/1.1",
+		.response = public_ip_response_cb,
+		.recv_buf = receive_buffer,
+		.recv_buf_len = sizeof(receive_buffer),
+	};
+
+	ret = http_client_req(sock, &request, 5 * MSEC_PER_SEC, NULL);
+	if (ret < 0) {
+		LOG_WRN("Public IP request failed: %d", ret);
+	}
+
+close_socket:
+	(void)close(sock);
+free_address:
+	freeaddrinfo(address);
+}
+
+static void public_ip_check_handler(struct k_work *work)
+{
+	ARG_UNUSED(work);
+	log_public_ip();
+}
+
+static K_WORK_DELAYABLE_DEFINE(public_ip_check, public_ip_check_handler);
 
 static void clear_sta_credentials(void)
 {
@@ -78,9 +157,7 @@ static void stop_ap_network(void)
 	}
 
 	if (ap_addr_configured) {
-		if (!net_if_ipv4_addr_rm(ap_iface, &ap_addr)) {
-			LOG_WRN("Failed to remove AP IPv4 address");
-		}
+		(void)net_if_ipv4_addr_rm(ap_iface, &ap_addr);
 		ap_addr_configured = false;
 	}
 }
@@ -90,12 +167,12 @@ static int start_ap_network(void)
 	struct net_in_addr netmask;
 	struct net_in_addr pool_start;
 
-	if (net_addr_pton(NET_AF_INET, CONFIG_OSKEY_WIFI_AP_IP_ADDRESS, &ap_addr) < 0) {
+	if (inet_pton(AF_INET, CONFIG_OSKEY_WIFI_AP_IP_ADDRESS, &ap_addr) != 1) {
 		LOG_ERR("Invalid AP address: %s", CONFIG_OSKEY_WIFI_AP_IP_ADDRESS);
 		return -EINVAL;
 	}
 
-	if (net_addr_pton(NET_AF_INET, CONFIG_OSKEY_WIFI_AP_NETMASK, &netmask) < 0) {
+	if (inet_pton(AF_INET, CONFIG_OSKEY_WIFI_AP_NETMASK, &netmask) != 1) {
 		LOG_ERR("Invalid AP netmask: %s", CONFIG_OSKEY_WIFI_AP_NETMASK);
 		return -EINVAL;
 	}
@@ -179,10 +256,6 @@ static void provisioning_submitted(const char *ssid, size_t ssid_len, const char
 
 static void disable_ap_mode(void)
 {
-	if (wifi_state != APP_WIFI_AP_ACTIVE) {
-		return;
-	}
-
 	(void)wifi_portal_stop();
 	wifi_state = APP_WIFI_AP_STOPPING;
 
@@ -190,10 +263,7 @@ static void disable_ap_mode(void)
 
 	if (ret < 0) {
 		LOG_ERR("Failed to disable AP mode: %d", ret);
-		wifi_state = APP_WIFI_AP_ACTIVE;
-		if (wifi_portal_start() < 0) {
-			LOG_ERR("Failed to restart Wi-Fi configuration portal");
-		}
+		wifi_state = APP_WIFI_STA_ACTIVE;
 	}
 }
 
@@ -220,13 +290,13 @@ static int connect_to_wifi(void)
 	config.band = WIFI_FREQ_BAND_2_4_GHZ;
 
 	LOG_INF("Connecting to SSID: %s", sta_ssid);
-	wifi_state = APP_WIFI_STA_ACTIVE;
+	wifi_state = APP_WIFI_STA_CONNECTING;
 
 	int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT, sta_iface, &config, sizeof(config));
 
 	if (ret < 0) {
 		LOG_ERR("Failed to request connection to %s: %d", sta_ssid, ret);
-		wifi_state = APP_WIFI_IDLE;
+		wifi_state = APP_WIFI_AP_ACTIVE;
 	}
 
 	return ret;
@@ -256,13 +326,14 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		if (status != 0) {
 			LOG_ERR("Wi-Fi connection failed: %d", status);
 			clear_sta_credentials();
-			wifi_state = APP_WIFI_IDLE;
-			k_work_submit(&wifi_work);
+			wifi_state = APP_WIFI_AP_ACTIVE;
 			break;
 		}
 
 		LOG_INF("Connected to %s", sta_ssid);
 		clear_sta_credentials();
+		k_work_reschedule(&public_ip_check, K_SECONDS(30));
+		disable_ap_mode();
 		break;
 	}
 	case NET_EVENT_WIFI_DISCONNECT_RESULT: {
@@ -277,8 +348,12 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		} else {
 			LOG_INF("Wi-Fi disconnected");
 		}
+		k_work_cancel_delayable(&public_ip_check);
 
-		if (wifi_state == APP_WIFI_STA_ACTIVE) {
+		if (wifi_state == APP_WIFI_STA_CONNECTING) {
+			clear_sta_credentials();
+			wifi_state = APP_WIFI_AP_ACTIVE;
+		} else if (wifi_state == APP_WIFI_STA_ACTIVE) {
 			clear_sta_credentials();
 			wifi_state = APP_WIFI_IDLE;
 			k_work_submit(&wifi_work);
@@ -319,14 +394,12 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 
 		if (status != 0) {
 			LOG_ERR("AP disable failed: %d", status);
-			wifi_state = APP_WIFI_AP_ACTIVE;
-			(void)wifi_portal_start();
+			wifi_state = APP_WIFI_STA_ACTIVE;
 			break;
 		}
 
 		stop_ap_network();
-		wifi_state = APP_WIFI_IDLE;
-		k_work_submit(&wifi_work);
+		wifi_state = APP_WIFI_STA_ACTIVE;
 		break;
 	}
 	case NET_EVENT_WIFI_AP_STA_CONNECTED:
@@ -355,7 +428,9 @@ static void wifi_work_handler(struct k_work *work)
 	ARG_UNUSED(work);
 
 	if (wifi_state == APP_WIFI_AP_ACTIVE && sta_ssid_len > 0) {
-		disable_ap_mode();
+		if (connect_to_wifi() < 0) {
+			clear_sta_credentials();
+		}
 		return;
 	}
 
@@ -363,11 +438,6 @@ static void wifi_work_handler(struct k_work *work)
 		return;
 	}
 
-	if (sta_ssid_len > 0 && connect_to_wifi() == 0) {
-		return;
-	}
-
-	clear_sta_credentials();
 	(void)enable_ap_mode();
 }
 

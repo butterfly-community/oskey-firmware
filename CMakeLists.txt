@@ -65,6 +65,15 @@ target_sources_ifdef(CONFIG_WIFI_USAGE_MODE_STA_AP app PRIVATE
   src/net/wifi_portal.c
 )
 
+if(CONFIG_WIFI_USAGE_MODE_STA_AP)
+  zephyr_linker_sources(SECTIONS src/net/wifi_portal-sections.ld)
+  # Enable when supporting CMake linker generator targets.
+  # zephyr_iterable_section(
+  #   NAME http_resource_desc_wifi_portal_service
+  #   GROUP RODATA_REGION
+  # )
+endif()
+
 target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
   src/usb/bulk.c
   src/usb/init.c
