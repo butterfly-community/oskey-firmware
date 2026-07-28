@@ -31,12 +31,10 @@ enum app_wifi_state {
 	APP_WIFI_AP_STARTING,
 	APP_WIFI_AP_ACTIVE,
 	APP_WIFI_AP_STOPPING,
-	APP_WIFI_STA_CONNECTING,
-	APP_WIFI_STA_CONNECTED,
+	APP_WIFI_STA_ACTIVE,
 };
 
 static struct net_if *sta_iface;
-static struct wifi_connect_req_params sta_config;
 static struct net_mgmt_event_callback wifi_event_cb;
 static enum app_wifi_state wifi_state;
 static char sta_ssid[WIFI_SSID_MAX_LEN + 1];
@@ -53,11 +51,9 @@ static void clear_sta_credentials(void)
 	memset(sta_password, 0, sizeof(sta_password));
 	sta_ssid_len = 0;
 	sta_password_len = 0;
-	memset(&sta_config, 0, sizeof(sta_config));
 }
 
 static struct net_if *ap_iface;
-static struct wifi_connect_req_params ap_config;
 static struct net_in_addr ap_addr;
 static bool ap_addr_configured;
 static bool dhcp_server_started;
@@ -135,6 +131,8 @@ static int start_ap_network(void)
 
 static int enable_ap_mode(void)
 {
+	struct wifi_connect_req_params config = {0};
+
 	if (ap_iface == NULL) {
 		LOG_ERR("AP interface is not initialized");
 		return -ENODEV;
@@ -146,18 +144,16 @@ static int enable_ap_mode(void)
 		return ret;
 	}
 
-	memset(&ap_config, 0, sizeof(ap_config));
-	ap_config.ssid = (const uint8_t *)CONFIG_OSKEY_WIFI_AP_SSID;
-	ap_config.ssid_length = sizeof(CONFIG_OSKEY_WIFI_AP_SSID) - 1;
-	ap_config.psk = (const uint8_t *)CONFIG_OSKEY_WIFI_AP_PSK;
-	ap_config.psk_length = sizeof(CONFIG_OSKEY_WIFI_AP_PSK) - 1;
-	ap_config.security =
-		ap_config.psk_length == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
-	ap_config.channel = WIFI_CHANNEL_ANY;
-	ap_config.band = WIFI_FREQ_BAND_2_4_GHZ;
+	config.ssid = (const uint8_t *)CONFIG_OSKEY_WIFI_AP_SSID;
+	config.ssid_length = sizeof(CONFIG_OSKEY_WIFI_AP_SSID) - 1;
+	config.psk = (const uint8_t *)CONFIG_OSKEY_WIFI_AP_PSK;
+	config.psk_length = sizeof(CONFIG_OSKEY_WIFI_AP_PSK) - 1;
+	config.security = config.psk_length == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
+	config.channel = WIFI_CHANNEL_ANY;
+	config.band = WIFI_FREQ_BAND_2_4_GHZ;
 
 	wifi_state = APP_WIFI_AP_STARTING;
-	ret = net_mgmt(NET_REQUEST_WIFI_AP_ENABLE, ap_iface, &ap_config, sizeof(ap_config));
+	ret = net_mgmt(NET_REQUEST_WIFI_AP_ENABLE, ap_iface, &config, sizeof(config));
 	if (ret < 0) {
 		LOG_ERR("Failed to enable AP mode: %d", ret);
 		wifi_state = APP_WIFI_IDLE;
@@ -203,6 +199,8 @@ static void disable_ap_mode(void)
 
 static int connect_to_wifi(void)
 {
+	struct wifi_connect_req_params config = {0};
+
 	if (sta_iface == NULL) {
 		LOG_ERR("STA interface is not initialized");
 		return -ENODEV;
@@ -213,20 +211,18 @@ static int connect_to_wifi(void)
 		return -EINVAL;
 	}
 
-	memset(&sta_config, 0, sizeof(sta_config));
-	sta_config.ssid = (const uint8_t *)sta_ssid;
-	sta_config.ssid_length = sta_ssid_len;
-	sta_config.psk = (const uint8_t *)sta_password;
-	sta_config.psk_length = sta_password_len;
-	sta_config.security =
-		sta_password_len == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
-	sta_config.channel = WIFI_CHANNEL_ANY;
-	sta_config.band = WIFI_FREQ_BAND_2_4_GHZ;
+	config.ssid = (const uint8_t *)sta_ssid;
+	config.ssid_length = sta_ssid_len;
+	config.psk = (const uint8_t *)sta_password;
+	config.psk_length = sta_password_len;
+	config.security = sta_password_len == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
+	config.channel = WIFI_CHANNEL_ANY;
+	config.band = WIFI_FREQ_BAND_2_4_GHZ;
 
 	LOG_INF("Connecting to SSID: %s", sta_ssid);
-	wifi_state = APP_WIFI_STA_CONNECTING;
+	wifi_state = APP_WIFI_STA_ACTIVE;
 
-	int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT, sta_iface, &sta_config, sizeof(sta_config));
+	int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT, sta_iface, &config, sizeof(config));
 
 	if (ret < 0) {
 		LOG_ERR("Failed to request connection to %s: %d", sta_ssid, ret);
@@ -265,7 +261,6 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 			break;
 		}
 
-		wifi_state = APP_WIFI_STA_CONNECTED;
 		LOG_INF("Connected to %s", sta_ssid);
 		clear_sta_credentials();
 		break;
@@ -283,7 +278,7 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 			LOG_INF("Wi-Fi disconnected");
 		}
 
-		if (wifi_state == APP_WIFI_STA_CONNECTING || wifi_state == APP_WIFI_STA_CONNECTED) {
+		if (wifi_state == APP_WIFI_STA_ACTIVE) {
 			clear_sta_credentials();
 			wifi_state = APP_WIFI_IDLE;
 			k_work_submit(&wifi_work);
