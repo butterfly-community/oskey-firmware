@@ -2,6 +2,7 @@
 #include <zephyr/dt-bindings/gpio/gpio.h>
 
 / {
+  /* Deprecated hardware definition retained for reference. */
   chosen {
     zephyr,display = &st7789v;
     zephyr,touch = &cst816s;

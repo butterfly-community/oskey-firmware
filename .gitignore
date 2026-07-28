@@ -4,5 +4,5 @@
 build
 *.bin
 target
-temp
+temp*
 kconfig.json
