@@ -13,7 +13,9 @@
 #include <zephyr/net/mqtt.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
-#include <zephyr/net/socket.h>
+#include <zephyr/posix/netdb.h>
+#include <zephyr/posix/poll.h>
+#include <zephyr/posix/sys/socket.h>
 
 LOG_MODULE_REGISTER(mqtt);
 
@@ -48,7 +50,7 @@ static int init_client_id(void)
 
 	const struct net_linkaddr *addr = net_if_get_link_addr(iface);
 
-	if (addr == NULL || addr->addr == NULL || addr->len < 6) {
+	if (addr == NULL || addr->len < 6) {
 		return -ENODEV;
 	}
 
