@@ -8,6 +8,12 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/flash.h>
 
+#ifdef CONFIG_SETTINGS_ZMS
+
+#include <zephyr/settings/settings.h>
+
+#endif
+
 #ifdef CONFIG_SOC_SERIES_ESP32C3
 
 #include <esp_efuse.h>
@@ -20,21 +26,39 @@
 #define ZMS_PARTITION_OFFSET PARTITION_OFFSET(ZMS_PARTITION)
 #define ZMS_PARTITION_SIZE   PARTITION_SIZE(ZMS_PARTITION)
 
-static struct zms_fs fs;
+static struct zms_fs local_fs;
+static struct zms_fs *fs = &local_fs;
 
 bool ohw_official = false;
 
 int storage_init()
 {
+#ifdef CONFIG_SETTINGS_ZMS
+	void *settings_storage;
+	int res = settings_subsys_init();
+
+	if (res < 0) {
+		return res;
+	}
+
+	res = settings_storage_get(&settings_storage);
+	if (res < 0) {
+		return res;
+	}
+
+	fs = settings_storage;
+	storage_initd = true;
+	return 0;
+#else
 	struct flash_pages_info info;
 
-	fs.flash_device = ZMS_PARTITION_DEVICE;
-	if (!device_is_ready(fs.flash_device)) {
+	fs->flash_device = ZMS_PARTITION_DEVICE;
+	if (!device_is_ready(fs->flash_device)) {
 		return -ENODEV;
 	}
 
-	fs.offset = ZMS_PARTITION_OFFSET;
-	int res = flash_get_page_info_by_offs(fs.flash_device, fs.offset, &info);
+	fs->offset = ZMS_PARTITION_OFFSET;
+	int res = flash_get_page_info_by_offs(fs->flash_device, fs->offset, &info);
 	if (res < 0) {
 		return res;
 	}
@@ -43,11 +67,11 @@ int storage_init()
 		return -EINVAL;
 	}
 
-	fs.sector_size = info.size;
-	fs.sector_count = (ZMS_PARTITION_SIZE / fs.sector_size);
+	fs->sector_size = info.size;
+	fs->sector_count = (ZMS_PARTITION_SIZE / fs->sector_size);
 
 	// ZMS requires minimum 2 sectors
-	if (fs.sector_count < 2) {
+	if (fs->sector_count < 2) {
 		return -EINVAL;
 	}
 
@@ -58,7 +82,7 @@ int storage_init()
 	// printk("  Sector count: %d\n", fs.sector_count);
 	// printk("  Total size: %d bytes\n", fs.sector_size * fs.sector_count);
 
-	res = zms_mount(&fs);
+	res = zms_mount(fs);
 	if (res < 0) {
 		return res;
 	}
@@ -77,12 +101,13 @@ int storage_init()
 		storage_initd = true;
 	}
 	return res;
+#endif
 }
 
 bool storage_general_check(uint16_t id)
 {
 	uint8_t read_value[2] = {0};
-	int res = zms_read(&fs, id, &read_value, sizeof(read_value));
+	int res = zms_read(fs, id, &read_value, sizeof(read_value));
 	if (res < 0) {
 		return false;
 	}
@@ -91,7 +116,7 @@ bool storage_general_check(uint16_t id)
 
 bool storage_general_write(const uint8_t *data, int len, uint16_t id)
 {
-	int res = zms_write(&fs, id, data, len);
+	int res = zms_write(fs, id, data, len);
 	if (res < 0) {
 		return false;
 	}
@@ -100,17 +125,17 @@ bool storage_general_write(const uint8_t *data, int len, uint16_t id)
 
 int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 {
-	return zms_read(&fs, id, data, len);
+	return zms_read(fs, id, data, len);
 }
 
 int storage_erase_zms()
 {
-	return zms_clear(&fs);
+	return zms_clear(fs);
 }
 
 int storage_delete(uint16_t id)
 {
-	return zms_delete(&fs, id);
+	return zms_delete(fs, id);
 }
 
 int storage_erase_flash()

@@ -10,6 +10,5 @@ typedef void (*wifi_portal_submit_cb_t)(const char *ssid, size_t ssid_len, const
 
 void wifi_portal_init(wifi_portal_submit_cb_t submit_cb);
 int wifi_portal_start(void);
-int wifi_portal_stop(void);
 
 #endif

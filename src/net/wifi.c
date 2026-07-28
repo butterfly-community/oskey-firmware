@@ -13,6 +13,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/net/conn_mgr_monitor.h>
 #include <zephyr/net/http/client.h>
+#include <zephyr/net/wifi_credentials.h>
 #include <zephyr/net/wifi_mgmt.h>
 #include <zephyr/posix/arpa/inet.h>
 #include <zephyr/posix/netdb.h>
@@ -39,6 +40,8 @@ enum app_wifi_state {
 	APP_WIFI_AP_STARTING,
 	APP_WIFI_AP_ACTIVE,
 	APP_WIFI_STA_CONNECTING,
+	APP_WIFI_STA_DISCONNECTING,
+	APP_WIFI_STA_RESTORE_PENDING,
 	APP_WIFI_AP_STOPPING,
 	APP_WIFI_STA_ACTIVE,
 };
@@ -52,7 +55,7 @@ static size_t sta_ssid_len;
 static size_t sta_password_len;
 
 static void wifi_work_handler(struct k_work *work);
-static K_WORK_DEFINE(wifi_work, wifi_work_handler);
+static K_WORK_DELAYABLE_DEFINE(wifi_work, wifi_work_handler);
 
 static int public_ip_response_cb(struct http_response *response, enum http_final_call final_data,
 				 void *user_data)
@@ -130,6 +133,27 @@ static void clear_sta_credentials(void)
 	memset(sta_password, 0, sizeof(sta_password));
 	sta_ssid_len = 0;
 	sta_password_len = 0;
+}
+
+static int save_sta_credentials(void)
+{
+	enum wifi_security_type security =
+		sta_password_len == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
+	int ret = wifi_credentials_delete_all();
+
+	if (ret < 0) {
+		LOG_ERR("Failed to replace stored Wi-Fi credentials: %d", ret);
+		return ret;
+	}
+
+	ret = wifi_credentials_set_personal(sta_ssid, sta_ssid_len, security, NULL, 0, sta_password,
+					    sta_password_len, WIFI_CREDENTIALS_FLAG_2_4GHz,
+					    WIFI_CHANNEL_ANY, 0);
+	if (ret < 0) {
+		LOG_ERR("Failed to store Wi-Fi credentials: %d", ret);
+	}
+
+	return ret;
 }
 
 static struct net_if *ap_iface;
@@ -251,12 +275,11 @@ static void provisioning_submitted(const char *ssid, size_t ssid_len, const char
 	sta_password[password_len] = '\0';
 	sta_password_len = password_len;
 
-	k_work_submit(&wifi_work);
+	k_work_reschedule(&wifi_work, K_NO_WAIT);
 }
 
 static void disable_ap_mode(void)
 {
-	(void)wifi_portal_stop();
 	wifi_state = APP_WIFI_AP_STOPPING;
 
 	int ret = net_mgmt(NET_REQUEST_WIFI_AP_DISABLE, ap_iface, NULL, 0);
@@ -296,7 +319,22 @@ static int connect_to_wifi(void)
 
 	if (ret < 0) {
 		LOG_ERR("Failed to request connection to %s: %d", sta_ssid, ret);
-		wifi_state = APP_WIFI_AP_ACTIVE;
+		wifi_state = ap_addr_configured ? APP_WIFI_AP_ACTIVE : APP_WIFI_STA_RESTORE_PENDING;
+	}
+
+	return ret;
+}
+
+static int connect_to_stored_wifi(void)
+{
+	LOG_INF("Connecting with stored Wi-Fi credentials");
+	wifi_state = APP_WIFI_STA_CONNECTING;
+
+	int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT_STORED, sta_iface, NULL, 0);
+
+	if (ret < 0) {
+		LOG_ERR("Failed to request stored Wi-Fi connection: %d", ret);
+		wifi_state = APP_WIFI_IDLE;
 	}
 
 	return ret;
@@ -317,7 +355,7 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 {
 	switch (mgmt_event) {
 	case NET_EVENT_WIFI_CONNECT_RESULT: {
-		if (iface != sta_iface) {
+		if (iface != sta_iface || wifi_state != APP_WIFI_STA_CONNECTING) {
 			break;
 		}
 
@@ -325,15 +363,42 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 
 		if (status != 0) {
 			LOG_ERR("Wi-Fi connection failed: %d", status);
+			bool provisioning = sta_ssid_len > 0;
+			bool ap_active = ap_addr_configured;
+
 			clear_sta_credentials();
-			wifi_state = APP_WIFI_AP_ACTIVE;
+			if (provisioning && !ap_active) {
+				wifi_state = APP_WIFI_STA_RESTORE_PENDING;
+				k_work_reschedule(&wifi_work, K_MSEC(500));
+			} else {
+				wifi_state = provisioning ? APP_WIFI_AP_ACTIVE : APP_WIFI_IDLE;
+			}
+			if (!provisioning) {
+				k_work_reschedule(&wifi_work, K_NO_WAIT);
+			}
 			break;
 		}
 
-		LOG_INF("Connected to %s", sta_ssid);
+		bool provisioning = sta_ssid_len > 0;
+
+		if (provisioning) {
+			LOG_INF("Connected to %s", sta_ssid);
+			(void)save_sta_credentials();
+		} else {
+			LOG_INF("Connected with stored Wi-Fi credentials");
+		}
 		clear_sta_credentials();
 		k_work_reschedule(&public_ip_check, K_SECONDS(30));
-		disable_ap_mode();
+		if (provisioning && ap_addr_configured) {
+			disable_ap_mode();
+		} else {
+			wifi_state = APP_WIFI_STA_ACTIVE;
+			int ret = wifi_portal_start();
+
+			if (ret < 0) {
+				LOG_ERR("Failed to start Wi-Fi configuration portal: %d", ret);
+			}
+		}
 		break;
 	}
 	case NET_EVENT_WIFI_DISCONNECT_RESULT: {
@@ -350,13 +415,26 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		}
 		k_work_cancel_delayable(&public_ip_check);
 
-		if (wifi_state == APP_WIFI_STA_CONNECTING) {
+		if (wifi_state == APP_WIFI_STA_DISCONNECTING) {
+			wifi_state = APP_WIFI_IDLE;
+			k_work_reschedule(&wifi_work, K_NO_WAIT);
+		} else if (wifi_state == APP_WIFI_STA_CONNECTING) {
+			bool provisioning = sta_ssid_len > 0;
+
 			clear_sta_credentials();
-			wifi_state = APP_WIFI_AP_ACTIVE;
+			if (provisioning && !ap_addr_configured) {
+				wifi_state = APP_WIFI_STA_RESTORE_PENDING;
+				k_work_reschedule(&wifi_work, K_MSEC(500));
+			} else {
+				wifi_state = provisioning ? APP_WIFI_AP_ACTIVE : APP_WIFI_IDLE;
+				if (!provisioning) {
+					k_work_reschedule(&wifi_work, K_NO_WAIT);
+				}
+			}
 		} else if (wifi_state == APP_WIFI_STA_ACTIVE) {
 			clear_sta_credentials();
 			wifi_state = APP_WIFI_IDLE;
-			k_work_submit(&wifi_work);
+			k_work_reschedule(&wifi_work, K_NO_WAIT);
 		}
 		break;
 	}
@@ -427,9 +505,31 @@ static void wifi_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
 
-	if (wifi_state == APP_WIFI_AP_ACTIVE && sta_ssid_len > 0) {
+	if ((wifi_state == APP_WIFI_AP_ACTIVE || wifi_state == APP_WIFI_IDLE) && sta_ssid_len > 0) {
 		if (connect_to_wifi() < 0) {
 			clear_sta_credentials();
+			if (wifi_state == APP_WIFI_STA_RESTORE_PENDING) {
+				k_work_reschedule(&wifi_work, K_MSEC(500));
+			}
+		}
+		return;
+	}
+
+	if (wifi_state == APP_WIFI_STA_ACTIVE && sta_ssid_len > 0) {
+		wifi_state = APP_WIFI_STA_DISCONNECTING;
+		int ret = net_mgmt(NET_REQUEST_WIFI_DISCONNECT, sta_iface, NULL, 0);
+
+		if (ret < 0) {
+			LOG_ERR("Failed to disconnect before changing Wi-Fi: %d", ret);
+			wifi_state = APP_WIFI_STA_ACTIVE;
+			clear_sta_credentials();
+		}
+		return;
+	}
+
+	if (wifi_state == APP_WIFI_STA_RESTORE_PENDING) {
+		if (connect_to_stored_wifi() < 0) {
+			k_work_reschedule(&wifi_work, K_NO_WAIT);
 		}
 		return;
 	}
@@ -460,6 +560,10 @@ int wifi_start(void)
 	conn_mgr_ignore_iface(ap_iface);
 
 	wifi_portal_init(provisioning_submitted);
+	if (!wifi_credentials_is_empty() && connect_to_stored_wifi() == 0) {
+		return 0;
+	}
+
 	return enable_ap_mode();
 }
 

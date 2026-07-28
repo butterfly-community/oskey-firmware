@@ -28,7 +28,7 @@ static const char portal_page[] =
 	"<button type=\"submit\">Connect</button></form></body></html>";
 
 static const char accepted_page[] =
-	"<h1>Connecting</h1><p>The setup access point will now close.</p>";
+	"<h1>Connecting</h1><p>The device is connecting to the new Wi-Fi network.</p>";
 
 static const char invalid_page[] =
 	"<h1>Invalid Wi-Fi settings</h1>"
@@ -153,13 +153,6 @@ void wifi_portal_init(wifi_portal_submit_cb_t submit_cb)
 int wifi_portal_start(void)
 {
 	int ret = http_server_start();
-
-	return ret == -EALREADY ? 0 : ret;
-}
-
-int wifi_portal_stop(void)
-{
-	int ret = http_server_stop();
 
 	return ret == -EALREADY ? 0 : ret;
 }
