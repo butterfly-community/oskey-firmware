@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>OSKey Wi-Fi</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 28rem;
+        margin: 3rem auto;
+        padding: 0 1rem;
+      }
+
+      label,
+      input,
+      button {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      label {
+        margin-top: 1rem;
+      }
+
+      input,
+      button {
+        font-size: 1rem;
+        padding: 0.7rem;
+      }
+
+      button {
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Configure Wi-Fi</h1>
+    <form id="wifi">
+      <label>
+        Wi-Fi name (SSID)
+        <input name="ssid" maxlength="32" pattern="[^:]*" required>
+      </label>
+      <label>
+        Password
+        <input name="password" type="password" maxlength="63">
+      </label>
+      <button type="submit">Connect</button>
+      <p id="wifiStatus"></p>
+    </form>
+    <form id="host">
+      <label>
+        Device hostname
+        <input
+          name="hostname"
+          maxlength="63"
+          pattern="[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+          required
+        >
+      </label>
+      <button type="submit">Save hostname</button>
+      <p id="hostnameStatus"></p>
+    </form>
+    <button id="reboot" type="button">Restart device</button>
+    <script>
+      wifi.onsubmit = event => {
+        event.preventDefault();
+        fetch("/configure", {
+          method: "POST",
+          body: `${wifi.ssid.value}:${wifi.password.value}`,
+        })
+          .then(response => {
+            wifiStatus.textContent = response.ok ? "Connecting" : "Invalid Wi-Fi settings";
+          });
+      };
+
+      host.onsubmit = event => {
+        event.preventDefault();
+        fetch("/hostname", { method: "POST", body: host.hostname.value })
+          .then(response => {
+            hostnameStatus.textContent = response.ok ? "Hostname saved" : "Failed to save hostname";
+          });
+      };
+
+      reboot.onclick = () => {
+        fetch("/reboot", { method: "POST" })
+          .then(() => document.body.innerHTML = "<h1>Restarting</h1>");
+      };
+    </script>
+  </body>
+</html>

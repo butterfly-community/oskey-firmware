@@ -66,6 +66,13 @@ target_sources_ifdef(CONFIG_WIFI_USAGE_MODE_STA_AP app PRIVATE
 )
 
 if(CONFIG_WIFI_USAGE_MODE_STA_AP)
+  set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated)
+  generate_inc_file_for_target(app
+    src/net/wifi_portal.html
+    ${gen_dir}/wifi_portal.html.gz.inc
+    --gzip
+  )
+
   zephyr_linker_sources(SECTIONS src/net/wifi_portal-sections.ld)
   # Enable when supporting CMake linker generator targets.
   # zephyr_iterable_section(
