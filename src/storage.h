@@ -3,7 +3,13 @@
 
 #include "wrapper.h"
 
-volatile bool storage_initd = false;
+struct storage_ids {
+	uint16_t seed;
+	uint16_t pin;
+};
+
+extern const struct storage_ids storage_ids;
+extern volatile bool storage_initd;
 
 int storage_init();
 bool storage_general_check(uint16_t id);

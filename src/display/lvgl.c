@@ -1206,7 +1206,7 @@ void app_display_loop()
 	if (features[3] == true && !app_check_storage()) {
 		app_display_storage_error();
 	} else {
-		if (storage_general_check(STORAGE_ID_SEED)) {
+		if (storage_general_check(storage_ids.seed)) {
 			wallet_lock();
 			app_display_input("Verify PIN", INPUT_ACTION_PIN_VERIFY, BACK_ACTION_NONE);
 		} else {
@@ -1226,7 +1226,7 @@ void app_display_loop()
 
 void app_display_loop()
 {
-	if (storage_general_check(STORAGE_ID_SEED)) {
+	if (storage_general_check(storage_ids.seed)) {
 		wallet_lock();
 	}
 	return;

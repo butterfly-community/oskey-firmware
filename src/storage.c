@@ -1,5 +1,12 @@
 #include "storage.h"
 
+const struct storage_ids storage_ids = {
+	.seed = 2,
+	.pin = 10,
+};
+
+volatile bool storage_initd;
+
 #ifdef CONFIG_SETTINGS_ZMS
 
 #include <zephyr/drivers/flash.h>
@@ -123,9 +130,9 @@ int storage_init()
 
 bool storage_general_check(uint16_t id)
 {
-	if (id == STORAGE_ID_SEED) {
+	if (id == storage_ids.seed) {
 		return storage_seed_buffer[0] != 0;
-	} else if (id == STORAGE_ID_PIN) {
+	} else if (id == storage_ids.pin) {
 		return storage_pin_buffer[0] != 0;
 	}
 	return false;
@@ -133,13 +140,13 @@ bool storage_general_check(uint16_t id)
 
 bool storage_general_write(const uint8_t *data, int len, uint16_t id)
 {
-	if (id == STORAGE_ID_SEED) {
+	if (id == storage_ids.seed) {
 		if (len > sizeof(storage_seed_buffer)) {
 			return false;
 		}
 		memcpy(storage_seed_buffer, data, len);
 		return true;
-	} else if (id == STORAGE_ID_PIN) {
+	} else if (id == storage_ids.pin) {
 		if (len > sizeof(storage_pin_buffer)) {
 			return false;
 		}
@@ -151,13 +158,13 @@ bool storage_general_write(const uint8_t *data, int len, uint16_t id)
 
 int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 {
-	if (id == STORAGE_ID_SEED) {
+	if (id == storage_ids.seed) {
 		if (len > sizeof(storage_seed_buffer)) {
 			len = sizeof(storage_seed_buffer);
 		}
 		memcpy(data, storage_seed_buffer, len);
 		return len;
-	} else if (id == STORAGE_ID_PIN) {
+	} else if (id == storage_ids.pin) {
 		if (len > sizeof(storage_pin_buffer)) {
 			len = sizeof(storage_pin_buffer);
 		}
