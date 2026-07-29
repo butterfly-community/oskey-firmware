@@ -6,7 +6,7 @@ You can directly use the Dockerfile, which provides a tested compilation and deb
 
 ## Try Compile Demo
 
-`esp32s3_devkitc/esp32s3/procpu` is our recommended development board. OSKey requires native pointer-width atomic operations; targets such as ESP32-C2/C3 and RP2040 are not supported.
+`esp32s3_devkitc/esp32s3/procpu` is our recommended development board. OSKey requires native pointer-width atomic operations.
 
 If you have completed the steps in the link above, try compiling the example with this command.
 
@@ -29,16 +29,6 @@ cd <YOUR_ZEPHYR_PATH>/modules/lang/rust
 wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/rust.patch
 
 git apply rust.patch
-```
-
-ESP32 builds also require the Espressif HAL patch.
-
-```bash
-cd <YOUR_ZEPHYR_PATH>/modules/hal/espressif
-
-wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/espressif.patch
-
-git apply espressif.patch
 ```
 
 Also refer to [Docker](../../Dockerfile)

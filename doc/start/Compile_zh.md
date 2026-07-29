@@ -8,7 +8,7 @@
 
 ## 尝试编译示例
 
-`esp32s3_devkitc/esp32s3/procpu` 是我们推荐的开发板。OSKey 要求原生支持指针宽度 atomic，不再支持 ESP32-C2/C3、RP2040 等目标。
+`esp32s3_devkitc/esp32s3/procpu` 是我们推荐的开发板。OSKey 要求原生支持指针宽度 atomic。
 
 如果您已完成上述链接中的步骤，请尝试使用此命令编译示例。
 
@@ -32,16 +32,6 @@ cd <YOUR_ZEPHYR_PATH>/modules/lang/rust
 wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/rust.patch
 
 git apply rust.patch
-```
-
-ESP32 构建还需要应用乐鑫 HAL 补丁。
-
-```bash
-cd <YOUR_ZEPHYR_PATH>/modules/hal/espressif
-
-wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/espressif.patch
-
-git apply espressif.patch
 ```
 
 另外可以参考 [Docker](../../Dockerfile)
