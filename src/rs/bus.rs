@@ -66,8 +66,7 @@ extern "C" fn app_event_bytes_handle() {
 
 // Not irq, should be called in main loop or work thread
 pub fn app_event_trans() -> Result<()> {
-    let test = APP_UART_REQ_PARSER.unpack();
-    let req_data = test.ok_or(anyhow!("Waiting"))??;
+    let req_data = APP_UART_REQ_PARSER.unpack().ok_or(anyhow!("Waiting"))??;
     let payload = wallet_handle_hub(req_data);
     app_event_sent_res(payload);
     Ok(())
