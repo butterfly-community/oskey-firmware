@@ -18,6 +18,9 @@ static const uint8_t portal_page[] = {
 #include "wifi_portal.html.gz.inc"
 };
 
+static const uint8_t captive_portal_status[] =
+	"{\"captive\":true,\"user-portal-url\":\"http://" CONFIG_OSKEY_WIFI_AP_IP_ADDRESS "/\"}";
+
 static char request_body[WIFI_PORTAL_REQUEST_SIZE];
 static size_t request_body_len;
 static wifi_portal_submit_cb_t portal_submit_cb;
@@ -163,6 +166,17 @@ static struct http_resource_detail_static portal_resource_detail = {
 	.static_data_len = sizeof(portal_page),
 };
 
+static struct http_resource_detail_static captive_portal_resource_detail = {
+	.common =
+		{
+			.type = HTTP_RESOURCE_TYPE_STATIC,
+			.bitmask_of_supported_http_methods = BIT(HTTP_GET),
+			.content_type = "application/captive+json",
+		},
+	.static_data = captive_portal_status,
+	.static_data_len = sizeof(captive_portal_status) - 1,
+};
+
 static struct http_resource_detail_dynamic configure_resource_detail = {
 	.common =
 		{
@@ -198,6 +212,8 @@ static uint16_t portal_port = 80;
 HTTP_SERVICE_DEFINE(wifi_portal_service, NULL, &portal_port, 1, 1, NULL,
 		    &portal_resource_detail.common, NULL);
 HTTP_RESOURCE_DEFINE(wifi_portal_root, wifi_portal_service, "/", &portal_resource_detail);
+HTTP_RESOURCE_DEFINE(wifi_portal_status, wifi_portal_service, "/generate_204",
+		     &captive_portal_resource_detail);
 HTTP_RESOURCE_DEFINE(wifi_portal_configure, wifi_portal_service, "/configure",
 		     &configure_resource_detail);
 HTTP_RESOURCE_DEFINE(wifi_portal_hostname, wifi_portal_service, "/hostname",
