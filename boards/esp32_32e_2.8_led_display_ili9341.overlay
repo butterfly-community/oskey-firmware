@@ -26,7 +26,6 @@
       mipi-max-frequency = <DT_FREQ_M(30)>;
       reg = <0>;
       pixel-format = <PANEL_PIXEL_FORMAT_RGB_565X>;
-      rotation = <0>;
       width = <240>;
       height = <320>;
       rotation = <90>;
@@ -39,12 +38,6 @@
     lcd_bk: led_0 {
       gpios = <&gpio0 21 GPIO_ACTIVE_HIGH>;
     };
-  };
-
-  lvgl_pointer {
-    compatible = "zephyr,lvgl-pointer-input";
-    input = <&xpt2046>;
-    invert-x;
   };
 };
 
@@ -72,5 +65,7 @@
     max-x = <3800>;
     min-y = <300>;
     max-y = <3600>;
+    screen-width = <240>;
+    inverted-x;
   };
 };

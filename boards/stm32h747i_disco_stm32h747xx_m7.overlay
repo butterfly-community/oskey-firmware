@@ -8,7 +8,6 @@
     int-gpios = <&dsi_lcd_qsh_030 0x4 0x1>;
     status = "okay";
     reg = <0x2a>;
-    phandle = <0x88>;
   };
 };
 

@@ -56,12 +56,6 @@
       gpios = <&gpio0 21 GPIO_ACTIVE_HIGH>;
     };
   };
-
-  lvgl_pointer {
-    compatible = "zephyr,lvgl-pointer-input";
-    input = <&xpt2046>;
-    swap-xy;
-  };
 };
 
 &spim3_default {
@@ -88,5 +82,6 @@
     max-x = <3800>;
     min-y = <300>;
     max-y = <3600>;
+    swapped-x-y;
   };
 };

@@ -54,12 +54,6 @@
       gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
     };
   };
-
-  lvgl_pointer {
-    compatible = "zephyr,lvgl-pointer-input";
-    input = <&ft6336>;
-    invert-y;
-  };
 };
 
 &i2c0 {
@@ -76,6 +70,8 @@
     status = "okay";
     compatible = "focaltech,ft5336";
     reg = <0x38>;
+    screen-height = <240>;
+    inverted-y;
   };
 };
 

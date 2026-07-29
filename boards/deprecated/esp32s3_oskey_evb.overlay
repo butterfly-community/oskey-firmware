@@ -4,11 +4,6 @@
 
 / {
   /* Deprecated hardware definition retained for reference. */
-  wifi_ap: wifi_ap {
-    compatible = "espressif,esp32-wifi";
-    status = "okay";
-  };
-
   chosen {
     zephyr,display = &st7789v;
     zephyr,touch = &ft6336;
@@ -54,12 +49,6 @@
     };
   };
 
-  lvgl_pointer {
-    compatible = "zephyr,lvgl-pointer-input";
-    input = <&ft6336>;
-    invert-y;
-  };
-
   leds {
     compatible = "gpio-leds";
     status = "okay";
@@ -85,6 +74,8 @@
     status = "okay";
     compatible = "focaltech,ft5336";
     reg = <0x38>;
+    screen-height = <240>;
+    inverted-y;
   };
 };
 

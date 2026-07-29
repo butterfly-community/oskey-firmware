@@ -2,7 +2,6 @@
   aliases {
     app-uart = &cdc_acm_uart0;
   };
-
 };
 
 &zephyr_udc0 {

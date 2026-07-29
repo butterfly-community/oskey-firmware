@@ -30,7 +30,6 @@
       width = <480>;
       madctl = <0x68>; // 0x36 0x08 0x68 0xC8 0xA8
       rgb-is-inverted;
-      // colmod = <0x05>; // 0x3A
       invert-mode = "1-dot"; // 0xB4 (dic)
       dfc = [ 80 22 3B  ]; // 0xB6
       doca = [ 40 8A 00 00 29 19 A5 33  ]; // 0xE8
@@ -49,12 +48,6 @@
     lcd_bk: led_0 {
       gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
     };
-  };
-
-  lvgl_pointer {
-    compatible = "zephyr,lvgl-pointer-input";
-    input = <&ft5336>;
-    invert-y;
   };
 };
 
@@ -91,7 +84,8 @@
     status = "okay";
     compatible = "focaltech,ft5336";
     reg = <0x38>;
-    // int-gpios = <&pca9554 2 GPIO_ACTIVE_LOW>;
+    screen-height = <320>;
+    inverted-y;
   };
 };
 
