@@ -1,200 +1,175 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-env
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run=west
 
-const config = {
-  command:
-    'west build -p always -b {board} --build-dir temp {command} -- -DEXTRA_CONF_FILE="{conf}" -DEXTRA_DTC_OVERLAY_FILE="{overlay}" {extra}',
-  files: ["bin", "elf", "uf2"],
-  boards: [
-    {
-      name: "stm32_nucleo_f401re",
-      target: "nucleo_f401re",
-      conf: ["boards/conf/enable_test_rng.conf"],
-      overlay: [],
-      extra: "-D CONFIG_HEAP_MEM_POOL_SIZE=40960",
-    },
-    {
-      name: "esp32s3_devkitc",
-      target: "esp32s3_devkitc/esp32s3/procpu",
-      conf: ["boards/conf/enable_storage.conf"],
-      overlay: [],
-    },
-    {
-      name: "esp32s3_core",
-      target: "esp32s3_devkitc/esp32s3/procpu",
-      conf: ["boards/conf/enable_storage.conf"],
-      overlay: ["boards/overlay/esp32_usb_jtag_serial.overlay"],
-    },
-    {
-      name: "lichuang_szpi_s3",
-      target: "esp32s3_devkitc/esp32s3/procpu",
-      conf: [
-        "boards/conf/enable_storage.conf",
-        "boards/conf/enable_lvgl.conf",
-      ],
-      overlay: ["boards/esp32s3_lichuang.overlay"],
-      extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
-    },
-    {
-      name: "lichuang_szpi_s3_usb_jtag_serial",
-      target: "esp32s3_devkitc/esp32s3/procpu",
-      conf: [
-        "boards/conf/enable_storage.conf",
-        "boards/conf/enable_lvgl.conf",
-      ],
-      overlay: [
-        "boards/esp32s3_lichuang.overlay",
-        "boards/overlay/esp32_usb_jtag_serial.overlay",
-      ],
-      extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
-    },
-    {
-      name: "lichuang_szpi_s3_webusb",
-      target: "esp32s3_devkitc/esp32s3/procpu",
-      conf: [
-        "boards/conf/enable_storage.conf",
-        "boards/conf/enable_lvgl.conf",
-        "boards/conf/enable_usb.conf",
-      ],
-      overlay: [
-        "boards/esp32s3_lichuang.overlay",
-        "boards/overlay/cdc_acm.overlay",
-      ],
-      extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
-    },
-    {
-      name: "generic_esp32e_2.8_ili9341",
-      target: "esp32_devkitc/esp32/procpu",
-      conf: [
-        "boards/conf/enable_storage.conf",
-        "boards/conf/enable_lvgl.conf",
-      ],
-      overlay: ["boards/esp32_32e_2.8_led_display_ili9341.overlay"],
-    },
-    {
-      name: "generic_esp32e_2.8_st7789",
-      target: "esp32_devkitc/esp32/procpu",
-      conf: [
-        "boards/conf/enable_storage.conf",
-        "boards/conf/enable_lvgl.conf",
-      ],
-      overlay: ["boards/esp32_32e_2.8_led_display_st7789.overlay"],
-    },
-    {
-      name: "waveshare_s3_touch_lcd_3.5",
-      target: "esp32s3_devkitc/esp32s3/procpu",
-      conf: [
-        "boards/conf/enable_storage.conf",
-        "boards/conf/enable_lvgl.conf",
-      ],
-      overlay: [
-        "boards/esp32s3_waveshare_3.5.overlay",
-        "boards/overlay/esp32_usb_jtag_serial.overlay",
-      ],
-    },
-    {
-      name: "stm32h747i_disco",
-      target: "stm32h747i_disco/stm32h747xx/m7",
-      conf: ["boards/conf/enable_storage.conf", "boards/conf/enable_lvgl.conf"],
-      overlay: [],
-      command: "--shield st_b_lcd40_dsi1_mb1166",
-    },
-    {
-      name: "stm32f769i_disco",
-      target: "stm32f769i_disco",
-      conf: ["boards/conf/enable_storage.conf"],
-      overlay: ["boards/overlay/stm32_rng.overlay"],
-    },
-    {
-      name: "nrf52840_mdk",
-      target: "nrf52840_mdk",
-      conf: ["boards/conf/enable_storage.conf"],
-      overlay: [],
-    },
-  ],
-};
-
-console.log("\n🚀 Start Buiding...\n");
-
-async function run() {
-  await cleanTemp();
-
-  for (const board of config.boards) {
-    const command = config.command
-      .replace("{board}", board.target)
-      .replace("{conf}", board.conf.join(";"))
-      .replace("{overlay}", board.overlay.join(";"))
-      .replace("{command}", board.command ?? "")
-      .replace("{extra}", board.extra ?? "");
-
-    console.log(`🔨 Build: ${board.name}\n`);
-
-    console.log(`🔨 Command: ${command}\n`);
-
-    const shell = Deno.env.get("SHELL") || "bash";
-
-    const process = new Deno.Command(shell, {
-      args: ["-c", command],
-      stdout: "inherit",
-      stderr: "inherit",
-    });
-
-    const { code } = await process.output();
-
-    if (code !== 0) {
-      console.error(`❌ ${board.name} Build failed with exit code ${code}\n`);
-      Deno.exit(code);
-    }
-    console.log(`✅ ${board.name} Build succeeded\n`);
-
-    const execFileOwner = new Deno.Command(shell, {
-      args: ["-c", "chmod -R 777 boards/build"],
-      stdout: "inherit",
-      stderr: "inherit",
-    });
-
-    await execFileOwner.output();
-
-    await copyBuildFiles(board.name);
-  }
-
-  await cleanTemp();
+interface Board {
+  name: string;
+  target: string;
+  features: string[];
+  overlays?: string[];
+  westArgs?: string[];
+  cmakeArgs?: string[];
 }
 
-async function cleanTemp() {
-  const shell = Deno.env.get("SHELL") || "bash";
+const buildDir = "temp";
+const outputDir = "boards/build";
+const artifacts = ["bin", "elf", "uf2"] as const;
 
-  const cleanProcess = new Deno.Command(shell, {
-    args: ["-c", "rm -rf temp"],
-    stdout: "inherit",
-    stderr: "inherit",
-  });
+const boards: Board[] = [
+  {
+    name: "stm32_nucleo_f401re",
+    target: "nucleo_f401re",
+    features: ["TEST_RNG"],
+    cmakeArgs: ["-DCONFIG_HEAP_MEM_POOL_SIZE=40960"],
+  },
+  {
+    name: "esp32s3_devkitc",
+    target: "esp32s3_devkitc/esp32s3/procpu",
+    features: ["STORAGE"],
+  },
+  {
+    name: "esp32s3_core",
+    target: "esp32s3_devkitc/esp32s3/procpu",
+    features: ["STORAGE"],
+    overlays: ["boards/overlay/esp32_usb_jtag_serial.overlay"],
+  },
+  {
+    name: "lichuang_szpi_s3",
+    target: "esp32s3_devkitc/esp32s3/procpu",
+    features: ["STORAGE", "DISPLAY"],
+    overlays: ["boards/esp32s3_lichuang.overlay"],
+    cmakeArgs: ["-DCONFIG_SPI_INIT_PRIORITY=80"],
+  },
+  {
+    name: "lichuang_szpi_s3_usb_jtag_serial",
+    target: "esp32s3_devkitc/esp32s3/procpu",
+    features: ["STORAGE", "DISPLAY"],
+    overlays: [
+      "boards/esp32s3_lichuang.overlay",
+      "boards/overlay/esp32_usb_jtag_serial.overlay",
+    ],
+    cmakeArgs: ["-DCONFIG_SPI_INIT_PRIORITY=80"],
+  },
+  {
+    name: "lichuang_szpi_s3_webusb",
+    target: "esp32s3_devkitc/esp32s3/procpu",
+    features: ["STORAGE", "DISPLAY", "USB"],
+    overlays: [
+      "boards/esp32s3_lichuang.overlay",
+      "boards/overlay/cdc_acm.overlay",
+    ],
+    cmakeArgs: ["-DCONFIG_SPI_INIT_PRIORITY=80"],
+  },
+  {
+    name: "generic_esp32e_2.8_ili9341",
+    target: "esp32_devkitc/esp32/procpu",
+    features: ["STORAGE", "DISPLAY"],
+    overlays: ["boards/esp32_32e_2.8_led_display_ili9341.overlay"],
+  },
+  {
+    name: "generic_esp32e_2.8_st7789",
+    target: "esp32_devkitc/esp32/procpu",
+    features: ["STORAGE", "DISPLAY"],
+    overlays: ["boards/esp32_32e_2.8_led_display_st7789.overlay"],
+  },
+  {
+    name: "waveshare_s3_touch_lcd_3.5",
+    target: "esp32s3_devkitc/esp32s3/procpu",
+    features: ["STORAGE", "DISPLAY"],
+    overlays: [
+      "boards/esp32s3_waveshare_3.5.overlay",
+      "boards/overlay/esp32_usb_jtag_serial.overlay",
+    ],
+  },
+  {
+    name: "stm32h747i_disco",
+    target: "stm32h747i_disco/stm32h747xx/m7",
+    features: ["STORAGE", "DISPLAY"],
+    westArgs: ["--shield", "st_b_lcd40_dsi1_mb1166"],
+  },
+  {
+    name: "stm32f769i_disco",
+    target: "stm32f769i_disco",
+    features: ["STORAGE"],
+    overlays: ["boards/overlay/stm32_rng.overlay"],
+  },
+  {
+    name: "nrf52840_mdk",
+    target: "nrf52840_mdk",
+    features: ["STORAGE"],
+  },
+];
 
-  await cleanProcess.output();
+async function removeDirectory(path: string) {
+  try {
+    await Deno.remove(path, { recursive: true });
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) {
+      throw error;
+    }
+  }
 }
 
 async function copyBuildFiles(boardName: string) {
-  await Deno.mkdir("boards/build", { recursive: true });
-
-  for (const fileExt of config.files) {
-    const sourceFile = `temp/zephyr/zephyr.${fileExt}`;
-    const targetFile = `boards/build/${boardName}.${fileExt}`;
+  for (const fileExt of artifacts) {
+    const sourceFile = `${buildDir}/zephyr/zephyr.${fileExt}`;
+    const targetFile = `${outputDir}/${boardName}.${fileExt}`;
 
     try {
-      await Deno.stat(sourceFile);
       await Deno.copyFile(sourceFile, targetFile);
       console.log(`📁 Copied: ${sourceFile} -> ${targetFile}\n`);
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {
         console.log(`⚠️  File not found: ${sourceFile}\n`);
       } else {
-        console.error(`❌ Error copying ${sourceFile}:`, error);
+        throw error;
       }
     }
   }
 }
 
+async function run() {
+  await removeDirectory(buildDir);
+  await Deno.mkdir(outputDir, { recursive: true });
+
+  for (const board of boards) {
+    const args = [
+      "build",
+      "-p",
+      "always",
+      "-b",
+      board.target,
+      "--build-dir",
+      buildDir,
+      ...(board.westArgs ?? []),
+      "--",
+      ...board.features.map((feature) => `-DCONFIG_OSKEY_${feature}=y`),
+      ...(board.overlays
+        ? [`-DEXTRA_DTC_OVERLAY_FILE=${board.overlays.join(";")}`]
+        : []),
+      ...(board.cmakeArgs ?? []),
+    ];
+
+    console.log(`🔨 Build: ${board.name}\n`);
+    console.log(`🔨 Command: west ${args.join(" ")}\n`);
+
+    const { code } = await new Deno.Command("west", {
+      args,
+      stdout: "inherit",
+      stderr: "inherit",
+    }).output();
+
+    if (code !== 0) {
+      console.error(`❌ ${board.name} build failed with exit code ${code}\n`);
+      await removeDirectory(buildDir);
+      Deno.exit(code);
+    }
+
+    console.log(`✅ ${board.name} build succeeded\n`);
+    await copyBuildFiles(board.name);
+  }
+
+  await removeDirectory(buildDir);
+}
+
+console.log("\n🚀 Start building...\n");
 await run();
-
 console.log("\n🎉 All builds completed successfully!\n");
-
-console.log("Done! 🎉\n");
