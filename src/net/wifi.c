@@ -381,7 +381,8 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		ap_state = APP_WIFI_AP_ACTIVE;
 		LOG_INF("AP %s ready at http://%s", CONFIG_OSKEY_WIFI_AP_SSID,
 			CONFIG_OSKEY_WIFI_AP_IP_ADDRESS);
-		k_work_reschedule(&wifi_work, K_NO_WAIT);
+		/* The result may arrive before the AP enable request returns. */
+		k_work_reschedule(&wifi_work, K_TICKS(1));
 		break;
 	}
 	case NET_EVENT_WIFI_AP_DISABLE_RESULT: {
