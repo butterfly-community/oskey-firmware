@@ -21,7 +21,29 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
    elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64"))
      set(RUST_TARGET "x86_64-unknown-none" PARENT_SCOPE)
    elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64"))
-@@ -142,8 +155,8 @@ target-dir = \"${CARGO_TARGET_DIR}\"
+@@ -92,1 +105,9 @@ function(add_cargo_target_with_zephyr_env target)
++  if(CONFIG_XTENSA)
++    set(cargo_toolchain_arg +esp)
++    set(cargo_build_std_args -Z build-std=core,alloc)
++  else()
++    set(cargo_toolchain_arg)
++    set(cargo_build_std_args)
++  endif()
++
+   add_custom_command(
+@@ -107,2 +128,2 @@ function(add_cargo_target_with_zephyr_env target)
+-      cargo ${cargo_command}
++      cargo ${cargo_toolchain_arg} ${cargo_command}
+       ${rust_build_type_arg}
+@@ -113,6 +134,7 @@ function(add_cargo_target_with_zephyr_env target)
+       --target ${RUST_TARGET}
+       --target-dir ${CARGO_TARGET_DIR}
++      ${cargo_build_std_args}
+       ${cargo_args}
+     COMMENT "${CARGO_TARGET_COMMENT}"
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+   )
+@@ -202,8 +224,8 @@ target-dir = \"${CARGO_TARGET_DIR}\"
  BUILD_DIR = \"${CMAKE_CURRENT_BINARY_DIR}\"
  DOTCONFIG = \"${DOTCONFIG}\"
  ZEPHYR_DTS = \"${ZEPHYR_DTS}\"
@@ -32,32 +54,10 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
  WRAPPER_FILE = \"${WRAPPER_FILE}\"
  BINARY_DIR_INCLUDE_GENERATED = \"${BINARY_DIR_INCLUDE_GENERATED}\"
  DT_AUGMENTS = \"${DT_AUGMENTS}\"
-@@ -160,18 +173,24 @@ ${config_paths}
-+  if(CONFIG_XTENSA)
-+    set(rust_cargo_command cargo +esp build -Z build-std=core,alloc)
-+  else()
-+    set(rust_cargo_command cargo build)
-+  endif()
-+
-   # The library is built by invoking Cargo.
-   add_custom_command(
-     OUTPUT ${DUMMY_FILE}
-     BYPRODUCTS ${RUST_LIBRARY} ${WRAPPER_FILE}
-     USES_TERMINAL
-     COMMAND
-       ${CMAKE_COMMAND} -E
-       env BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}
-       ZEPHYR_BASE=${ZEPHYR_BASE}
-       DOTCONFIG=${DOTCONFIG}
-       ZEPHYR_DTS=${ZEPHYR_DTS}
-       INCLUDE_DIRS="${include_dirs}"
-       INCLUDE_DEFINES="${include_defines}"
-       WRAPPER_FILE="${WRAPPER_FILE}"
-       DT_AUGMENTS="${DT_AUGMENTS}"
-       BINARY_DIR_INCLUDE_GENERATED="${BINARY_DIR_INCLUDE_GENERATED}"
--      cargo build
-+      ${rust_cargo_command}
-       ${rust_build_type_arg}
+@@ -225,3 +246,2 @@ ${config_paths}
+   add_cargo_target_with_zephyr_env(clippy
+-    ALL
+     OUTPUT run_rust_clippy
 diff --git a/Kconfig b/Kconfig
 --- a/Kconfig
 +++ b/Kconfig
@@ -69,21 +69,10 @@ diff --git a/Kconfig b/Kconfig
  				(ARCH_POSIX && 64BIT)) && \
  				!TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
  	help
-diff --git a/dt-rust.yaml b/dt-rust.yaml
---- a/dt-rust.yaml
-+++ b/dt-rust.yaml
-@@ -35,6 +35,7 @@
-       names:
-         - "nordic,nrf52-flash-controller"
-         - "nordic,nrf51-flash-controller"
-+        - "espressif,esp32-flash-controller"
-         - "raspberrypi,pico-flash-controller"
-         - "zephyr,sim-flash"
-       level: 0
 diff --git a/zephyr-build/src/lib.rs b/zephyr-build/src/lib.rs
 --- a/zephyr-build/src/lib.rs
 +++ b/zephyr-build/src/lib.rs
-@@ -66,7 +66,7 @@ pub fn build_kconfig_mod() {
+@@ -78,7 +78,7 @@ pub fn build_kconfig_mod() {
          let line = line.expect("reading line from dotconfig");
          if let Some(caps) = config_hex.captures(&line) {
              writeln!(&mut f, "#[allow(dead_code)]").unwrap();
