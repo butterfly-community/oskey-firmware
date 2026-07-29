@@ -27,7 +27,8 @@ void app_uart_rx_handler(const struct device *dev, void *user_data)
 {
 	uint8_t buf[32];
 	uint32_t len = 0;
-	if (uart_irq_update(dev) && uart_irq_rx_ready(dev)) {
+	uart_irq_update(dev);
+	if (uart_irq_rx_ready(dev)) {
 		len = uart_fifo_read(dev, buf, sizeof(buf));
 		printf("uart rx %u bytes\n", len);
 		app_uart_handle_rx(APP_UART_TRANSPORT_UART, buf, len);
