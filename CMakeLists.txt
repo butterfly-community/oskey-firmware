@@ -62,6 +62,7 @@ target_sources(app PRIVATE
 )
 
 target_sources_ifdef(CONFIG_WIFI_USAGE_MODE_STA_AP app PRIVATE
+  src/net/http.c
   src/net/wifi_portal.c
 )
 

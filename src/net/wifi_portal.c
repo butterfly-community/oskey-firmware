@@ -20,7 +20,6 @@ static const uint8_t portal_page[] = {
 
 static char request_body[WIFI_PORTAL_REQUEST_SIZE];
 static size_t request_body_len;
-static char *wifi_password;
 static wifi_portal_submit_cb_t portal_submit_cb;
 
 struct post_endpoint {
@@ -58,34 +57,24 @@ SETTINGS_STATIC_HANDLER_DEFINE(wifi_portal, "oskey", NULL, hostname_settings_set
 static enum http_status wifi_post(enum http_transaction_status status, char *body, size_t len)
 {
 	if (status == HTTP_SERVER_TRANSACTION_ABORTED) {
-		wifi_password = NULL;
 		return HTTP_200_OK;
 	}
 
-	if (status == HTTP_SERVER_TRANSACTION_COMPLETE && wifi_password != NULL &&
-	    portal_submit_cb != NULL) {
-		size_t ssid_len = wifi_password - body;
-
-		portal_submit_cb(body, ssid_len, wifi_password + 1, len - ssid_len - 1);
-	}
-
-	if (status == HTTP_SERVER_TRANSACTION_COMPLETE) {
-		wifi_password = NULL;
-		return HTTP_200_OK;
-	}
-
-	wifi_password = memchr(body, ':', len);
-	if (wifi_password == NULL) {
+	char *password = memchr(body, ':', len);
+	if (password == NULL) {
 		return HTTP_400_BAD_REQUEST;
 	}
 
-	size_t ssid_len = wifi_password - body;
+	size_t ssid_len = password - body;
 	size_t password_len = len - ssid_len - 1;
 
 	if (ssid_len == 0 || ssid_len > WIFI_SSID_MAX_LEN ||
 	    (password_len > 0 && password_len < 8) || password_len > 63) {
-		wifi_password = NULL;
 		return HTTP_400_BAD_REQUEST;
+	}
+
+	if (status == HTTP_SERVER_TRANSACTION_COMPLETE && portal_submit_cb != NULL) {
+		portal_submit_cb(body, ssid_len, password + 1, password_len);
 	}
 
 	return HTTP_200_OK;
@@ -215,14 +204,8 @@ HTTP_RESOURCE_DEFINE(wifi_portal_hostname, wifi_portal_service, "/hostname",
 		     &hostname_resource_detail);
 HTTP_RESOURCE_DEFINE(wifi_portal_reboot, wifi_portal_service, "/reboot", &reboot_resource_detail);
 
-void wifi_portal_init(wifi_portal_submit_cb_t submit_cb)
+int wifi_portal_init(wifi_portal_submit_cb_t submit_cb)
 {
 	portal_submit_cb = submit_cb;
-}
-
-int wifi_portal_start(void)
-{
-	int ret = http_server_start();
-
-	return ret == -EALREADY ? 0 : ret;
+	return http_server_start();
 }

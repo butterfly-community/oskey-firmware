@@ -12,14 +12,11 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/net/conn_mgr_monitor.h>
-#include <zephyr/net/http/client.h>
 #include <zephyr/net/wifi_credentials.h>
 #include <zephyr/net/wifi_mgmt.h>
 #include <zephyr/posix/arpa/inet.h>
-#include <zephyr/posix/netdb.h>
-#include <zephyr/posix/sys/socket.h>
-#include <zephyr/posix/unistd.h>
 
+#include "http.h"
 #include "wifi_portal.h"
 
 #include <zephyr/net/dhcpv4_server.h>
@@ -28,117 +25,50 @@ LOG_MODULE_REGISTER(wifi);
 
 #define MACSTR "%02X:%02X:%02X:%02X:%02X:%02X"
 
-#define PUBLIC_IP_HOST "ifconfig.me"
-
 #define NET_EVENT_WIFI_MASK                                                                        \
 	(NET_EVENT_WIFI_CONNECT_RESULT | NET_EVENT_WIFI_DISCONNECT_RESULT |                        \
 	 NET_EVENT_WIFI_AP_ENABLE_RESULT | NET_EVENT_WIFI_AP_DISABLE_RESULT |                      \
 	 NET_EVENT_WIFI_AP_STA_CONNECTED | NET_EVENT_WIFI_AP_STA_DISCONNECTED)
 
-enum app_wifi_state {
-	APP_WIFI_IDLE,
+enum app_wifi_ap_state {
+	APP_WIFI_AP_OFF,
 	APP_WIFI_AP_STARTING,
 	APP_WIFI_AP_ACTIVE,
-	APP_WIFI_STA_CONNECTING,
-	APP_WIFI_STA_DISCONNECTING,
-	APP_WIFI_STA_RESTORE_PENDING,
 	APP_WIFI_AP_STOPPING,
-	APP_WIFI_STA_ACTIVE,
+};
+
+enum app_wifi_sta_state {
+	APP_WIFI_STA_DISCONNECTED,
+	APP_WIFI_STA_CONNECTING_STORED,
+	APP_WIFI_STA_CONNECTING_NEW,
+	APP_WIFI_STA_CONNECTED,
+	APP_WIFI_STA_DISCONNECTING,
 };
 
 static struct net_if *sta_iface;
 static struct net_mgmt_event_callback wifi_event_cb;
-static enum app_wifi_state wifi_state;
-static char sta_ssid[WIFI_SSID_MAX_LEN + 1];
-static char sta_password[WIFI_PSK_MAX_LEN + 1];
-static size_t sta_ssid_len;
-static size_t sta_password_len;
+static enum app_wifi_ap_state ap_state;
+static enum app_wifi_sta_state sta_state;
+static char pending_ssid[WIFI_SSID_MAX_LEN + 1];
+static char pending_password[WIFI_PSK_MAX_LEN + 1];
+static size_t pending_ssid_len;
+static size_t pending_password_len;
 
 static void wifi_work_handler(struct k_work *work);
 static K_WORK_DELAYABLE_DEFINE(wifi_work, wifi_work_handler);
 
-static int public_ip_response_cb(struct http_response *response, enum http_final_call final_data,
-				 void *user_data)
+static void clear_pending_credentials(void)
 {
-	ARG_UNUSED(final_data);
-	ARG_UNUSED(user_data);
-
-	if (response->http_status_code == 200 && response->body_frag_start != NULL) {
-		LOG_INF("Public IP: %.*s", (int)response->body_frag_len,
-			(char *)response->body_frag_start);
-	}
-
-	return 0;
+	memset(pending_ssid, 0, sizeof(pending_ssid));
+	memset(pending_password, 0, sizeof(pending_password));
+	pending_ssid_len = 0;
+	pending_password_len = 0;
 }
 
-static void log_public_ip(void)
-{
-	const struct addrinfo hints = {
-		.ai_family = AF_INET,
-		.ai_socktype = SOCK_STREAM,
-	};
-	struct addrinfo *address;
-	uint8_t receive_buffer[256];
-	int ret = getaddrinfo(PUBLIC_IP_HOST, "80", &hints, &address);
-
-	if (ret != 0) {
-		LOG_WRN("Cannot resolve %s: %d", PUBLIC_IP_HOST, ret);
-		return;
-	}
-
-	int sock = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
-
-	if (sock < 0) {
-		LOG_WRN("Cannot create HTTP socket: %d", errno);
-		goto free_address;
-	}
-
-	if (connect(sock, address->ai_addr, address->ai_addrlen) < 0) {
-		LOG_WRN("Cannot connect to %s: %d", PUBLIC_IP_HOST, errno);
-		goto close_socket;
-	}
-
-	struct http_request request = {
-		.method = HTTP_GET,
-		.url = "/ip",
-		.host = PUBLIC_IP_HOST,
-		.protocol = "HTTP/1.1",
-		.response = public_ip_response_cb,
-		.recv_buf = receive_buffer,
-		.recv_buf_len = sizeof(receive_buffer),
-	};
-
-	ret = http_client_req(sock, &request, 5 * MSEC_PER_SEC, NULL);
-	if (ret < 0) {
-		LOG_WRN("Public IP request failed: %d", ret);
-	}
-
-close_socket:
-	(void)close(sock);
-free_address:
-	freeaddrinfo(address);
-}
-
-static void public_ip_check_handler(struct k_work *work)
-{
-	ARG_UNUSED(work);
-	log_public_ip();
-}
-
-static K_WORK_DELAYABLE_DEFINE(public_ip_check, public_ip_check_handler);
-
-static void clear_sta_credentials(void)
-{
-	memset(sta_ssid, 0, sizeof(sta_ssid));
-	memset(sta_password, 0, sizeof(sta_password));
-	sta_ssid_len = 0;
-	sta_password_len = 0;
-}
-
-static int save_sta_credentials(void)
+static int save_pending_credentials(void)
 {
 	enum wifi_security_type security =
-		sta_password_len == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
+		pending_password_len == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
 	int ret = wifi_credentials_delete_all();
 
 	if (ret < 0) {
@@ -146,9 +76,9 @@ static int save_sta_credentials(void)
 		return ret;
 	}
 
-	ret = wifi_credentials_set_personal(sta_ssid, sta_ssid_len, security, NULL, 0, sta_password,
-					    sta_password_len, WIFI_CREDENTIALS_FLAG_2_4GHz,
-					    WIFI_CHANNEL_ANY, 0);
+	ret = wifi_credentials_set_personal(pending_ssid, pending_ssid_len, security, NULL, 0,
+					    pending_password, pending_password_len,
+					    WIFI_CREDENTIALS_FLAG_2_4GHz, WIFI_CHANNEL_ANY, 0);
 	if (ret < 0) {
 		LOG_ERR("Failed to store Wi-Fi credentials: %d", ret);
 	}
@@ -234,14 +164,15 @@ static int enable_ap_mode(void)
 {
 	struct wifi_connect_req_params config = {0};
 
-	if (ap_iface == NULL) {
-		LOG_ERR("AP interface is not initialized");
-		return -ENODEV;
+	if (ap_state != APP_WIFI_AP_OFF) {
+		return 0;
 	}
 
+	LOG_INF("Starting Wi-Fi AP");
 	int ret = start_ap_network();
 
 	if (ret < 0) {
+		k_work_reschedule(&wifi_work, K_SECONDS(1));
 		return ret;
 	}
 
@@ -253,12 +184,13 @@ static int enable_ap_mode(void)
 	config.channel = WIFI_CHANNEL_ANY;
 	config.band = WIFI_FREQ_BAND_2_4_GHZ;
 
-	wifi_state = APP_WIFI_AP_STARTING;
+	ap_state = APP_WIFI_AP_STARTING;
 	ret = net_mgmt(NET_REQUEST_WIFI_AP_ENABLE, ap_iface, &config, sizeof(config));
 	if (ret < 0) {
 		LOG_ERR("Failed to enable AP mode: %d", ret);
-		wifi_state = APP_WIFI_IDLE;
+		ap_state = APP_WIFI_AP_OFF;
 		stop_ap_network();
+		k_work_reschedule(&wifi_work, K_SECONDS(1));
 	}
 
 	return ret;
@@ -267,59 +199,61 @@ static int enable_ap_mode(void)
 static void provisioning_submitted(const char *ssid, size_t ssid_len, const char *password,
 				   size_t password_len)
 {
-	memcpy(sta_ssid, ssid, ssid_len);
-	sta_ssid[ssid_len] = '\0';
-	sta_ssid_len = ssid_len;
+	memcpy(pending_ssid, ssid, ssid_len);
+	pending_ssid[ssid_len] = '\0';
+	pending_ssid_len = ssid_len;
 
-	memcpy(sta_password, password, password_len);
-	sta_password[password_len] = '\0';
-	sta_password_len = password_len;
+	memcpy(pending_password, password, password_len);
+	pending_password[password_len] = '\0';
+	pending_password_len = password_len;
 
 	k_work_reschedule(&wifi_work, K_NO_WAIT);
 }
 
 static void disable_ap_mode(void)
 {
-	wifi_state = APP_WIFI_AP_STOPPING;
+	if (ap_state != APP_WIFI_AP_ACTIVE) {
+		return;
+	}
+
+	LOG_INF("Stopping Wi-Fi AP");
+	ap_state = APP_WIFI_AP_STOPPING;
 
 	int ret = net_mgmt(NET_REQUEST_WIFI_AP_DISABLE, ap_iface, NULL, 0);
 
 	if (ret < 0) {
 		LOG_ERR("Failed to disable AP mode: %d", ret);
-		wifi_state = APP_WIFI_STA_ACTIVE;
+		ap_state = APP_WIFI_AP_ACTIVE;
+		k_work_reschedule(&wifi_work, K_SECONDS(1));
 	}
 }
 
-static int connect_to_wifi(void)
+static int connect_to_new_wifi(void)
 {
 	struct wifi_connect_req_params config = {0};
 
-	if (sta_iface == NULL) {
-		LOG_ERR("STA interface is not initialized");
-		return -ENODEV;
-	}
-
-	if (sta_ssid_len == 0) {
+	if (pending_ssid_len == 0) {
 		LOG_ERR("STA SSID is not configured");
 		return -EINVAL;
 	}
 
-	config.ssid = (const uint8_t *)sta_ssid;
-	config.ssid_length = sta_ssid_len;
-	config.psk = (const uint8_t *)sta_password;
-	config.psk_length = sta_password_len;
-	config.security = sta_password_len == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
+	config.ssid = (const uint8_t *)pending_ssid;
+	config.ssid_length = pending_ssid_len;
+	config.psk = (const uint8_t *)pending_password;
+	config.psk_length = pending_password_len;
+	config.security =
+		pending_password_len == 0 ? WIFI_SECURITY_TYPE_NONE : WIFI_SECURITY_TYPE_PSK;
 	config.channel = WIFI_CHANNEL_ANY;
 	config.band = WIFI_FREQ_BAND_2_4_GHZ;
 
-	LOG_INF("Connecting to SSID: %s", sta_ssid);
-	wifi_state = APP_WIFI_STA_CONNECTING;
+	LOG_INF("Connecting to SSID: %s", pending_ssid);
+	sta_state = APP_WIFI_STA_CONNECTING_NEW;
 
 	int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT, sta_iface, &config, sizeof(config));
 
 	if (ret < 0) {
-		LOG_ERR("Failed to request connection to %s: %d", sta_ssid, ret);
-		wifi_state = ap_addr_configured ? APP_WIFI_AP_ACTIVE : APP_WIFI_STA_RESTORE_PENDING;
+		LOG_ERR("Failed to request connection to %s: %d", pending_ssid, ret);
+		sta_state = APP_WIFI_STA_DISCONNECTED;
 	}
 
 	return ret;
@@ -328,13 +262,14 @@ static int connect_to_wifi(void)
 static int connect_to_stored_wifi(void)
 {
 	LOG_INF("Connecting with stored Wi-Fi credentials");
-	wifi_state = APP_WIFI_STA_CONNECTING;
+	sta_state = APP_WIFI_STA_CONNECTING_STORED;
 
 	int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT_STORED, sta_iface, NULL, 0);
 
 	if (ret < 0) {
 		LOG_ERR("Failed to request stored Wi-Fi connection: %d", ret);
-		wifi_state = APP_WIFI_IDLE;
+		sta_state = APP_WIFI_STA_DISCONNECTED;
+		k_work_reschedule(&wifi_work, K_SECONDS(10));
 	}
 
 	return ret;
@@ -350,12 +285,32 @@ static int event_status(const struct net_mgmt_event_callback *cb)
 	return ((const struct wifi_status *)cb->info)->status;
 }
 
+static void handle_sta_connection_failure(void)
+{
+	bool new_credentials = sta_state == APP_WIFI_STA_CONNECTING_NEW;
+
+	sta_state = APP_WIFI_STA_DISCONNECTED;
+	if (new_credentials) {
+		clear_pending_credentials();
+	} else if (pending_ssid_len > 0) {
+		k_work_reschedule(&wifi_work, K_NO_WAIT);
+	} else {
+		k_work_reschedule(&wifi_work, K_SECONDS(10));
+	}
+}
+
+static bool sta_is_connecting(void)
+{
+	return sta_state == APP_WIFI_STA_CONNECTING_STORED ||
+	       sta_state == APP_WIFI_STA_CONNECTING_NEW;
+}
+
 static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 			       struct net_if *iface)
 {
 	switch (mgmt_event) {
 	case NET_EVENT_WIFI_CONNECT_RESULT: {
-		if (iface != sta_iface || wifi_state != APP_WIFI_STA_CONNECTING) {
+		if (iface != sta_iface || !sta_is_connecting()) {
 			break;
 		}
 
@@ -363,42 +318,24 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 
 		if (status != 0) {
 			LOG_ERR("Wi-Fi connection failed: %d", status);
-			bool provisioning = sta_ssid_len > 0;
-			bool ap_active = ap_addr_configured;
-
-			clear_sta_credentials();
-			if (provisioning && !ap_active) {
-				wifi_state = APP_WIFI_STA_RESTORE_PENDING;
-				k_work_reschedule(&wifi_work, K_MSEC(500));
-			} else {
-				wifi_state = provisioning ? APP_WIFI_AP_ACTIVE : APP_WIFI_IDLE;
-			}
-			if (!provisioning) {
-				k_work_reschedule(&wifi_work, K_NO_WAIT);
-			}
+			handle_sta_connection_failure();
 			break;
 		}
 
-		bool provisioning = sta_ssid_len > 0;
+		bool new_credentials = sta_state == APP_WIFI_STA_CONNECTING_NEW;
 
-		if (provisioning) {
-			LOG_INF("Connected to %s", sta_ssid);
-			(void)save_sta_credentials();
+		if (new_credentials) {
+			LOG_INF("Connected to %s", pending_ssid);
+			(void)save_pending_credentials();
 		} else {
 			LOG_INF("Connected with stored Wi-Fi credentials");
 		}
-		clear_sta_credentials();
-		k_work_reschedule(&public_ip_check, K_SECONDS(30));
-		if (provisioning && ap_addr_configured) {
-			disable_ap_mode();
-		} else {
-			wifi_state = APP_WIFI_STA_ACTIVE;
-			int ret = wifi_portal_start();
-
-			if (ret < 0) {
-				LOG_ERR("Failed to start Wi-Fi configuration portal: %d", ret);
-			}
+		sta_state = APP_WIFI_STA_CONNECTED;
+		if (new_credentials) {
+			clear_pending_credentials();
 		}
+		http_public_ip_check_schedule();
+		k_work_reschedule(&wifi_work, K_NO_WAIT);
 		break;
 	}
 	case NET_EVENT_WIFI_DISCONNECT_RESULT: {
@@ -413,33 +350,21 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		} else {
 			LOG_INF("Wi-Fi disconnected");
 		}
-		k_work_cancel_delayable(&public_ip_check);
+		http_public_ip_check_cancel();
 
-		if (wifi_state == APP_WIFI_STA_DISCONNECTING) {
-			wifi_state = APP_WIFI_IDLE;
+		if (sta_state == APP_WIFI_STA_DISCONNECTING) {
+			sta_state = APP_WIFI_STA_DISCONNECTED;
 			k_work_reschedule(&wifi_work, K_NO_WAIT);
-		} else if (wifi_state == APP_WIFI_STA_CONNECTING) {
-			bool provisioning = sta_ssid_len > 0;
-
-			clear_sta_credentials();
-			if (provisioning && !ap_addr_configured) {
-				wifi_state = APP_WIFI_STA_RESTORE_PENDING;
-				k_work_reschedule(&wifi_work, K_MSEC(500));
-			} else {
-				wifi_state = provisioning ? APP_WIFI_AP_ACTIVE : APP_WIFI_IDLE;
-				if (!provisioning) {
-					k_work_reschedule(&wifi_work, K_NO_WAIT);
-				}
-			}
-		} else if (wifi_state == APP_WIFI_STA_ACTIVE) {
-			clear_sta_credentials();
-			wifi_state = APP_WIFI_IDLE;
+		} else if (sta_is_connecting()) {
+			handle_sta_connection_failure();
+		} else if (sta_state == APP_WIFI_STA_CONNECTED) {
+			sta_state = APP_WIFI_STA_DISCONNECTED;
 			k_work_reschedule(&wifi_work, K_NO_WAIT);
 		}
 		break;
 	}
 	case NET_EVENT_WIFI_AP_ENABLE_RESULT: {
-		if (iface != ap_iface) {
+		if (iface != ap_iface || ap_state != APP_WIFI_AP_STARTING) {
 			break;
 		}
 
@@ -447,24 +372,20 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 
 		if (status != 0) {
 			LOG_ERR("AP enable failed: %d", status);
-			wifi_state = APP_WIFI_IDLE;
+			ap_state = APP_WIFI_AP_OFF;
 			stop_ap_network();
+			k_work_reschedule(&wifi_work, K_SECONDS(1));
 			break;
 		}
 
-		wifi_state = APP_WIFI_AP_ACTIVE;
-		int ret = wifi_portal_start();
-
-		if (ret < 0) {
-			LOG_ERR("Failed to start Wi-Fi configuration portal: %d", ret);
-		} else {
-			LOG_INF("AP %s ready at http://%s", CONFIG_OSKEY_WIFI_AP_SSID,
-				CONFIG_OSKEY_WIFI_AP_IP_ADDRESS);
-		}
+		ap_state = APP_WIFI_AP_ACTIVE;
+		LOG_INF("AP %s ready at http://%s", CONFIG_OSKEY_WIFI_AP_SSID,
+			CONFIG_OSKEY_WIFI_AP_IP_ADDRESS);
+		k_work_reschedule(&wifi_work, K_NO_WAIT);
 		break;
 	}
 	case NET_EVENT_WIFI_AP_DISABLE_RESULT: {
-		if (iface != ap_iface) {
+		if (iface != ap_iface || ap_state != APP_WIFI_AP_STOPPING) {
 			break;
 		}
 
@@ -472,12 +393,17 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 
 		if (status != 0) {
 			LOG_ERR("AP disable failed: %d", status);
-			wifi_state = APP_WIFI_STA_ACTIVE;
+			ap_state = APP_WIFI_AP_ACTIVE;
+			k_work_reschedule(&wifi_work, K_SECONDS(1));
 			break;
 		}
 
 		stop_ap_network();
-		wifi_state = APP_WIFI_STA_ACTIVE;
+		ap_state = APP_WIFI_AP_OFF;
+		LOG_INF("Wi-Fi AP stopped");
+		if (sta_state != APP_WIFI_STA_CONNECTED || pending_ssid_len > 0) {
+			k_work_reschedule(&wifi_work, K_NO_WAIT);
+		}
 		break;
 	}
 	case NET_EVENT_WIFI_AP_STA_CONNECTED:
@@ -505,40 +431,45 @@ static void wifi_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
 
-	if ((wifi_state == APP_WIFI_AP_ACTIVE || wifi_state == APP_WIFI_IDLE) && sta_ssid_len > 0) {
-		if (connect_to_wifi() < 0) {
-			clear_sta_credentials();
-			if (wifi_state == APP_WIFI_STA_RESTORE_PENDING) {
-				k_work_reschedule(&wifi_work, K_MSEC(500));
-			}
+	if (sta_state == APP_WIFI_STA_CONNECTED) {
+		if (pending_ssid_len == 0) {
+			disable_ap_mode();
+			return;
 		}
-		return;
-	}
 
-	if (wifi_state == APP_WIFI_STA_ACTIVE && sta_ssid_len > 0) {
-		wifi_state = APP_WIFI_STA_DISCONNECTING;
+		sta_state = APP_WIFI_STA_DISCONNECTING;
 		int ret = net_mgmt(NET_REQUEST_WIFI_DISCONNECT, sta_iface, NULL, 0);
-
 		if (ret < 0) {
 			LOG_ERR("Failed to disconnect before changing Wi-Fi: %d", ret);
-			wifi_state = APP_WIFI_STA_ACTIVE;
-			clear_sta_credentials();
+			sta_state = APP_WIFI_STA_CONNECTED;
+			clear_pending_credentials();
 		}
 		return;
 	}
 
-	if (wifi_state == APP_WIFI_STA_RESTORE_PENDING) {
-		if (connect_to_stored_wifi() < 0) {
-			k_work_reschedule(&wifi_work, K_NO_WAIT);
+	if (sta_state != APP_WIFI_STA_DISCONNECTED) {
+		return;
+	}
+
+	if (ap_state == APP_WIFI_AP_OFF) {
+		(void)enable_ap_mode();
+		return;
+	}
+
+	if (ap_state != APP_WIFI_AP_ACTIVE) {
+		return;
+	}
+
+	if (pending_ssid_len > 0) {
+		if (connect_to_new_wifi() < 0) {
+			clear_pending_credentials();
 		}
 		return;
 	}
 
-	if (wifi_state != APP_WIFI_IDLE) {
-		return;
+	if (!wifi_credentials_is_empty()) {
+		(void)connect_to_stored_wifi();
 	}
-
-	(void)enable_ap_mode();
 }
 
 int wifi_start(void)
@@ -559,9 +490,11 @@ int wifi_start(void)
 	}
 	conn_mgr_ignore_iface(ap_iface);
 
-	wifi_portal_init(provisioning_submitted);
-	if (!wifi_credentials_is_empty() && connect_to_stored_wifi() == 0) {
-		return 0;
+	int ret = wifi_portal_init(provisioning_submitted);
+
+	if (ret < 0) {
+		LOG_ERR("Failed to start Wi-Fi configuration portal: %d", ret);
+		return ret;
 	}
 
 	return enable_ap_mode();
