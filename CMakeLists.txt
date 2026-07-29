@@ -48,7 +48,7 @@ add_subdirectory(lib/core/wallet/psa)
 target_sources(app PRIVATE
   src/main.c
   src/uart.c
-  src/bluetooth.c
+  src/bluetooth/bluetooth.c
   src/storage.c
   src/boot.c
   src/net/wifi.c

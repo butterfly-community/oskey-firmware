@@ -1,4 +1,4 @@
-#include "bluetooth.h"
+#include "bluetooth/bluetooth.h"
 #include "uart.h"
 
 #ifdef CONFIG_BT
@@ -11,19 +11,19 @@
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/services/nus.h>
 
-#define STR_LEN(str) (sizeof(str) - 1)
+#define OSKEY_BT_PASSKEY 123456
 
-LOG_MODULE_REGISTER(bluetooth);
+LOG_MODULE_REGISTER(oskey_bt);
 
-K_MUTEX_DEFINE(active_conn_lock);
+K_MUTEX_DEFINE(oskey_bt_conn_lock);
 static struct bt_conn *active_conn;
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
 };
 
 static const struct bt_data sd[] = {
-	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, STR_LEN(CONFIG_BT_DEVICE_NAME)),
 	BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NUS_SRV_VAL),
 };
 
@@ -31,10 +31,10 @@ static void set_active_conn(struct bt_conn *conn)
 {
 	struct bt_conn *old_conn;
 
-	k_mutex_lock(&active_conn_lock, K_FOREVER);
+	k_mutex_lock(&oskey_bt_conn_lock, K_FOREVER);
 	old_conn = active_conn;
 	active_conn = conn == NULL ? NULL : bt_conn_ref(conn);
-	k_mutex_unlock(&active_conn_lock);
+	k_mutex_unlock(&oskey_bt_conn_lock);
 
 	if (old_conn != NULL) {
 		bt_conn_unref(old_conn);
@@ -45,9 +45,9 @@ static struct bt_conn *get_active_conn(void)
 {
 	struct bt_conn *conn;
 
-	k_mutex_lock(&active_conn_lock, K_FOREVER);
+	k_mutex_lock(&oskey_bt_conn_lock, K_FOREVER);
 	conn = active_conn == NULL ? NULL : bt_conn_ref(active_conn);
-	k_mutex_unlock(&active_conn_lock);
+	k_mutex_unlock(&oskey_bt_conn_lock);
 
 	return conn;
 }
@@ -85,14 +85,14 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	set_active_conn(NULL);
 }
 
-static void start_adv(void)
+static void start_advertising(void)
 {
 	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 
 	if (err) {
-		LOG_ERR("Advertising failed to start (err %d)", err);
+		LOG_ERR("Failed to start advertising: %d", err);
 	} else {
-		LOG_INF("Advertising successfully started");
+		LOG_INF("Advertising started");
 	}
 }
 
@@ -126,7 +126,7 @@ static void security_changed(struct bt_conn *conn, bt_security_t level, enum bt_
 BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.connected = connected,
 	.disconnected = disconnected,
-	.recycled = start_adv,
+	.recycled = start_advertising,
 	.identity_resolved = identity_resolved,
 	.security_changed = security_changed,
 };
@@ -149,10 +149,21 @@ static void auth_cancel(struct bt_conn *conn)
 	LOG_INF("Pairing cancelled: %s", addr);
 }
 
-static struct bt_conn_auth_cb auth_cb_display = {
+#ifdef CONFIG_BT_APP_PASSKEY
+static uint32_t auth_app_passkey(struct bt_conn *conn)
+{
+	ARG_UNUSED(conn);
+
+	return OSKEY_BT_PASSKEY;
+}
+#endif
+
+static struct bt_conn_auth_cb auth_callbacks = {
 	.passkey_display = auth_passkey_display,
-	.passkey_entry = NULL,
 	.cancel = auth_cancel,
+#ifdef CONFIG_BT_APP_PASSKEY
+	.app_passkey = auth_app_passkey,
+#endif
 };
 
 static void pairing_complete(struct bt_conn *conn, bool bonded)
@@ -166,19 +177,19 @@ static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 	bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 }
 
-static struct bt_conn_auth_info_cb auth_cb_info = {
+static struct bt_conn_auth_info_cb auth_info_callbacks = {
 	.pairing_complete = pairing_complete,
 	.pairing_failed = pairing_failed,
 };
 
-static void notif_enabled(bool enabled, void *ctx)
+static void notifications_changed(bool enabled, void *ctx)
 {
 	ARG_UNUSED(ctx);
 
-	LOG_INF("%s() - %s", __func__, (enabled ? "Enabled" : "Disabled"));
+	LOG_INF("Notifications %s", enabled ? "enabled" : "disabled");
 }
 
-static void received(struct bt_conn *conn, const void *data, uint16_t len, void *ctx)
+static void nus_received(struct bt_conn *conn, const void *data, uint16_t len, void *ctx)
 {
 	ARG_UNUSED(ctx);
 
@@ -192,14 +203,14 @@ static void received(struct bt_conn *conn, const void *data, uint16_t len, void 
 	LOG_DBG("Received %u bytes", len);
 }
 
-static struct bt_nus_cb nus_listener = {
-	.notif_enabled = notif_enabled,
-	.received = received,
+static struct bt_nus_cb nus_callbacks = {
+	.notif_enabled = notifications_changed,
+	.received = nus_received,
 };
 
-int bt_init(void)
+int oskey_bt_init(void)
 {
-	int err = bt_nus_cb_register(&nus_listener, NULL);
+	int err = bt_nus_cb_register(&nus_callbacks, NULL);
 
 	if (err) {
 		LOG_ERR("Failed to register NUS callback: %d", err);
@@ -216,21 +227,17 @@ int bt_init(void)
 	return 0;
 }
 
-int bt_start(void)
+int oskey_bt_start(void)
 {
-	bt_conn_auth_cb_register(&auth_cb_display);
-	bt_conn_auth_info_cb_register(&auth_cb_info);
+	bt_conn_auth_cb_register(&auth_callbacks);
+	bt_conn_auth_info_cb_register(&auth_info_callbacks);
 
-#ifdef CONFIG_BT_FIXED_PASSKEY
-	bt_passkey_set(123456);
-#endif
-
-	start_adv();
+	start_advertising();
 
 	return 0;
 }
 
-int bt_nus_send_bytes(const uint8_t *data, size_t len)
+int oskey_bt_send(const uint8_t *data, size_t len)
 {
 	struct bt_conn *conn;
 	size_t max_payload;
@@ -278,17 +285,17 @@ out:
 
 #else
 
-int bt_init(void)
+int oskey_bt_init(void)
 {
 	return 0;
 }
 
-int bt_start(void)
+int oskey_bt_start(void)
 {
 	return 0;
 }
 
-int bt_nus_send_bytes(const uint8_t *data, size_t len)
+int oskey_bt_send(const uint8_t *data, size_t len)
 {
 	ARG_UNUSED(data);
 	ARG_UNUSED(len);

@@ -3,7 +3,7 @@
 #include <zephyr/device.h>
 #include "wrapper.h"
 #include "uart.h"
-#include "bluetooth.h"
+#include "bluetooth/bluetooth.h"
 #include "storage.h"
 #include "boot.h"
 #include "app.h"
@@ -27,13 +27,13 @@ int main(void)
 
 	user_button_init();
 
-	bt_init();
+	oskey_bt_init();
 
 	if (IS_ENABLED(CONFIG_SETTINGS) && app_check_storage()) {
 		settings_load();
 	}
 
-	bt_start();
+	oskey_bt_start();
 
 	int ret = wifi_start();
 

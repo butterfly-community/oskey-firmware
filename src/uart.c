@@ -1,6 +1,6 @@
 #include "uart.h"
 #include "bindings.h"
-#include "bluetooth.h"
+#include "bluetooth/bluetooth.h"
 
 LOG_MODULE_REGISTER(app_uart);
 
@@ -30,7 +30,7 @@ void app_uart_rx_handler(const struct device *dev, void *user_data)
 	uart_irq_update(dev);
 	if (uart_irq_rx_ready(dev)) {
 		len = uart_fifo_read(dev, buf, sizeof(buf));
-		printf("uart rx %u bytes\n", len);
+		LOG_DBG("UART received %u bytes", len);
 		app_uart_handle_rx(APP_UART_TRANSPORT_UART, buf, len);
 	}
 }
@@ -38,7 +38,7 @@ void app_uart_rx_handler(const struct device *dev, void *user_data)
 void app_uart_tx_push_array(const uint8_t *data, size_t len)
 {
 	if (app_uart_resp_transport == APP_UART_TRANSPORT_BLE) {
-		int err = bt_nus_send_bytes(data, len);
+		int err = oskey_bt_send(data, len);
 
 		if (err) {
 			LOG_ERR("Bluetooth response failed (%d)", err);
