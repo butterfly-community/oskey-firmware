@@ -20,6 +20,7 @@ struct app_message {
 };
 
 K_MEM_SLAB_DEFINE(app_message_slab, sizeof(struct app_message), APP_MESSAGE_QUEUE_DEPTH, 4);
+
 K_MSGQ_DEFINE(app_message_queue, sizeof(struct app_message *), APP_MESSAGE_QUEUE_DEPTH, 4);
 
 LOG_MODULE_REGISTER(app_message);
