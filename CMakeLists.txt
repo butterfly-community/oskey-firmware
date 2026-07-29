@@ -49,6 +49,7 @@ endif()
 
 target_sources(app PRIVATE
   src/main.c
+  src/message.c
   src/uart.c
   src/bluetooth/bluetooth.c
   src/storage.c

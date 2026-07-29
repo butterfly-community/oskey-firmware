@@ -1,8 +1,9 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-#include "wrapper.h"
+#include <stdbool.h>
 
-bool user_button_exists();
-int user_button_init();
+bool user_button_exists(void);
+int user_button_init(void);
+void user_button_request(bool active);
 #endif

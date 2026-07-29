@@ -1,15 +1,13 @@
 #include <zephyr/random/random.h>
 #include <zephyr/drivers/hwinfo.h>
+#include <zephyr/sys/reboot.h>
 #include "gpio.h"
 #include "app.h"
 #include "storage.h"
 
-struct k_work app_sign_work;
-
 bool app_csrand_get(void *dst, size_t len)
 {
-	sys_csrand_get(dst, len);
-	return true;
+	return sys_csrand_get(dst, len) == 0;
 }
 
 void app_version_get(void *ver, size_t len)
@@ -36,7 +34,7 @@ void app_version_get(void *ver, size_t len)
  */
 bool app_check_feature(uint8_t *buffer, size_t len)
 {
-	if (len < 5) {
+	if (len < 7) {
 		return false;
 	}
 	memset(buffer, 0, len);
@@ -66,33 +64,9 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	return true;
 }
 
-/**
- * @brief Get app runing status.
- *
- * @param [out] buffer buffer to fill with status.
- *
- * The buffer content represents:
- * - buffer[0]: Storage Init
- * - buffer[1]: Lock status
- *
- * @return true if success, false error.
- *
- */
-bool app_check_status(uint8_t *buffer, size_t len)
-{
-	if (len < 3) {
-		return false;
-	}
-	memset(buffer, 0, len);
-	buffer[0] = storage_initd;
-	buffer[1] = wallet_check_lock();
-	return true;
-}
-
-int app_get_chip_model(char *buffer, size_t len)
+void app_get_chip_model(char *buffer, size_t len)
 {
 	snprintf(buffer, len, "%s", CONFIG_SOC);
-	return 0;
 }
 
 int app_get_eui64(uint8_t *buffer, size_t len)
@@ -105,17 +79,21 @@ int app_get_device_id(uint8_t *buffer, size_t len)
 	return hwinfo_get_device_id(buffer, len);
 }
 
-bool app_check_storage()
+bool app_check_storage(void)
 {
 	return storage_initd;
 }
 
-void app_sign_work_handler(struct k_work *work)
+void app_storage_reset(void)
 {
-	wallet_sign_eth_from_trigger();
+	if (app_check_storage()) {
+		storage_erase_zms();
+	}
+	storage_erase_flash();
+	sys_reboot(SYS_REBOOT_COLD);
 }
 
-void app_sign_trigger()
+void app_restart(void)
 {
-	k_work_init(&app_sign_work, app_sign_work_handler);
+	sys_reboot(SYS_REBOOT_COLD);
 }

@@ -2,9 +2,8 @@
 #define UART_CONSOLE_H
 
 #include <zephyr/drivers/uart.h>
+#include <zephyr/devicetree.h>
 #include <zephyr/device.h>
-#include <zephyr/kernel.h>
-#include "wrapper.h"
 
 #if DT_NODE_HAS_STATUS(DT_ALIAS(app_uart), okay)
 
@@ -16,17 +15,8 @@
 
 #endif
 
-enum app_uart_transport {
-	APP_UART_TRANSPORT_UART = 0,
-	APP_UART_TRANSPORT_BLE = 1,
-};
+void app_uart_send(const uint8_t *data, size_t len);
 
-void app_uart_rx_handler(const struct device *dev, void *user_data);
-
-void app_uart_tx_push_array(const uint8_t *data, size_t len);
-
-int app_uart_irq_register();
-
-bool app_uart_handle_rx(enum app_uart_transport transport, const uint8_t *data, size_t len);
+int app_uart_irq_register(void);
 
 #endif

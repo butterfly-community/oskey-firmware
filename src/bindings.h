@@ -1,23 +1,42 @@
+#ifndef OSKEY_BINDINGS_H
+#define OSKEY_BINDINGS_H
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-bool app_uart_event_rs(const uint8_t *data, uintptr_t len);
+typedef enum AppDisplayAction {
+  AppDisplayAction_Ready = 1,
+  AppDisplayAction_Mnemonic,
+  AppDisplayAction_Sign,
+  AppDisplayAction_Error,
+} AppDisplayAction;
 
-bool app_event_bytes_handle(void);
+typedef enum AppMessageAction {
+  AppMessageAction_External = 0,
+  AppMessageAction_Unlock,
+  AppMessageAction_InitCustom,
+  AppMessageAction_GenerateMnemonic,
+  AppMessageAction_Approve,
+  AppMessageAction_Reject,
+  AppMessageAction_Restart,
+  AppMessageAction_ResetStorage,
+} AppMessageAction;
 
-bool wallet_check_lock(void);
+typedef enum AppMessageSource {
+  AppMessageSource_Uart = 0,
+  AppMessageSource_Bluetooth = 1,
+  AppMessageSource_Display = 2,
+  AppMessageSource_Button = 3,
+} AppMessageSource;
 
-void wallet_lock(void);
+void app_message_handle_rs(enum AppMessageSource source,
+                           enum AppMessageAction action,
+                           uint32_t value,
+                           const uint8_t *data,
+                           uintptr_t len,
+                           const uint8_t *auxiliary,
+                           uintptr_t auxiliary_len);
 
-bool wallet_set_pin_cache_from_display(const char *pin);
-
-bool wallet_unlock_from_display(const char *pin);
-
-bool wallet_sign_eth_from_trigger(void);
-
-bool wallet_mnemonic_generate_from_display(uintptr_t mnemonic_length, char *buffer, uintptr_t len,
-					   const uint8_t *entry, bool custom_mode);
-
-bool wallet_init_custom_from_display(const char *mnemonic);
+#endif  /* OSKEY_BINDINGS_H */

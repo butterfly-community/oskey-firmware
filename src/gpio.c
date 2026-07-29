@@ -1,6 +1,8 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/atomic.h>
+#include "message.h"
 #include "wrapper.h"
 
 LOG_MODULE_REGISTER(app_gpio);
@@ -9,15 +11,21 @@ LOG_MODULE_REGISTER(app_gpio);
 
 #if DT_HAS_ALIAS(sw0) && DT_NODE_HAS_STATUS(SW0_NODE, okay)
 
-#define SW0_ENABLED true
-
 static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(SW0_NODE, gpios);
 static struct gpio_callback button_cb_data;
+static atomic_t user_action_requested;
 
 static void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-	k_work_submit(&app_sign_work);
-	LOG_INF("User button released!");
+	if (atomic_cas(&user_action_requested, true, false)) {
+		if (app_message_submit(AppMessageSource_Button, AppMessageAction_Approve, 0, NULL,
+				       0, NULL, 0)) {
+			LOG_INF("User action approved");
+		} else {
+			atomic_set(&user_action_requested, true);
+			LOG_ERR("Failed to queue user action");
+		}
+	}
 }
 
 bool user_button_exists(void)
@@ -37,7 +45,10 @@ int user_button_init(void)
 	}
 
 	gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
-	gpio_add_callback(button.port, &button_cb_data);
+	ret = gpio_add_callback(button.port, &button_cb_data);
+	if (ret) {
+		return ret;
+	}
 
 	ret = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_TO_INACTIVE);
 	if (ret) {
@@ -47,9 +58,12 @@ int user_button_init(void)
 	return 0;
 }
 
-#else
+void user_button_request(bool active)
+{
+	atomic_set(&user_action_requested, active);
+}
 
-#define SW0_ENABLED false
+#else
 
 bool user_button_exists(void)
 {
@@ -59,5 +73,10 @@ bool user_button_exists(void)
 int user_button_init(void)
 {
 	return -1;
+}
+
+void user_button_request(bool active)
+{
+	ARG_UNUSED(active);
 }
 #endif

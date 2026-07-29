@@ -21,8 +21,6 @@ int main(void)
 
 	storage_init();
 
-	app_sign_trigger();
-
 	app_uart_irq_register();
 
 	user_button_init();

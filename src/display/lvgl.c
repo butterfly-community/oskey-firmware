@@ -6,12 +6,12 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
-#include <zephyr/sys/reboot.h>
 #include <lvgl.h>
 #include <lvgl_private.h>
 #include "wrapper.h"
 #include "storage.h"
 #include "app.h"
+#include "message.h"
 #include "logo.h"
 
 #ifdef CONFIG_LV_Z_DEMO_BENCHMARK
@@ -21,54 +21,16 @@
 static const struct device *display_dev;
 
 static char check_mnemonic_buffer[256] = {0};
-static struct k_work app_mnemonic_generate_work;
-static int app_mnemonic_length = 0;
 static char app_mnemonic_buffer[256] = {0};
-
-static struct k_work app_wallet_init_custom_work;
-static char app_wallet_init_mnemonic[256] = {0};
-static bool app_wallet_init_result = false;
-static volatile bool app_wallet_init_done = false;
-
 static char sign_buffer[1024] = {0};
+static char display_error_buffer[128] = {0};
 
 static char pin_buffer[30] = {0};
-static int pin_failed_attempts = 0;
 
 static lv_obj_t *cont = NULL;
 static int title_height = 0;
 static bool custom_mode = false;
 uint8_t entropy_bytes[32];
-
-void app_mnemonic_generate_work_handler(struct k_work *work)
-{
-	if (!custom_mode) {
-		wallet_mnemonic_generate_from_display(app_mnemonic_length, app_mnemonic_buffer,
-						      sizeof(app_mnemonic_buffer), NULL, false);
-	} else {
-		wallet_mnemonic_generate_from_display(app_mnemonic_length, app_mnemonic_buffer,
-						      sizeof(app_mnemonic_buffer), entropy_bytes,
-						      true);
-		memset(entropy_bytes, 0, sizeof(entropy_bytes));
-		custom_mode = false;
-	}
-}
-
-void app_mnemonic_generate_trigger(void)
-{
-	k_work_init(&app_mnemonic_generate_work, app_mnemonic_generate_work_handler);
-}
-
-void app_wallet_init_custom_work_handler(struct k_work *work)
-{
-	app_wallet_init_result = wallet_init_custom_from_display(app_wallet_init_mnemonic);
-	app_wallet_init_done = true;
-}
-
-void app_wallet_init_custom_trigger(void)
-{
-	k_work_init(&app_wallet_init_custom_work, app_wallet_init_custom_work_handler);
-}
 
 static lv_obj_t *create_button_container(lv_obj_t *parent)
 {
@@ -113,21 +75,6 @@ static void resize_container_for_keyboard(bool show_keyboard)
 	lv_coord_t new_height = show_keyboard ? screen_height - title_height - (screen_height / 2)
 					      : screen_height - title_height;
 	lv_obj_set_size(cont, lv_disp_get_hor_res(NULL), new_height);
-}
-
-static bool wallet_init_and_wait(const char *mnemonic)
-{
-	strncpy(app_wallet_init_mnemonic, mnemonic, sizeof(app_wallet_init_mnemonic) - 1);
-	app_wallet_init_result = false;
-	app_wallet_init_done = false;
-
-	k_work_submit(&app_wallet_init_custom_work);
-
-	while (!app_wallet_init_done) {
-		k_sleep(K_MSEC(100));
-	}
-
-	return app_wallet_init_result;
 }
 
 static lv_obj_t *create_title_bar(const char *text, lv_color_t border_color)
@@ -200,7 +147,7 @@ static lv_obj_t *create_content_container(lv_coord_t title_height, lv_flex_align
 	return container;
 }
 
-static void show_fail(char *msg)
+static void show_fail(const char *msg)
 {
 	lv_obj_t *error_label = lv_label_create(lv_scr_act());
 	lv_label_set_text(error_label, msg ? msg : "Verification failed!");
@@ -209,6 +156,15 @@ static void show_fail(char *msg)
 
 	lv_timer_t *timer = lv_timer_create(hide_error_label, 2000, error_label);
 	lv_timer_set_repeat_count(timer, 1);
+}
+
+static void display_submit(AppMessageAction action, uint32_t value, const void *data, size_t len,
+			   const void *auxiliary, size_t auxiliary_len)
+{
+	if (!app_message_submit(AppMessageSource_Display, action, value, data, len, auxiliary,
+				auxiliary_len)) {
+		show_fail("Device busy");
+	}
 }
 
 void hide_error_label(lv_timer_t *timer)
@@ -244,9 +200,6 @@ static bool validate_pin_complexity(const char *pin)
 
 int app_init_display()
 {
-	app_mnemonic_generate_trigger();
-	app_wallet_init_custom_trigger();
-
 	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 	if (!device_is_ready(display_dev)) {
 		return 0;
@@ -397,16 +350,12 @@ void app_display_tools()
 
 void app_display_mnemonic(int legth)
 {
-	app_mnemonic_length = legth;
-	memset(app_mnemonic_buffer, 0, sizeof(app_mnemonic_buffer));
+	size_t entropy_len = custom_mode ? legth * 4 / 3 : 0;
 
-	k_work_submit(&app_mnemonic_generate_work);
-
-	while (app_mnemonic_buffer[0] == '\0') {
-		k_sleep(K_MSEC(100));
-	}
-
-	lv_async_call(app_display_mnemonic_process, NULL);
+	display_submit(AppMessageAction_GenerateMnemonic, legth,
+		       entropy_len > 0 ? entropy_bytes : NULL, entropy_len, NULL, 0);
+	memset(entropy_bytes, 0, sizeof(entropy_bytes));
+	custom_mode = false;
 }
 
 void app_display_mnemonic_process(void *param)
@@ -471,10 +420,10 @@ void app_display_mnemonic_process(void *param)
 			       app_display_mnemonic_cb, NULL);
 }
 
-void app_sign_cb()
+static void display_sign_approve_cb(lv_event_t *event)
 {
-	k_work_submit(&app_sign_work);
-	app_display_index();
+	ARG_UNUSED(event);
+	display_submit(AppMessageAction_Approve, 0, NULL, 0, NULL, 0);
 }
 
 void app_display_index_cb(lv_event_t *e)
@@ -499,13 +448,9 @@ void app_display_tools_cb(lv_event_t *e)
 {
 	app_tools_action_t action = (app_tools_action_t)(intptr_t)lv_event_get_user_data(e);
 	if (action == TOOLS_ACTION_ERASE_DATA) {
-		if (app_check_storage()) {
-			storage_erase_zms();
-		}
-		storage_erase_flash();
-		sys_reboot(SYS_REBOOT_COLD);
+		display_submit(AppMessageAction_ResetStorage, 0, NULL, 0, NULL, 0);
 	} else if (action == TOOLS_ACTION_RESTART) {
-		sys_reboot(SYS_REBOOT_COLD);
+		display_submit(AppMessageAction_Restart, 0, NULL, 0, NULL, 0);
 	}
 }
 
@@ -528,6 +473,9 @@ void back_button_event_handler(lv_event_t *e)
 		break;
 	case BACK_ACTION_TO_TOOLS:
 		app_display_tools();
+		break;
+	case BACK_ACTION_REJECT:
+		display_submit(AppMessageAction_Reject, 0, NULL, 0, NULL, 0);
 		break;
 	default:
 		break;
@@ -557,14 +505,15 @@ static void app_display_features_cb()
 	app_display_input("Set Init PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
 }
 
-void app_display_sign_x()
+static void display_sign(void *param)
 {
+	ARG_UNUSED(param);
 	lv_obj_clean(lv_scr_act());
 
 	lv_obj_t *title = create_title_bar("Sign", lv_palette_main(LV_PALETTE_BLUE));
 	lv_coord_t th = lv_obj_get_height(title);
 
-	create_back_button(th, BACK_ACTION_TO_INIT);
+	create_back_button(th, BACK_ACTION_REJECT);
 	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_START);
 	lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
 	lv_obj_set_style_pad_all(container, 10, 0);
@@ -577,14 +526,54 @@ void app_display_sign_x()
 	lv_obj_set_style_pad_top(msg_label, 20, 0);
 
 	lv_obj_t *btn_cont = create_button_container(container);
-	create_centered_button(btn_cont, "Sign", lv_palette_main(LV_PALETTE_RED), 100, app_sign_cb,
-			       NULL);
+	create_centered_button(btn_cont, "Sign", lv_palette_main(LV_PALETTE_RED), 100,
+			       display_sign_approve_cb, NULL);
 }
 
-void app_display_sign(char *text)
+static void display_ready(void *param)
 {
-	strcpy(sign_buffer, text);
-	lv_async_call(app_display_sign_x, NULL);
+	ARG_UNUSED(param);
+	memset(check_mnemonic_buffer, 0, sizeof(check_mnemonic_buffer));
+	memset(app_mnemonic_buffer, 0, sizeof(app_mnemonic_buffer));
+	memset(pin_buffer, 0, sizeof(pin_buffer));
+	app_display_index();
+}
+
+static void display_error(void *param)
+{
+	ARG_UNUSED(param);
+	show_fail(display_error_buffer);
+}
+
+static void copy_display_text(char *buffer, size_t buffer_size, const uint8_t *data, size_t len)
+{
+	// TODO: Display long contract requests in pages instead of truncating them.
+	len = MIN(len, buffer_size - 1);
+	if (len > 0) {
+		memcpy(buffer, data, len);
+	}
+	buffer[len] = '\0';
+}
+
+void app_display_message(AppDisplayAction action, const uint8_t *data, size_t len)
+{
+	switch (action) {
+	case AppDisplayAction_Ready:
+		lv_async_call(display_ready, NULL);
+		break;
+	case AppDisplayAction_Mnemonic:
+		copy_display_text(app_mnemonic_buffer, sizeof(app_mnemonic_buffer), data, len);
+		lv_async_call(app_display_mnemonic_process, NULL);
+		break;
+	case AppDisplayAction_Sign:
+		copy_display_text(sign_buffer, sizeof(sign_buffer), data, len);
+		lv_async_call(display_sign, NULL);
+		break;
+	case AppDisplayAction_Error:
+		copy_display_text(display_error_buffer, sizeof(display_error_buffer), data, len);
+		lv_async_call(display_error, NULL);
+		break;
+	}
 }
 
 static void custom_button_toggle_cb(lv_event_t *e)
@@ -722,25 +711,23 @@ static void keyboard_event_cb(lv_event_t *e)
 		lv_obj_t *ta = lv_keyboard_get_textarea(kb);
 		resize_container_for_keyboard(false);
 
-		const char *text = lv_textarea_get_text(ta);
 		if (!ta) {
 			return;
 		}
+		const char *text = lv_textarea_get_text(ta);
 
 		switch (action) {
 		case INPUT_ACTION_IMPORT:
-			if (wallet_init_and_wait(text)) {
-				app_display_index();
-			} else {
-				show_fail(NULL);
-			}
+			display_submit(AppMessageAction_InitCustom, 0, text, strlen(text),
+				       pin_buffer, strlen(pin_buffer));
 			break;
 
 		case INPUT_ACTION_CHECK_MNEMONIC:
 			if (strcmp(check_mnemonic_buffer, text) == 0 ||
 			    strcmp(text, "oskey") == 0) {
-				wallet_init_and_wait(check_mnemonic_buffer);
-				app_display_index();
+				display_submit(AppMessageAction_InitCustom, 0,
+					       check_mnemonic_buffer, strlen(check_mnemonic_buffer),
+					       pin_buffer, strlen(pin_buffer));
 			} else {
 				show_fail(NULL);
 			}
@@ -751,14 +738,13 @@ static void keyboard_event_cb(lv_event_t *e)
 				show_fail("Need 8+ chars: A-Z,a-z,0-9,!@#");
 				return;
 			}
-			strcpy(pin_buffer, text);
+			snprintf(pin_buffer, sizeof(pin_buffer), "%s", text);
 			app_display_input("Check", INPUT_ACTION_PIN_CONFIRM,
 					  BACK_ACTION_TO_CHECK_FEATURES);
 			break;
 
 		case INPUT_ACTION_PIN_CONFIRM:
 			if (strcmp(pin_buffer, text) == 0) {
-				wallet_set_pin_cache_from_display(pin_buffer);
 				app_display_init();
 			} else {
 				show_fail(NULL);
@@ -766,23 +752,7 @@ static void keyboard_event_cb(lv_event_t *e)
 			break;
 
 		case INPUT_ACTION_PIN_VERIFY:
-			if (wallet_unlock_from_display(text)) {
-				pin_failed_attempts = 0;
-				app_display_index();
-			} else {
-				pin_failed_attempts++;
-				if (pin_failed_attempts >= 10) {
-					if (app_check_storage()) {
-						storage_erase_zms();
-					}
-					storage_erase_flash();
-					sys_reboot(SYS_REBOOT_COLD);
-				}
-				char error_msg[50];
-				snprintf(error_msg, sizeof(error_msg), "Failed! %d/10 attempts",
-					 pin_failed_attempts);
-				show_fail(error_msg);
-			}
+			display_submit(AppMessageAction_Unlock, 0, text, strlen(text), NULL, 0);
 			break;
 		}
 	}
@@ -818,6 +788,10 @@ void app_display_input(char *title_text, uintptr_t action, uintptr_t back_action
 	lv_obj_set_width(text_area, lv_pct(100));
 	lv_obj_set_flex_grow(text_area, 1);
 	lv_textarea_set_placeholder_text(text_area, "Enter words here...");
+	if (action == INPUT_ACTION_PIN_SET || action == INPUT_ACTION_PIN_CONFIRM ||
+	    action == INPUT_ACTION_PIN_VERIFY) {
+		lv_textarea_set_max_length(text_area, sizeof(pin_buffer) - 1);
+	}
 
 	lv_obj_t *keyboard = lv_keyboard_create(lv_scr_act());
 	lv_keyboard_set_textarea(keyboard, text_area);
@@ -1203,15 +1177,12 @@ void app_display_loop()
 	uint8_t features[7];
 	app_check_feature(features, sizeof(features));
 
-	if (features[3] == true && !app_check_storage()) {
+	if (features[3] && !app_check_storage()) {
 		app_display_storage_error();
+	} else if (storage_general_check(storage_ids.seed)) {
+		app_display_input("Verify PIN", INPUT_ACTION_PIN_VERIFY, BACK_ACTION_NONE);
 	} else {
-		if (storage_general_check(storage_ids.seed)) {
-			wallet_lock();
-			app_display_input("Verify PIN", INPUT_ACTION_PIN_VERIFY, BACK_ACTION_NONE);
-		} else {
-			app_display_features();
-		}
+		app_display_features();
 	}
 
 	lv_timer_handler();
@@ -1226,9 +1197,6 @@ void app_display_loop()
 
 void app_display_loop()
 {
-	if (storage_general_check(storage_ids.seed)) {
-		wallet_lock();
-	}
 	return;
 }
 
@@ -1237,9 +1205,11 @@ int app_init_display()
 	return 0;
 }
 
-void app_display_sign(char *text)
+void app_display_message(AppDisplayAction action, const uint8_t *data, size_t len)
 {
-	return;
+	(void)action;
+	(void)data;
+	(void)len;
 }
 
 #endif

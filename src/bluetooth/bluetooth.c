@@ -1,5 +1,8 @@
 #include "bluetooth/bluetooth.h"
-#include "uart.h"
+
+#include <zephyr/logging/log.h>
+
+#include "message.h"
 
 #ifdef CONFIG_BT
 
@@ -83,6 +86,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	LOG_INF("Disconnected from %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
 
 	set_active_conn(NULL);
+	/* TODO: Handle partial requests and pending signatures lost on BLE disconnect. */
 }
 
 static void start_advertising(void)
@@ -198,9 +202,12 @@ static void nus_received(struct bt_conn *conn, const void *data, uint16_t len, v
 		return;
 	}
 
-	app_uart_handle_rx(APP_UART_TRANSPORT_BLE, data, len);
-
-	LOG_DBG("Received %u bytes", len);
+	if (app_message_submit(AppMessageSource_Bluetooth, AppMessageAction_External, 0, data, len,
+			       NULL, 0)) {
+		LOG_DBG("Received %u bytes", len);
+	} else {
+		LOG_ERR("Failed to queue %u Bluetooth bytes", len);
+	}
 }
 
 static struct bt_nus_cb nus_callbacks = {

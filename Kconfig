@@ -25,6 +25,13 @@ config OSKEY_RUST
 	  Build the OSKey Rust application and its PSA wallet backend.
 	  Disable this to build the C application without Rust wallet support.
 
+config OSKEY_MESSAGE_STACK_SIZE
+	int "OSKey message thread stack size"
+	default 20480 if OSKEY_RUST
+	default 2048
+	help
+	  Stack size for the thread that processes OSKey protocol messages.
+
 config LV_Z_DEMO_BENCHMARK
 	bool "LVGL benchmark demo"
 	select LV_USE_DEMO_BENCHMARK

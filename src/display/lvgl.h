@@ -1,8 +1,10 @@
 #ifndef APP_SCREEN_H
 #define APP_SCREEN_H
 
-#include "storage.h"
-#include "wrapper.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#include "bindings.h"
 
 #ifdef CONFIG_DISPLAY
 
@@ -34,7 +36,8 @@ typedef enum {
 	BACK_ACTION_TO_INDEX = 2,
 	BACK_ACTION_TO_SELECT_LENGTH = 3,
 	BACK_ACTION_TO_TOOLS = 4,
-	BACK_ACTION_TO_CHECK_FEATURES = 5
+	BACK_ACTION_TO_CHECK_FEATURES = 5,
+	BACK_ACTION_REJECT = 6
 } app_back_action_t;
 
 typedef enum {
@@ -49,11 +52,7 @@ void app_display_tools_cb(lv_event_t *e);
 void app_display_mnemonic_cb();
 void app_display_index_cb(lv_event_t *e);
 
-void app_mnemonic_generate_work_handler(struct k_work *work);
-void app_mnemonic_generate_trigger(void);
 void app_display_mnemonic_process(void *param);
-void app_wallet_init_custom_work_handler(struct k_work *work);
-void app_wallet_init_custom_trigger(void);
 
 void back_button_event_handler(lv_event_t *e);
 
@@ -68,5 +67,6 @@ void app_display_entropy_collection(int page_count);
 
 int app_init_display(void);
 void app_display_loop(void);
+void app_display_message(AppDisplayAction action, const uint8_t *data, size_t len);
 
 #endif /* APP_SCREEN_H */

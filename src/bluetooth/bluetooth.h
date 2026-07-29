@@ -1,7 +1,8 @@
 #ifndef OSKEY_BLUETOOTH_H
 #define OSKEY_BLUETOOTH_H
 
-#include "wrapper.h"
+#include <stddef.h>
+#include <stdint.h>
 
 int oskey_bt_init(void);
 int oskey_bt_start(void);
