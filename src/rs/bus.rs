@@ -59,17 +59,18 @@ extern "C" fn app_uart_event_rs(data: *const u8, len: usize) -> bool {
 }
 
 #[no_mangle]
-extern "C" fn app_event_bytes_handle() {
-    let _event = app_event_trans();
-    return;
+extern "C" fn app_event_bytes_handle() -> bool {
+    app_event_trans()
 }
 
 // Not irq, should be called in main loop or work thread
-pub fn app_event_trans() -> Result<()> {
-    let req_data = APP_UART_REQ_PARSER.unpack().ok_or(anyhow!("Waiting"))??;
-    let payload = wallet_handle_hub(req_data);
-    app_event_sent_res(payload);
-    Ok(())
+pub fn app_event_trans() -> bool {
+    let Some(req_data) = APP_UART_REQ_PARSER.unpack() else {
+        return false;
+    };
+
+    app_event_sent_res(req_data.and_then(wallet_handle_hub));
+    true
 }
 
 pub fn app_event_sent_res(payload: Result<res_data::Payload>) {

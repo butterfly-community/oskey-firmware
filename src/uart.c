@@ -4,19 +4,21 @@
 
 LOG_MODULE_REGISTER(app_uart);
 
-struct k_work app_uart_work;
+static struct k_work_delayable app_uart_work;
 static volatile enum app_uart_transport app_uart_resp_transport = APP_UART_TRANSPORT_UART;
 
-void app_uart_work_handler(struct k_work *work)
+static void app_uart_work_handler(struct k_work *work)
 {
-	app_event_bytes_handle();
+	if (app_event_bytes_handle()) {
+		k_work_reschedule(&app_uart_work, K_MSEC(10));
+	}
 }
 
 bool app_uart_handle_rx(enum app_uart_transport transport, const uint8_t *data, size_t len)
 {
 	if (app_uart_event_rs(data, len)) {
 		app_uart_resp_transport = transport;
-		k_work_submit(&app_uart_work);
+		k_work_schedule(&app_uart_work, K_NO_WAIT);
 		return true;
 	}
 
@@ -53,7 +55,7 @@ void app_uart_tx_push_array(const uint8_t *data, size_t len)
 
 int app_uart_irq_register()
 {
-	k_work_init(&app_uart_work, app_uart_work_handler);
+	k_work_init_delayable(&app_uart_work, app_uart_work_handler);
 
 	if (!device_is_ready(DEV_CONSOLE)) {
 		return -1;
