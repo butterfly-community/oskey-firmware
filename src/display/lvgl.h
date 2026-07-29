@@ -6,7 +6,7 @@
 
 #include "bindings.h"
 
-#ifdef CONFIG_DISPLAY
+#ifdef CONFIG_OSKEY_DISPLAY
 
 #include <lvgl.h>
 #include <zephyr/kernel.h>
@@ -63,7 +63,7 @@ void app_display_logo(void);
 void app_display_features(void);
 void app_display_entropy_collection(int page_count);
 
-#endif /* CONFIG_DISPLAY */
+#endif /* CONFIG_OSKEY_DISPLAY */
 
 int app_init_display(void);
 void app_display_loop(void);

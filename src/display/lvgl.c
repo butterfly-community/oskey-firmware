@@ -1,6 +1,6 @@
 #include "lvgl.h"
 
-#ifdef CONFIG_DISPLAY
+#ifdef CONFIG_OSKEY_DISPLAY
 
 #include <zephyr/drivers/display.h>
 #include <zephyr/kernel.h>

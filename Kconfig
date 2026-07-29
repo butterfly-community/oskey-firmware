@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+
+menu "OSKey core"
 
 config OSKEY_RUST
 	bool "OSKey Rust application"
@@ -32,6 +35,58 @@ config OSKEY_MESSAGE_STACK_SIZE
 	help
 	  Stack size for the thread that processes OSKey protocol messages.
 
+endmenu
+
+menu "OSKey features"
+
+config OSKEY_STORAGE
+	bool "Storage"
+	select ZMS
+	select SETTINGS
+	select FLASH
+	select FLASH_MAP
+	select FLASH_PAGE_LAYOUT
+	help
+	  Enable the shared ZMS storage and Zephyr settings backend.
+
+config MPU_ALLOW_FLASH_WRITE
+	default y if OSKEY_STORAGE || OSKEY_XIP
+
+menuconfig OSKEY_DISPLAY
+	bool "Display and input"
+	select I2C
+	select DISPLAY
+	select INPUT
+	select LVGL
+	select LV_Z_MEMORY_POOL_CUSTOM_SECTION
+	select LV_Z_VDB_CUSTOM_SECTION
+	select LV_USE_FONT_COMPRESSED
+	select LV_FONT_MONTSERRAT_32
+	select LV_FONT_MONTSERRAT_18
+	select LV_FONT_MONTSERRAT_16
+
+config MAIN_STACK_SIZE
+	default 20480 if OSKEY_DISPLAY
+	default 12288
+
+if OSKEY_DISPLAY
+
+config LV_Z_MEM_POOL_SIZE
+	default 81920 if OSKEY_LVGL_BENCHMARK
+	default 40960
+
+choice LV_COLOR_DEPTH
+	default LV_COLOR_DEPTH_16
+endchoice
+
+config OSKEY_LVGL_BENCHMARK
+	bool "LVGL benchmark"
+	select LV_Z_DEMO_BENCHMARK
+	select LV_USE_SYSMON
+	select LV_USE_PERF_MONITOR
+	select LV_Z_SHELL
+	select SHELL
+
 config LV_Z_DEMO_BENCHMARK
 	bool "LVGL benchmark demo"
 	select LV_USE_DEMO_BENCHMARK
@@ -39,8 +94,128 @@ config LV_Z_DEMO_BENCHMARK
 	help
 	  Build benchmarking demo application.
 
-menu "Wi-Fi provisioning"
-	depends on WIFI && WIFI_USAGE_MODE_STA_AP
+endif
+
+config OSKEY_BLUETOOTH
+	bool "Bluetooth"
+	select OSKEY_STORAGE
+	select BT
+	select BT_PERIPHERAL
+	select BT_SMP
+	select BT_SMP_SC_ONLY
+	select BT_ZEPHYR_NUS
+	select BT_KEYS_OVERWRITE_OLDEST
+	select BT_PRIVACY
+	select BT_SETTINGS
+
+if OSKEY_BLUETOOTH
+
+config BT_DEVICE_NAME
+	default "OSKey"
+
+config BT_L2CAP_TX_MTU
+	default 512
+
+config BT_BUF_ACL_TX_SIZE
+	default 502
+
+config BT_BUF_ACL_RX_SIZE
+	default 502
+
+config BT_BUF_ACL_TX_COUNT
+	default 12
+
+config BT_CTLR_DATA_LENGTH_MAX
+	default 251
+
+config BT_RX_STACK_SIZE
+	default 2048
+
+config BT_MAX_PAIRED
+	default 3
+
+endif
+
+menuconfig OSKEY_WIFI
+	bool "Wi-Fi provisioning"
+	select OSKEY_STORAGE
+	select WIFI
+	select WIFI_NM
+	select WIFI_CREDENTIALS
+	select WIFI_CREDENTIALS_CONNECT_STORED
+	select NETWORKING
+	select POSIX_API
+	select NET_CONNECTION_MANAGER
+	select NET_IPV4
+	select NET_L2_WIFI_MGMT
+	select NET_SOCKETS
+	select NET_TCP
+	select NET_UDP
+	select NET_HOSTNAME_ENABLE
+	select NET_HOSTNAME_DYNAMIC
+	select NET_HOSTNAME_UNIQUE
+	select NET_DHCPV4
+	select NET_DHCPV4_SERVER
+	select NET_DHCPV4_SERVER_OPTION_CAPTIVE_PORTAL
+	select DNS_RESOLVER
+	select HTTP_SERVER
+	select HTTP_CLIENT
+
+if OSKEY_WIFI
+
+choice WIFI_USAGE_MODE
+	default WIFI_USAGE_MODE_STA_AP
+endchoice
+
+choice WIFI_CREDENTIALS_BACKEND
+	default WIFI_CREDENTIALS_BACKEND_SETTINGS
+endchoice
+
+choice ESP_WIFI_HEAP
+	default ESP_WIFI_HEAP_SPIRAM if OSKEY_ESP_SPIRAM
+endchoice
+
+config WIFI_CREDENTIALS_MAX_ENTRIES
+	default 1
+
+config NET_IPV6
+	default n
+
+config NET_SOCKETS_SERVICE_STACK_SIZE
+	default 4096
+
+config NET_HOSTNAME
+	default "OSKey-"
+
+config NET_IF_MAX_IPV4_COUNT
+	default 2
+
+config NET_MAX_CONN
+	default 8
+
+config NET_BUF_RX_COUNT
+	default 100
+
+config NET_BUF_TX_COUNT
+	default 100
+
+config NET_MGMT_EVENT_QUEUE_SIZE
+	default 10
+
+config NET_MGMT_EVENT_STACK_SIZE
+	default 4096
+
+config HTTP_SERVER_VERSION_2
+	default n
+
+config HTTP_SERVER_MAX_CLIENTS
+	default 1
+
+config ZVFS_EVENTFD_MAX
+	default 2
+
+config ESP32_WIFI_NET_ALLOC_SPIRAM
+	default y if OSKEY_ESP_SPIRAM
 
 config OSKEY_WIFI_AP_SSID
 	string "Wi-Fi provisioning AP SSID"
@@ -61,23 +236,28 @@ config OSKEY_WIFI_AP_NETMASK
 	string "Wi-Fi provisioning AP IPv4 netmask"
 	default "255.255.255.0"
 
-endmenu
+endif
 
-menu "MQTT options"
-	depends on MQTT_LIB
+menuconfig OSKEY_USB
+	bool "USB"
+	select USB_DEVICE_STACK_NEXT
+	select UART_LINE_CTRL
 
-config OSKEY_MQTT_BROKER_HOSTNAME
-	string "MQTT broker hostname"
-	default "bemfa.com"
+if OSKEY_USB
 
-config OSKEY_MQTT_BROKER_PORT
-	string "MQTT broker port"
-	default "9501"
+config ESP_USB_SERIAL_JTAG_ENABLED
+	default n
 
-endmenu
+config CDC_ACM_SERIAL_INITIALIZE_AT_BOOT
+	default n
 
-menu "USB options"
-	depends on USB_DEVICE_STACK_NEXT
+choice USBD_LOG_LEVEL_CHOICE
+	default USBD_LOG_LEVEL_WRN
+endchoice
+
+choice UDC_DRIVER_LOG_LEVEL_CHOICE
+	default UDC_DRIVER_LOG_LEVEL_WRN
+endchoice
 
 config OSKEY_USBD_MANUFACTURER
 	string "USB device manufacturer string"
@@ -99,7 +279,6 @@ config OSKEY_USBD_PID
 
 config OSKEY_USBD_SELF_POWERED
 	bool "USB device Self-powered attribute"
-	default n
 	help
 	  Set the Self-powered attribute in the USB configuration.
 
@@ -118,9 +297,130 @@ config OSKEY_USBD_MAX_POWER
 config OSKEY_USBD_20_EXTENSION_DESC
 	bool "Use default USB 2.0 Extension Descriptor"
 	depends on USBD_BOS_SUPPORT
+	default y
 	help
 	  Set bcdUSB value to 0201 and use default USB 2.0 Extension Descriptor.
 
+endif
+
+menuconfig OSKEY_MQTT
+	bool "MQTT"
+	depends on NETWORKING
+	select MQTT_LIB
+	select MQTT_CLEAN_SESSION
+
+if OSKEY_MQTT
+
+config OSKEY_MQTT_BROKER_HOSTNAME
+	string "MQTT broker hostname"
+	default "bemfa.com"
+
+config OSKEY_MQTT_BROKER_PORT
+	string "MQTT broker port"
+	default "9501"
+
+endif
+
+config OSKEY_I2S
+	bool "I2S audio"
+	select I2S
+
+config OSKEY_MCUBOOT
+	bool "MCUboot and MCUmgr"
+	select BOOTLOADER_MCUBOOT
+	select MCUBOOT_BOOTLOADER_NO_DOWNGRADE
+	select MCUMGR
+	select MCUMGR_GRP_IMG
+	select MCUMGR_GRP_OS
+	select MCUMGR_GRP_STAT
+	select MCUMGR_TRANSPORT_BT if BT
+	select ZCBOR
+	select CRC
+	select IMG_MANAGER
+	select STREAM_FLASH
+
+if OSKEY_MCUBOOT
+
+config MCUBOOT_SIGNATURE_KEY_FILE
+	default "bootloader/mcuboot/root-ec-p256.pem"
+
+config MCUBOOT_GENERATE_UNSIGNED_IMAGE
+	default n
+
+config MCUBOOT_IMGTOOL_SIGN_VERSION
+	default "0.0.2"
+
+endif
+
+config OSKEY_XIP
+	bool "Execute in place"
+
+if OSKEY_XIP
+
+config XIP
+	default y
+
+endif
+
 endmenu
+
+menu "OSKey development options"
+
+config OSKEY_LOG
+	bool "Logging"
+	select NET_LOG if NETWORKING
+
+config LOG
+	default y if OSKEY_LOG
+	default n
+
+config BOOT_BANNER
+	default n if OSKEY_DEBUG
+	default y if OSKEY_LOG
+	default n
+
+config OSKEY_DEBUG
+	bool "Debugging"
+	select DEBUG
+	select STACK_USAGE
+	select STATS
+
+config OSKEY_TEST_RNG
+	bool "Insecure test random generator"
+	select TEST_RANDOM_GENERATOR
+
+if OSKEY_TEST_RNG
+
+config MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG_ALLOW_NON_CSPRNG
+	default y
+
+choice RNG_GENERATOR_CHOICE
+	default TIMER_RANDOM_GENERATOR
+endchoice
+
+endif
+
+config OSKEY_ESP_SPIRAM
+	bool "ESP32-S3 octal SPI RAM"
+	depends on SOC_SERIES_ESP32S3
+	select ESP_SPIRAM
+	select SPIRAM_FETCH_INSTRUCTIONS
+	select SPIRAM_RODATA
+
+if OSKEY_ESP_SPIRAM
+
+choice SPIRAM_MODE
+	default SPIRAM_MODE_OCT
+endchoice
+
+endif
+
+endmenu
+
+config HW_STACK_PROTECTION
+	default y
+
+config STACK_SENTINEL
+	default y
 
 source "Kconfig.zephyr"

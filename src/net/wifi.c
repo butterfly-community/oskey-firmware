@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <string.h>
 
-#if defined(CONFIG_WIFI) && defined(CONFIG_WIFI_USAGE_MODE_STA_AP)
+#ifdef CONFIG_OSKEY_WIFI
 
 #include <zephyr/logging/log.h>
 #include <zephyr/net/conn_mgr_monitor.h>
@@ -505,11 +505,7 @@ int wifi_start(void)
 
 int wifi_start(void)
 {
-#ifdef CONFIG_WIFI
-	return -ENOTSUP;
-#else
 	return 0;
-#endif
 }
 
-#endif /* CONFIG_WIFI && CONFIG_WIFI_USAGE_MODE_STA_AP */
+#endif /* CONFIG_OSKEY_WIFI */

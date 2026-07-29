@@ -39,11 +39,11 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	}
 	memset(buffer, 0, len);
 
-#if defined(CONFIG_BOOTLOADER_MCUBOOT)
+#if defined(CONFIG_OSKEY_MCUBOOT)
 	buffer[2] = true;
 #endif
 
-#if defined(CONFIG_ZMS) && defined(CONFIG_FLASH)
+#if defined(CONFIG_OSKEY_STORAGE)
 	buffer[3] = true;
 #endif
 
@@ -51,7 +51,7 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	buffer[4] = true;
 #endif
 
-#if defined(CONFIG_DISPLAY) && defined(CONFIG_INPUT) && defined(CONFIG_LVGL)
+#if defined(CONFIG_OSKEY_DISPLAY)
 	buffer[5] = true;
 #endif
 

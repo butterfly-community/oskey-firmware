@@ -2,7 +2,7 @@
 
 #include "mqtt.h"
 
-#ifdef CONFIG_MQTT_LIB
+#ifdef CONFIG_OSKEY_MQTT
 
 #include <errno.h>
 #include <string.h>
@@ -353,4 +353,4 @@ int mqtt_start(void)
 	return 0;
 }
 
-#endif /* CONFIG_MQTT_LIB */
+#endif /* CONFIG_OSKEY_MQTT */

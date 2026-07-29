@@ -8,7 +8,7 @@ const struct storage_ids storage_ids = {
 
 volatile bool storage_initd;
 
-#ifdef CONFIG_SETTINGS_ZMS
+#ifdef CONFIG_OSKEY_STORAGE
 
 #include <zephyr/drivers/flash.h>
 #include <zephyr/kvss/zms.h>
@@ -18,16 +18,7 @@ volatile bool storage_initd;
 
 LOG_MODULE_REGISTER(oskey_storage);
 
-#ifdef CONFIG_SOC_SERIES_ESP32C3
-
-#include <esp_efuse.h>
-#include <esp_efuse_table.h>
-
-#endif
-
 static struct zms_fs *fs;
-
-bool ohw_official = false;
 
 int storage_init(void)
 {
@@ -48,16 +39,6 @@ int storage_init(void)
 		(const void *)fs->flash_device, fs->flash_device->name, (unsigned long)fs->offset,
 		fs->sector_size, fs->sector_count, fs->sector_size * fs->sector_count);
 
-#ifdef CONFIG_SOC_SERIES_ESP32C3
-
-	uint8_t ohw_data[32] = {0};
-	esp_err_t err = esp_efuse_read_block(EFUSE_BLK6, ohw_data, 0, 256);
-
-	if (err == ESP_OK && ohw_data[31] == 0xFF) {
-		ohw_official = true;
-	}
-
-#endif
 	storage_initd = true;
 	return 0;
 }

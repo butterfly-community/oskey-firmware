@@ -64,12 +64,12 @@ target_sources(app PRIVATE
   src/app.c
 )
 
-target_sources_ifdef(CONFIG_WIFI_USAGE_MODE_STA_AP app PRIVATE
+target_sources_ifdef(CONFIG_OSKEY_WIFI app PRIVATE
   src/net/http.c
   src/net/wifi_portal.c
 )
 
-if(CONFIG_WIFI_USAGE_MODE_STA_AP)
+if(CONFIG_OSKEY_WIFI)
   set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated)
   generate_inc_file_for_target(app
     src/net/wifi_portal.html
@@ -85,7 +85,7 @@ if(CONFIG_WIFI_USAGE_MODE_STA_AP)
   # )
 endif()
 
-target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
+target_sources_ifdef(CONFIG_OSKEY_USB app PRIVATE
   src/usb/bulk.c
   src/usb/init.c
 )

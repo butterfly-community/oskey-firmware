@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef CONFIG_USB_DEVICE_STACK_NEXT
+#ifdef CONFIG_OSKEY_USB
 
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/usb/usbd.h>
@@ -176,4 +176,4 @@ int init_usb_stack(void)
 	return 0;
 }
 
-#endif /* CONFIG_USB_DEVICE_STACK_NEXT */
+#endif /* CONFIG_OSKEY_USB */

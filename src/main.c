@@ -27,7 +27,7 @@ int main(void)
 
 	oskey_bt_init();
 
-	if (IS_ENABLED(CONFIG_SETTINGS) && app_check_storage()) {
+	if (IS_ENABLED(CONFIG_OSKEY_STORAGE) && app_check_storage()) {
 		settings_load();
 	}
 
@@ -39,7 +39,7 @@ int main(void)
 		LOG_ERR("Wi-Fi startup failed: %d", ret);
 	}
 
-	if (IS_ENABLED(CONFIG_MQTT_LIB)) {
+	if (IS_ENABLED(CONFIG_OSKEY_MQTT)) {
 		ret = mqtt_start();
 		if (ret < 0) {
 			LOG_ERR("MQTT startup failed: %d", ret);

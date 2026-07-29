@@ -4,7 +4,7 @@
 
 #include "message.h"
 
-#ifdef CONFIG_BT
+#ifdef CONFIG_OSKEY_BLUETOOTH
 
 #include <errno.h>
 #include <zephyr/kernel.h>

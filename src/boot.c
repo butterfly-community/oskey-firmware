@@ -1,6 +1,6 @@
 #include "boot.h"
 
-#ifdef CONFIG_BOOTLOADER_MCUBOOT
+#ifdef CONFIG_OSKEY_MCUBOOT
 
 #include <zephyr/dfu/mcuboot.h>
 

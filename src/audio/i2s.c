@@ -1,4 +1,4 @@
-#ifdef CONFIG_I2S
+#ifdef CONFIG_OSKEY_I2S
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
@@ -101,4 +101,4 @@ int i2s_start(void)
 	}
 }
 
-#endif /* CONFIG_I2S */
+#endif /* CONFIG_OSKEY_I2S */
