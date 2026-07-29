@@ -31,6 +31,16 @@ wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/h
 git apply rust.patch
 ```
 
+ESP32 builds also require the Espressif HAL patch.
+
+```bash
+cd <YOUR_ZEPHYR_PATH>/modules/hal/espressif
+
+wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/espressif.patch
+
+git apply espressif.patch
+```
+
 Also refer to [Docker](../../Dockerfile)
 
 **When using an Xtensa ESP32, ESP32-S2, or ESP32-S3, configure the Espressif Rust toolchain.**

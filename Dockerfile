@@ -15,6 +15,9 @@ RUN echo '. /root/export-esp.sh' >> ~/.bashrc
 RUN wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/rust.patch -P /workdir/modules/lang/rust
 RUN cd /workdir/modules/lang/rust && git apply rust.patch
 
+RUN wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/espressif.patch -P /workdir/modules/hal/espressif
+RUN cd /workdir/modules/hal/espressif && git apply espressif.patch
+
 RUN apt update && apt install curl && curl -fsSL https://deno.land/install.sh | sh
 
 ENV PATH="/root/.deno/bin:$PATH"

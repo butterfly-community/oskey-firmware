@@ -34,6 +34,16 @@ wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/h
 git apply rust.patch
 ```
 
+ESP32 构建还需要应用乐鑫 HAL 补丁。
+
+```bash
+cd <YOUR_ZEPHYR_PATH>/modules/hal/espressif
+
+wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/espressif.patch
+
+git apply espressif.patch
+```
+
 另外可以参考 [Docker](../../Dockerfile)
 
 **如果芯片为 Xtensa 架构的 ESP32、ESP32-S2 或 ESP32-S3，其他芯片可忽略此项**
