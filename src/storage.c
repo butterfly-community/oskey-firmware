@@ -1,8 +1,9 @@
 #include "storage.h"
 
+#include "wrapper.h"
+
 const struct storage_ids storage_ids = {
 	.seed = 2,
-	.pin = 10,
 };
 
 volatile bool storage_initd;
@@ -28,7 +29,7 @@ static struct zms_fs *fs;
 
 bool ohw_official = false;
 
-int storage_init()
+int storage_init(void)
 {
 	void *settings_storage;
 	int res = settings_subsys_init();
@@ -71,7 +72,7 @@ bool storage_general_check(uint16_t id)
 	return true;
 }
 
-bool storage_general_write(const uint8_t *data, int len, uint16_t id)
+bool storage_general_write(const uint8_t *data, size_t len, uint16_t id)
 {
 	int res = zms_write(fs, id, data, len);
 	if (res < 0) {
@@ -85,7 +86,7 @@ int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 	return zms_read(fs, id, data, len);
 }
 
-int storage_erase_zms()
+int storage_erase_zms(void)
 {
 	return zms_clear(fs);
 }
@@ -95,7 +96,7 @@ int storage_delete(uint16_t id)
 	return zms_delete(fs, id);
 }
 
-int storage_erase_flash()
+int storage_erase_flash(void)
 {
 	const struct flash_area *fa;
 
@@ -119,38 +120,32 @@ int storage_erase_flash()
 #else
 
 static uint8_t storage_seed_buffer[256] = {0};
-static uint8_t storage_pin_buffer[22] = {0};
+static size_t storage_seed_len;
 
-int storage_init()
+int storage_init(void)
 {
 	memset(storage_seed_buffer, 0, sizeof(storage_seed_buffer));
-	memset(storage_pin_buffer, 0, sizeof(storage_pin_buffer));
+	storage_seed_len = 0;
 	return 0;
 }
 
 bool storage_general_check(uint16_t id)
 {
 	if (id == storage_ids.seed) {
-		return storage_seed_buffer[0] != 0;
-	} else if (id == storage_ids.pin) {
-		return storage_pin_buffer[0] != 0;
+		return storage_seed_len > 0;
 	}
 	return false;
 }
 
-bool storage_general_write(const uint8_t *data, int len, uint16_t id)
+bool storage_general_write(const uint8_t *data, size_t len, uint16_t id)
 {
 	if (id == storage_ids.seed) {
 		if (len > sizeof(storage_seed_buffer)) {
 			return false;
 		}
+		memset(storage_seed_buffer, 0, sizeof(storage_seed_buffer));
 		memcpy(storage_seed_buffer, data, len);
-		return true;
-	} else if (id == storage_ids.pin) {
-		if (len > sizeof(storage_pin_buffer)) {
-			return false;
-		}
-		memcpy(storage_pin_buffer, data, len);
+		storage_seed_len = len;
 		return true;
 	}
 	return false;
@@ -159,23 +154,17 @@ bool storage_general_write(const uint8_t *data, int len, uint16_t id)
 int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 {
 	if (id == storage_ids.seed) {
-		if (len > sizeof(storage_seed_buffer)) {
-			len = sizeof(storage_seed_buffer);
-		}
-		memcpy(data, storage_seed_buffer, len);
-		return len;
-	} else if (id == storage_ids.pin) {
-		if (len > sizeof(storage_pin_buffer)) {
-			len = sizeof(storage_pin_buffer);
-		}
-		memcpy(data, storage_pin_buffer, len);
-		return len;
+		size_t read_len = MIN(len, storage_seed_len);
+		memcpy(data, storage_seed_buffer, read_len);
+		return read_len;
 	}
-	return false;
+	return -ENOENT;
 }
 
-int storage_erase_zms()
+int storage_erase_zms(void)
 {
+	memset(storage_seed_buffer, 0, sizeof(storage_seed_buffer));
+	storage_seed_len = 0;
 	return 0;
 }
 
@@ -184,8 +173,10 @@ int storage_delete(uint16_t id)
 	return 0;
 }
 
-int storage_erase_flash()
+int storage_erase_flash(void)
 {
+	memset(storage_seed_buffer, 0, sizeof(storage_seed_buffer));
+	storage_seed_len = 0;
 	return 0;
 }
 
