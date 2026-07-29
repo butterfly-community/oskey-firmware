@@ -29,6 +29,7 @@
       height = <320>;
       width = <480>;
       madctl = <0x68>; // 0x36 0x08 0x68 0xC8 0xA8
+      rgb-is-inverted;
       // colmod = <0x05>; // 0x3A
       invert-mode = "1-dot"; // 0xB4 (dic)
       dfc = [ 80 22 3B  ]; // 0xB6

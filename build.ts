@@ -30,7 +30,6 @@ const config = {
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
-        "boards/conf/fix_rgb565.conf",
       ],
       overlay: ["boards/esp32s3_lichuang.overlay"],
       extra: "-D CONFIG_SPI_INIT_PRIORITY=80",
@@ -41,7 +40,6 @@ const config = {
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
-        "boards/conf/fix_rgb565.conf",
       ],
       overlay: [
         "boards/esp32s3_lichuang.overlay",
@@ -56,7 +54,6 @@ const config = {
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
         "boards/conf/enable_usb.conf",
-        "boards/conf/fix_rgb565.conf",
       ],
       overlay: [
         "boards/esp32s3_lichuang.overlay",
@@ -70,7 +67,6 @@ const config = {
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
-        "boards/conf/fix_rgb565.conf",
       ],
       overlay: ["boards/esp32_32e_2.8_led_display_ili9341.overlay"],
     },
@@ -80,7 +76,6 @@ const config = {
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
-        "boards/conf/fix_rgb565.conf",
       ],
       overlay: ["boards/esp32_32e_2.8_led_display_st7789.overlay"],
     },
@@ -90,7 +85,6 @@ const config = {
       conf: [
         "boards/conf/enable_storage.conf",
         "boards/conf/enable_lvgl.conf",
-        "boards/conf/fix_rgb565.conf",
       ],
       overlay: [
         "boards/esp32s3_waveshare_3.5.overlay",

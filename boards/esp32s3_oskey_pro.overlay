@@ -1,5 +1,6 @@
 #include <zephyr/dt-bindings/mipi_dbi/mipi_dbi.h>
 #include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/display/panel.h>
 
 / {
   chosen {
@@ -30,7 +31,7 @@
       vdvs = <0x20>;     // 0xc4
       mdac = <0x60>;     // 0x36 horizontal 0x00 0xc0 0x70 0xa0 0x60
       gamma = <0x01>;    // no gamma
-      colmod = <0x55>;   // 0x3a, 0x05 0x55 0x66
+      pixel-format = <PANEL_PIXEL_FORMAT_RGB_565X>;
       lcm = <0x2c>;
       porch-param = [ 0c 0c 00 33 33  ];   // 0xb2
       cmd2en-param = [ 5a 69 02 01  ];     // 0xdf

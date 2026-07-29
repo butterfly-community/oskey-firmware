@@ -1,5 +1,6 @@
 #include <zephyr/dt-bindings/mipi_dbi/mipi_dbi.h>
 #include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/display/panel.h>
 
 / {
   chosen {
@@ -24,7 +25,7 @@
       compatible = "ilitek,ili9341";
       mipi-max-frequency = <DT_FREQ_M(30)>;
       reg = <0>;
-      pixel-format = <0>;
+      pixel-format = <PANEL_PIXEL_FORMAT_RGB_565X>;
       rotation = <0>;
       width = <240>;
       height = <320>;
