@@ -1,18 +1,14 @@
 #include "storage.h"
 
-#ifdef CONFIG_ZMS
-
-#include <zephyr/kernel.h>
-#include <zephyr/kvss/zms.h>
-#include <zephyr/storage/flash_map.h>
-#include <zephyr/device.h>
-#include <zephyr/drivers/flash.h>
-
 #ifdef CONFIG_SETTINGS_ZMS
 
+#include <zephyr/drivers/flash.h>
+#include <zephyr/kvss/zms.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
+#include <zephyr/storage/flash_map.h>
 
-#endif
+LOG_MODULE_REGISTER(oskey_storage);
 
 #ifdef CONFIG_SOC_SERIES_ESP32C3
 
@@ -21,22 +17,14 @@
 
 #endif
 
-#define ZMS_PARTITION        storage_partition
-#define ZMS_PARTITION_DEVICE PARTITION_DEVICE(ZMS_PARTITION)
-#define ZMS_PARTITION_OFFSET PARTITION_OFFSET(ZMS_PARTITION)
-#define ZMS_PARTITION_SIZE   PARTITION_SIZE(ZMS_PARTITION)
-
-static struct zms_fs local_fs;
-static struct zms_fs *fs = &local_fs;
+static struct zms_fs *fs;
 
 bool ohw_official = false;
 
 int storage_init()
 {
-#ifdef CONFIG_SETTINGS_ZMS
 	void *settings_storage;
 	int res = settings_subsys_init();
-
 	if (res < 0) {
 		return res;
 	}
@@ -47,45 +35,10 @@ int storage_init()
 	}
 
 	fs = settings_storage;
-	storage_initd = true;
-	return 0;
-#else
-	struct flash_pages_info info;
 
-	fs->flash_device = ZMS_PARTITION_DEVICE;
-	if (!device_is_ready(fs->flash_device)) {
-		return -ENODEV;
-	}
-
-	fs->offset = ZMS_PARTITION_OFFSET;
-	int res = flash_get_page_info_by_offs(fs->flash_device, fs->offset, &info);
-	if (res < 0) {
-		return res;
-	}
-
-	if (info.size == 0 || ZMS_PARTITION_SIZE < 1024) {
-		return -EINVAL;
-	}
-
-	fs->sector_size = info.size;
-	fs->sector_count = (ZMS_PARTITION_SIZE / fs->sector_size);
-
-	// ZMS requires minimum 2 sectors
-	if (fs->sector_count < 2) {
-		return -EINVAL;
-	}
-
-	// printk("ZMS Configuration:\n");
-	// printk("  Flash device: %p (%s)\n", fs.flash_device, fs.flash_device->name);
-	// printk("  Offset: 0x%lx (%ld)\n", fs.offset, fs.offset);
-	// printk("  Sector size: %d bytes\n", fs.sector_size);
-	// printk("  Sector count: %d\n", fs.sector_count);
-	// printk("  Total size: %d bytes\n", fs.sector_size * fs.sector_count);
-
-	res = zms_mount(fs);
-	if (res < 0) {
-		return res;
-	}
+	LOG_INF("ZMS device=%p (%s), offset=0x%lx, sector=%u x %u, total=%u bytes",
+		(const void *)fs->flash_device, fs->flash_device->name, (unsigned long)fs->offset,
+		fs->sector_size, fs->sector_count, fs->sector_size * fs->sector_count);
 
 #ifdef CONFIG_SOC_SERIES_ESP32C3
 
@@ -97,11 +50,8 @@ int storage_init()
 	}
 
 #endif
-	if (res >= 0) {
-		storage_initd = true;
-	}
-	return res;
-#endif
+	storage_initd = true;
+	return 0;
 }
 
 bool storage_general_check(uint16_t id)
