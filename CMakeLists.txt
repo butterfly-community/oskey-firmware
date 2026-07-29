@@ -43,7 +43,9 @@ zephyr_get_compile_options_for_lang(C options_list)
 
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_options.txt" CONTENT "${options_list}")
 
-add_subdirectory(lib/core/wallet/psa)
+if(CONFIG_OSKEY_RUST)
+  add_subdirectory(lib/core/wallet/psa)
+endif()
 
 target_sources(app PRIVATE
   src/main.c
@@ -87,14 +89,15 @@ target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
   src/usb/init.c
 )
 
-target_compile_options(crypto PRIVATE)
-
-target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
-
-target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/core/wallet)
-
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-rust_cargo_application()
+if(CONFIG_OSKEY_RUST)
+  rust_cargo_application()
 
-target_link_libraries(app PRIVATE crypto)
+  target_compile_options(crypto PRIVATE)
+  target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
+  target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/core/wallet)
+  target_link_libraries(app PRIVATE crypto)
+else()
+  target_sources(app PRIVATE src/bindings.c)
+endif()
