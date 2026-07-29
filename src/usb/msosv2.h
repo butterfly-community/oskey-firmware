@@ -34,7 +34,6 @@
 
 struct msosv2_descriptor {
 	struct msosv2_descriptor_set_header header;
-#if defined(CONFIG_USBD_CDC_ACM_CLASS)
 	/*
 	 * The function subset associates the WINUSB compatible ID and GUID with
 	 * the WebUSB vendor function. bFirstInterface is updated with the
@@ -42,7 +41,6 @@ struct msosv2_descriptor {
 	 * sent to the host.
 	 */
 	struct msosv2_function_subset_header subset_header;
-#endif
 	struct msosv2_compatible_id compatible_id;
 	struct msosv2_guids_property guids_property;
 } __packed;
@@ -55,7 +53,6 @@ static struct msosv2_descriptor msosv2_desc = {
 			.dwWindowsVersion = sys_cpu_to_le32(MSOS2_WINDOWS_VERSION),
 			.wTotalLength = sizeof(msosv2_desc),
 		},
-#if defined(CONFIG_USBD_CDC_ACM_CLASS)
 	.subset_header =
 		{
 			.wLength = sizeof(struct msosv2_function_subset_header),
@@ -63,7 +60,6 @@ static struct msosv2_descriptor msosv2_desc = {
 			.bFirstInterface = 0,
 			.wSubsetLength = MSOS2_FUNCTION_SUBSET_LENGTH,
 		},
-#endif
 	.compatible_id =
 		{
 			.wLength = sizeof(struct msosv2_compatible_id),
@@ -128,24 +124,31 @@ struct bos_msosv2_descriptor bos_msosv2_desc = {
 		.bAltEnumCode = 0x00},
 };
 
-static int msosv2_to_host_cb(const struct usbd_context *const ctx,
-			     const struct usb_setup_packet *const setup, struct net_buf *const buf)
+static struct net_buf *msosv2_to_host_cb(const struct usbd_context *const ctx,
+					 const struct usb_setup_packet *const setup)
 {
 	LOG_INF("Vendor callback to host");
 
 	if (setup->bRequest == MSOS2_VENDOR_CODE && setup->wIndex == MS_OS_20_DESCRIPTOR_INDEX) {
+		struct net_buf *buf;
+		uint16_t len;
+
 		LOG_INF("Get MS OS 2.0 Descriptor Set");
 
-#if defined(CONFIG_USBD_CDC_ACM_CLASS)
 		msosv2_desc.subset_header.bFirstInterface = webusb_bulk_get_interface_number();
-#endif
 
-		net_buf_add_mem(buf, &msosv2_desc, MIN(net_buf_tailroom(buf), sizeof(msosv2_desc)));
+		len = MIN(setup->wLength, sizeof(msosv2_desc));
+		buf = usbd_ep_ctrl_data_in_alloc(ctx, len);
+		if (buf == NULL) {
+			return NULL;
+		}
 
-		return 0;
+		net_buf_add_mem(buf, &msosv2_desc, len);
+
+		return buf;
 	}
 
-	return -ENOTSUP;
+	return NULL;
 }
 
 USBD_DESC_BOS_VREQ_DEFINE(bos_vreq_msosv2, sizeof(bos_msosv2_desc), &bos_msosv2_desc,

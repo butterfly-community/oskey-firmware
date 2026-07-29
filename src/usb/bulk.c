@@ -119,10 +119,10 @@ static struct net_buf *webusb_bulk_buf_alloc(struct usbd_class_data *const c_dat
 	}
 
 	buf = net_buf_alloc_with_data(&webusb_bulk_pool, webusb_bulk_buf, size, K_NO_WAIT);
-	net_buf_reset(buf);
 	if (!buf) {
 		return NULL;
 	}
+	net_buf_reset(buf);
 
 	bi = udc_get_buf_info(buf);
 	bi->ep = ep;
