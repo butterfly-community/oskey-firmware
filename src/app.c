@@ -4,6 +4,8 @@
 #include "app.h"
 #include "storage.h"
 
+struct k_work app_sign_work;
+
 bool app_csrand_get(void *dst, size_t len)
 {
 	sys_csrand_get(dst, len);

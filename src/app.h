@@ -4,7 +4,7 @@
 #include "wrapper.h"
 #include "display/lvgl.h"
 
-struct k_work app_sign_work;
+extern struct k_work app_sign_work;
 
 bool app_csrand_get(void *dst, size_t len);
 void app_version_get(void *ver, size_t len);
