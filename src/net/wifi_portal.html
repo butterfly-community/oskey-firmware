@@ -1,91 +1,422 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>OSKey Wi-Fi</title>
+    <title>OSKey Settings</title>
     <style>
-      body {
-        font-family: sans-serif;
-        max-width: 28rem;
-        margin: 3rem auto;
-        padding: 0 1rem;
+      :root {
+        --ink: #18181b;
+        --text: #3f3f46;
+        --muted: #62626b;
+        --line: #d4d4d8;
+        --soft: #f4f4f5;
+        color-scheme: light;
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: var(--text);
+        background: #fff;
       }
 
-      label,
-      input,
-      button {
-        display: block;
-        width: 100%;
+      * {
         box-sizing: border-box;
       }
 
+      body {
+        max-width: 34rem;
+        margin: 0 auto;
+        padding: 3rem 1.25rem;
+      }
+
+      header {
+        margin-bottom: 2rem;
+      }
+
+      h1,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 0.25rem;
+        color: var(--ink);
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
+      }
+
+      .meta {
+        margin-bottom: 1.5rem;
+      }
+
+      nav {
+        display: flex;
+        gap: 1.5rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      nav button {
+        margin: 0;
+        padding: 0 0 0.75rem;
+        color: var(--muted);
+        background: transparent;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+      }
+
+      nav button[aria-pressed="true"] {
+        color: var(--ink);
+        border-bottom-color: var(--ink);
+      }
+
+      section {
+        padding: 2rem 0;
+      }
+
+      details {
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      details + details {
+        border-top: 0;
+      }
+
+      summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 0;
+        color: var(--ink);
+        font-weight: 600;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      summary::after {
+        content: "+";
+        color: var(--muted);
+        font-size: 1.25rem;
+        font-weight: 400;
+        line-height: 1;
+      }
+
+      details[open] summary::after {
+        content: "−";
+      }
+
+      .setting {
+        padding-bottom: 1.5rem;
+      }
+
+      header > p,
+      .meta,
+      .setting > p,
+      .status {
+        color: var(--muted);
+        font-size: 0.875rem;
+      }
+
+      .setting > p {
+        margin-bottom: 0.25rem;
+      }
+
+      label,
+      input {
+        display: block;
+        width: 100%;
+      }
+
       label {
-        margin-top: 1rem;
+        margin-top: 1.25rem;
+        font-size: 0.8125rem;
       }
 
       input,
       button {
-        font-size: 1rem;
-        padding: 0.7rem;
+        font: inherit;
+        border: 1px solid var(--line);
+        border-radius: 0.25rem;
+      }
+
+      input {
+        margin-top: 0.375rem;
+        padding: 0.5rem 0.625rem;
+        color: var(--ink);
+        background: #fff;
+        font-size: 0.875rem;
+        line-height: 1.4;
+      }
+
+      input::placeholder {
+        color: var(--text);
+        opacity: 1;
+      }
+
+      input:focus,
+      summary:focus-visible,
+      button:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 2px;
       }
 
       button {
+        cursor: pointer;
+      }
+
+      .setting button {
         margin-top: 1.5rem;
+        padding: 0.6rem 1rem;
+        color: var(--text);
+        background: #fff;
+      }
+
+      .setting button:not(:disabled):hover {
+        background: var(--soft);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.5;
+      }
+
+      .status {
+        min-height: 1.25rem;
+        margin: 0.75rem 0 0;
+      }
+
+      .status[data-state="success"] {
+        color: #166534;
+      }
+
+      .status[data-state="error"] {
+        color: #b91c1c;
+      }
+
+      @media (max-width: 30rem) {
+        body {
+          padding: 1.5rem 1rem;
+        }
       }
     </style>
   </head>
   <body>
-    <h1>Configure Wi-Fi</h1>
-    <form id="wifi">
-      <label>
-        Wi-Fi name (SSID)
-        <input name="ssid" maxlength="32" pattern="[^:]*" required>
-      </label>
-      <label>
-        Password
-        <input name="password" type="password" maxlength="63">
-      </label>
-      <button type="submit">Connect</button>
-      <p id="wifiStatus"></p>
-    </form>
-    <form id="host">
-      <label>
-        Device hostname
-        <input
-          name="hostname"
-          maxlength="63"
-          pattern="[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
-          required
-        >
-      </label>
-      <button type="submit">Save hostname</button>
-      <p id="hostnameStatus"></p>
-    </form>
-    <button id="reboot" type="button">Restart device</button>
+    <header>
+      <h1>OSKey</h1>
+      <p>Settings</p>
+    </header>
+    <main>
+      <nav aria-label="Settings">
+        <button type="button" data-panel="wifi" aria-pressed="true">
+          Wi-Fi
+        </button>
+        <button type="button" data-panel="device" aria-pressed="false">
+          Device
+        </button>
+      </nav>
+
+      <section id="wifi">
+        <p class="meta">Mode: <span id="wifiMode">AP</span></p>
+        <details>
+          <summary>Network credentials</summary>
+          <div class="setting">
+            <p>Choose the Wi-Fi network OSKey should connect to.</p>
+            <form id="wifiForm">
+              <label for="ssid">Network name (SSID)</label>
+              <input
+                id="ssid"
+                name="ssid"
+                maxlength="32"
+                pattern="[^:]*"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="Wi-Fi network name"
+                required
+              >
+              <label for="password">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                minlength="8"
+                maxlength="63"
+                autocomplete="off"
+                placeholder="Leave blank for an open network"
+              >
+              <button type="submit">Connect</button>
+              <p id="wifiStatus" class="status" role="status"></p>
+            </form>
+          </div>
+        </details>
+      </section>
+
+      <section id="device" hidden>
+        <p class="meta">Identity, preferences, and maintenance</p>
+        <details>
+          <summary>Hostname</summary>
+          <div class="setting">
+            <p>Name used to identify OSKey on the local network.</p>
+            <form id="hostnameForm">
+              <input
+                name="hostname"
+                aria-label="Hostname"
+                maxlength="63"
+                pattern="[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="New hostname"
+                required
+              >
+              <button type="submit">Save</button>
+              <p id="hostnameStatus" class="status" role="status"></p>
+            </form>
+          </div>
+        </details>
+        <details>
+          <summary>Restart</summary>
+          <div class="setting">
+            <p>Saved settings are retained.</p>
+            <button id="rebootButton" type="button">Restart</button>
+            <p id="rebootStatus" class="status" role="status"></p>
+          </div>
+        </details>
+      </section>
+    </main>
     <script>
-      wifi.onsubmit = event => {
-        event.preventDefault();
-        fetch("/configure", {
-          method: "POST",
-          body: `${wifi.ssid.value}:${wifi.password.value}`,
-        })
-          .then(response => {
-            wifiStatus.textContent = response.ok ? "Connecting" : "Invalid Wi-Fi settings";
+      const wifiForm = document.getElementById("wifiForm");
+      const wifiButton = wifiForm.querySelector("button");
+      const wifiStatus = document.getElementById("wifiStatus");
+      const hostnameForm = document.getElementById("hostnameForm");
+      const hostnameButton = hostnameForm.querySelector("button");
+      const hostnameStatus = document.getElementById("hostnameStatus");
+      const rebootButton = document.getElementById("rebootButton");
+      const rebootStatus = document.getElementById("rebootStatus");
+      const tabs = document.querySelectorAll("nav button");
+
+      document.getElementById("wifiMode").textContent =
+        location.hostname === "192.168.4.1" ? "AP" : "STA";
+
+      tabs.forEach((button) => {
+        button.onclick = () => {
+          tabs.forEach((item) => {
+            const selected = item === button;
+            item.setAttribute("aria-pressed", selected);
+            document.getElementById(item.dataset.panel).hidden =
+              !selected;
           });
+        };
+      });
+
+      function status(element, message, state = "") {
+        element.textContent = message;
+        element.dataset.state = state;
+      }
+
+      async function post(path, body = "") {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
+        try {
+          return await fetch(path, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=UTF-8" },
+            body,
+            signal: controller.signal,
+          });
+        } catch {
+          return null;
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+
+      wifiForm.onsubmit = async (event) => {
+        event.preventDefault();
+        wifiButton.disabled = true;
+        wifiButton.textContent = "Sending…";
+        status(wifiStatus, "Sending Wi-Fi settings…");
+
+        const body =
+          `${wifiForm.ssid.value}:${wifiForm.password.value}`;
+        const response = await post("/configure", body);
+
+        if (response?.ok) {
+          wifiButton.textContent = "Request sent";
+          status(
+            wifiStatus,
+            "Settings accepted. OSKey is connecting now.",
+            "success",
+          );
+          return;
+        }
+
+        wifiButton.disabled = false;
+        wifiButton.textContent = "Connect";
+        status(
+          wifiStatus,
+          response
+            ? "Check the network name and password."
+            : "No response. Try again.",
+          "error",
+        );
       };
 
-      host.onsubmit = event => {
-        event.preventDefault();
-        fetch("/hostname", { method: "POST", body: host.hostname.value })
-          .then(response => {
-            hostnameStatus.textContent = response.ok ? "Hostname saved" : "Failed to save hostname";
-          });
+      wifiForm.oninput = () => {
+        if (
+          wifiButton.disabled &&
+          wifiButton.textContent === "Request sent"
+        ) {
+          wifiButton.disabled = false;
+          wifiButton.textContent = "Connect";
+          status(wifiStatus, "");
+        }
       };
 
-      reboot.onclick = () => {
-        fetch("/reboot", { method: "POST" })
-          .then(() => document.body.innerHTML = "<h1>Restarting</h1>");
+      hostnameForm.onsubmit = async (event) => {
+        event.preventDefault();
+        hostnameButton.disabled = true;
+        hostnameButton.textContent = "Saving…";
+        status(hostnameStatus, "Saving hostname…");
+
+        const response = await post(
+          "/hostname",
+          hostnameForm.hostname.value,
+        );
+
+        hostnameButton.disabled = false;
+        hostnameButton.textContent = "Save";
+        status(
+          hostnameStatus,
+          response?.ok ? "Hostname saved." : "Could not save hostname.",
+          response?.ok ? "success" : "error",
+        );
+      };
+
+      rebootButton.onclick = async () => {
+        if (!confirm("Restart OSKey now?")) {
+          return;
+        }
+
+        rebootButton.disabled = true;
+        rebootButton.textContent = "Restarting…";
+        status(
+          rebootStatus,
+          "Restart requested. Reopen this page in a moment.",
+        );
+
+        const response = await post("/reboot");
+        if (response && !response.ok) {
+          rebootButton.disabled = false;
+          rebootButton.textContent = "Restart";
+          status(rebootStatus, "Could not request a restart.", "error");
+        }
       };
     </script>
   </body>
