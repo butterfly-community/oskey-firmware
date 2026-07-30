@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <zephyr/random/random.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/sys/reboot.h>

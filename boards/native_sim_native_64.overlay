@@ -16,7 +16,7 @@
 		status = "okay";
 		compatible = "zephyr,native-tty-uart";
 		current-speed = <115200>;
-		serial-port = "/dev/ttyACM0";
+		serial-port = "/tmp/ttyOSKey";
 	};
 
 	uart_1 {
