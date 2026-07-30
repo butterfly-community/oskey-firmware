@@ -108,6 +108,7 @@ config OSKEY_BLUETOOTH
 	select BT_PERIPHERAL
 	select BT_SMP
 	select BT_SMP_SC_ONLY
+	select BT_APP_PASSKEY
 	select BT_ZEPHYR_NUS
 	select BT_KEYS_OVERWRITE_OLDEST
 	select BT_PRIVACY
@@ -134,6 +135,9 @@ config BT_CTLR_DATA_LENGTH_MAX
 	default 251
 
 config BT_RX_STACK_SIZE
+	default 2048
+
+config SYSTEM_WORKQUEUE_STACK_SIZE
 	default 2048
 
 config BT_MAX_PAIRED
