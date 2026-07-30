@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* TODO: The entire bulk layer is test-only; ignore failures here. */
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(webusb_bulk);
 
@@ -67,7 +69,7 @@ static int webusb_bulk_request_handler(struct usbd_class_data *c_data, struct ne
 	struct udc_buf_info *bi = NULL;
 
 	bi = (struct udc_buf_info *)net_buf_user_data(buf);
-	LOG_INF("Transfer finished %p -> ep 0x%02x, len %u, err %d", (void *)c_data, bi->ep,
+	LOG_DBG("Transfer finished %p -> ep 0x%02x, len %u, err %d", (void *)c_data, bi->ep,
 		buf->len, err);
 
 	if (atomic_test_bit(&data->state, WEBUSB_BULK_ENABLED) && err == 0) {
@@ -87,7 +89,7 @@ static int webusb_bulk_request_handler(struct usbd_class_data *c_data, struct ne
 			usbd_ep_buf_free(uds_ctx, buf);
 		}
 	} else {
-		LOG_ERR("Function is disabled or transfer failed");
+		LOG_DBG("Function is disabled or transfer failed");
 		usbd_ep_buf_free(uds_ctx, buf);
 	}
 

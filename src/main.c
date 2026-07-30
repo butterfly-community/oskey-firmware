@@ -32,7 +32,10 @@ int main(void)
 		LOG_ERR("Display startup failed: %d", ret);
 	}
 
-	init_usb_stack();
+	ret = init_usb_stack();
+	if (ret < 0) {
+		LOG_ERR("USB startup failed: %d", ret);
+	}
 
 	app_uart_irq_register();
 

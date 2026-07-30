@@ -9,7 +9,6 @@
 
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/usb/usbd.h>
-#include <zephyr/usb/class/usbd_hid.h>
 #include <zephyr/usb/msos_desc.h>
 #include <zephyr/logging/log.h>
 #include "init.h"
@@ -23,7 +22,6 @@ LOG_MODULE_REGISTER(webusb);
 
 #define WEBUSB_REQ_GET_URL      0x02U
 #define WEBUSB_DESC_TYPE_URL    0x03U
-#define WEBUSB_URL_PREFIX_HTTP  0x00U
 #define WEBUSB_URL_PREFIX_HTTPS 0x01U
 
 #define WEBUSB_VENDOR_CODE  0x01U
