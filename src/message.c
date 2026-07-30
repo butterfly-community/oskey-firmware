@@ -8,7 +8,6 @@
 #include "bindings.h"
 #include "usb/fido2.h"
 
-#define APP_MESSAGE_DATA_SIZE   512
 #define APP_MESSAGE_QUEUE_DEPTH 4
 
 struct app_message {

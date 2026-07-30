@@ -31,7 +31,8 @@ static void confirmation_control(AppMessageSource source, bool active)
 	}
 }
 
-int app_confirmation_wait(AppMessageSource source, int32_t timeout_ms)
+int app_confirmation_wait(AppMessageSource source, int32_t timeout_ms, const uint8_t *data,
+			  size_t len)
 {
 	if (!atomic_cas(&confirmation_state, CONFIRMATION_IDLE, CONFIRMATION_WAITING)) {
 		return -EBUSY;
@@ -39,7 +40,7 @@ int app_confirmation_wait(AppMessageSource source, int32_t timeout_ms)
 
 	k_sem_reset(&confirmation_done);
 
-	if (!app_message_submit(source, AppMessageAction_Confirmation, true, NULL, 0, NULL, 0)) {
+	if (!app_message_submit(source, AppMessageAction_Confirmation, true, data, len, NULL, 0)) {
 		atomic_set(&confirmation_state, CONFIRMATION_IDLE);
 		return -EIO;
 	}

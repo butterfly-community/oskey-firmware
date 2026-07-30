@@ -549,11 +549,15 @@ static void display_sign(const uint8_t *data, size_t len)
 	display_confirmation("Sign", "Sign", data, len);
 }
 
-static void display_confirm(void)
+static void display_confirm(const uint8_t *data, size_t len)
 {
-	static const uint8_t text[] = "Confirm security key request";
+	static const uint8_t fallback[] = "Confirm security key request";
 
-	display_confirmation("Confirm", "Approve", text, sizeof(text) - 1);
+	if (data == NULL || len == 0) {
+		data = fallback;
+		len = sizeof(fallback) - 1;
+	}
+	display_confirmation("Confirm", "Approve", data, len);
 }
 
 static void display_ready(void)
@@ -628,7 +632,7 @@ void app_display_message(DisplayAction action, AppError error, uint32_t value, c
 		display_error(error, value);
 		break;
 	case DisplayAction_Confirm:
-		display_confirm();
+		display_confirm(data, len);
 		break;
 	case DisplayAction_Unspecified:
 		break;
