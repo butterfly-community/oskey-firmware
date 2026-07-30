@@ -320,6 +320,7 @@ config OSKEY_FIDO2
 	select OSKEY_USB
 	select FIDO2
 	select FIDO2_CREDENTIALS_CUSTOM
+	select FIDO2_CREDENTIALS_BACKUP_ELIGIBLE
 	select FIDO2_TRANSPORT_USB_HID
 	help
 	  Enable the USB FIDO2 authenticator for OpenSSH and other FIDO2 clients.

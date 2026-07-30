@@ -185,12 +185,11 @@ void fido2_message_reply(bool success, const uint8_t *credential_id, size_t cred
 	}
 }
 
-int fido2_credentials_make(const char *rp_id, const uint8_t *user_id, size_t user_id_len,
+int fido2_credentials_make(const char *rp_id,
 			   uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
 			   uint8_t public_key[FIDO2_P256_UNCOMPRESSED_KEY_SIZE])
 {
-	int ret =
-		request(AppMessageAction_Fido2Register, rp_id, strlen(rp_id), user_id, user_id_len);
+	int ret = request(AppMessageAction_Fido2Register, rp_id, strlen(rp_id), NULL, 0);
 
 	if (ret == 0 && (response.credential_id_len != FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE ||
 			 response.data_len != FIDO2_P256_UNCOMPRESSED_KEY_SIZE)) {
