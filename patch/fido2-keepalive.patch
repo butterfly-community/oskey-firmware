@@ -1,0 +1,12 @@
+diff --git a/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c b/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
+--- a/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
++++ b/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
+@@ -521,7 +521,7 @@ static void keepalive_timer_expiry(struct k_timer *timer)
+ {
+ 	ARG_UNUSED(timer);
+ 
+-	k_work_submit(&keepalive_work);
++	k_work_submit_to_queue(&hid_rx_work_q, &keepalive_work);
+ }
+ 
+ K_TIMER_DEFINE(keepalive_timer, keepalive_timer_expiry, NULL);
