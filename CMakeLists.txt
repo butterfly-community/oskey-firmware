@@ -58,7 +58,6 @@ target_sources(app PRIVATE
   src/net/mqtt.c
   src/display/lvgl.c
   src/gpio.c
-  src/audio/i2s.c
   src/usb/webusb.c
   src/input/touch.c
   src/app.c

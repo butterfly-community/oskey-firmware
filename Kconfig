@@ -326,10 +326,6 @@ config OSKEY_MQTT_BROKER_PORT
 
 endif
 
-config OSKEY_I2S
-	bool "I2S audio"
-	select I2S
-
 config OSKEY_MCUBOOT
 	bool "MCUboot and MCUmgr"
 	select BOOTLOADER_MCUBOOT
