@@ -6,3 +6,5 @@ build
 target
 temp*
 kconfig.json
+*.log
+AGENTS.md
