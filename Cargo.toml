@@ -9,22 +9,19 @@ license = ""
 crate-type = ["staticlib"]
 
 [dependencies]
-zephyr = "^0.1.0"
-anyhow = { version = "1.0", default-features = false }
-oskey-action = { path = "./lib/core/action" , default-features = false, features = [
+zephyr = "0.1"
+
+oskey-action = { path = "lib/core/action", default-features = false, features = [
   "crypto-psa",
 ] }
 
-[build-dependencies]
-# zephyr-build = "^0.1.0"
-cbindgen = "0.29.0"
+anyhow = { version = "1.0", default-features = false }
 
+[build-dependencies]
+cbindgen = "0.29"
 
 [profile.release]
 strip = true
 opt-level = 'z'
 lto = "thin"
 panic = 'abort'
-
-[profile.dev]
-# opt-level = 1

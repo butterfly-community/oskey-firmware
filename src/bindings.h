@@ -6,20 +6,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-enum AppError {
-  AppError_Unspecified = 0,
-  AppError_Failed = 1,
-  AppError_Busy = 2,
-  AppError_Rejected = 3,
-  AppError_Locked = 4,
-  AppError_NoPendingAction = 5,
-  AppError_DisplayRequired = 6,
-  AppError_ExternalRequestRequired = 7,
-  AppError_TrustedActionRequired = 8,
-  AppError_InvalidAction = 9,
-  AppError_UnlockFailed = 10,
-};
-typedef int32_t AppError;
+typedef enum AppMessageSource {
+  AppMessageSource_Uart = 0,
+  AppMessageSource_Bluetooth = 1,
+  AppMessageSource_Display = 2,
+  AppMessageSource_Button = 3,
+} AppMessageSource;
 
 typedef enum AppMessageAction {
   AppMessageAction_External = 0,
@@ -32,21 +24,45 @@ typedef enum AppMessageAction {
   AppMessageAction_ResetStorage,
 } AppMessageAction;
 
-typedef enum AppMessageSource {
-  AppMessageSource_Uart = 0,
-  AppMessageSource_Bluetooth = 1,
-  AppMessageSource_Display = 2,
-  AppMessageSource_Button = 3,
-} AppMessageSource;
-
-enum DisplayAction {
+enum DisplayAction
+#if __STDC_VERSION__ >= 202311L
+  : int32_t
+#endif // __STDC_VERSION__ >= 202311L
+ {
   DisplayAction_Unspecified = 0,
   DisplayAction_Ready = 1,
   DisplayAction_Mnemonic = 2,
   DisplayAction_Sign = 3,
   DisplayAction_Error = 4,
 };
+#if __STDC_VERSION__ >= 202311L
+typedef enum DisplayAction DisplayAction;
+#else
 typedef int32_t DisplayAction;
+#endif // __STDC_VERSION__ >= 202311L
+
+enum AppError
+#if __STDC_VERSION__ >= 202311L
+  : int32_t
+#endif // __STDC_VERSION__ >= 202311L
+ {
+  AppError_Unspecified = 0,
+  AppError_Failed = 1,
+  AppError_Busy = 2,
+  AppError_Rejected = 3,
+  AppError_Locked = 4,
+  AppError_NoPendingAction = 5,
+  AppError_DisplayRequired = 6,
+  AppError_ExternalRequestRequired = 7,
+  AppError_TrustedActionRequired = 8,
+  AppError_InvalidAction = 9,
+  AppError_UnlockFailed = 10,
+};
+#if __STDC_VERSION__ >= 202311L
+typedef enum AppError AppError;
+#else
+typedef int32_t AppError;
+#endif // __STDC_VERSION__ >= 202311L
 
 void app_message_handle_rs(enum AppMessageSource source,
                            enum AppMessageAction action,
