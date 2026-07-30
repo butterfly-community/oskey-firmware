@@ -1,15 +1,8 @@
 use core::ffi::{c_char, c_int};
+use oskey_action::proto::{AppError, DisplayAction};
 use oskey_action::{AppMessageAction, AppMessageSource, WalletRuntime};
 
 use crate::rs::platform::Platform;
-
-#[repr(C)]
-pub enum AppDisplayAction {
-    Ready = 1,
-    Mnemonic,
-    Sign,
-    Error,
-}
 
 #[repr(C)]
 pub struct StorageIds {
@@ -36,7 +29,13 @@ extern "C" {
 
     pub(crate) fn app_uart_send(data: *const u8, len: usize);
     pub(crate) fn oskey_bt_send(data: *const u8, len: usize) -> c_int;
-    pub(crate) fn app_display_message(action: AppDisplayAction, data: *const u8, len: usize);
+    pub(crate) fn app_display_message(
+        action: DisplayAction,
+        error: AppError,
+        value: u32,
+        data: *const u8,
+        len: usize,
+    );
     pub(crate) fn user_button_request(active: bool);
 }
 

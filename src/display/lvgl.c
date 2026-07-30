@@ -2,35 +2,38 @@
 
 #ifdef CONFIG_OSKEY_DISPLAY
 
+#include <errno.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <lvgl.h>
 #include <lvgl_private.h>
+#include <lvgl_zephyr.h>
 #include "wrapper.h"
 #include "storage.h"
 #include "app.h"
 #include "message.h"
-#include "logo.h"
 
 #ifdef CONFIG_LV_Z_DEMO_BENCHMARK
 #include <lv_demos.h>
 #endif
 
+#define DISPLAY_SIGN_TEXT_MAX_LEN 1023
+
 static const struct device *display_dev;
+static lv_timer_t *display_start_timer;
 
 static char check_mnemonic_buffer[256] = {0};
-static char app_mnemonic_buffer[256] = {0};
-static char sign_buffer[1024] = {0};
-static char display_error_buffer[128] = {0};
-
 static char pin_buffer[30] = {0};
 
 static lv_obj_t *cont = NULL;
 static int title_height = 0;
 static bool custom_mode = false;
-uint8_t entropy_bytes[32];
+static uint8_t entropy_bytes[32];
+
+static void display_start(lv_timer_t *timer);
+static void hide_error_label(lv_timer_t *timer);
 
 static lv_obj_t *create_button_container(lv_obj_t *parent)
 {
@@ -147,15 +150,20 @@ static lv_obj_t *create_content_container(lv_coord_t title_height, lv_flex_align
 	return container;
 }
 
-static void show_fail(const char *msg)
+static lv_obj_t *create_error_label(void)
 {
 	lv_obj_t *error_label = lv_label_create(lv_scr_act());
-	lv_label_set_text(error_label, msg ? msg : "Verification failed!");
 	lv_obj_set_style_text_color(error_label, lv_palette_main(LV_PALETTE_RED), 0);
 	lv_obj_align(error_label, LV_ALIGN_BOTTOM_MID, 0, -20);
 
-	lv_timer_t *timer = lv_timer_create(hide_error_label, 2000, error_label);
-	lv_timer_set_repeat_count(timer, 1);
+	lv_timer_create(hide_error_label, 2000, error_label);
+
+	return error_label;
+}
+
+static void show_fail(const char *msg)
+{
+	lv_label_set_text(create_error_label(), msg ? msg : "Verification failed!");
 }
 
 static void display_submit(AppMessageAction action, uint32_t value, const void *data, size_t len,
@@ -167,7 +175,7 @@ static void display_submit(AppMessageAction action, uint32_t value, const void *
 	}
 }
 
-void hide_error_label(lv_timer_t *timer)
+static void hide_error_label(lv_timer_t *timer)
 {
 	lv_obj_t *label = (lv_obj_t *)timer->user_data;
 	lv_obj_del(label);
@@ -198,44 +206,41 @@ static bool validate_pin_complexity(const char *pin)
 	return has_digit && has_lower && has_upper && has_symbol;
 }
 
-int app_init_display()
+int app_init_display(void)
 {
 	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 	if (!device_is_ready(display_dev)) {
-		return 0;
+		return -ENODEV;
 	}
 
 #if DT_NODE_EXISTS(DT_ALIAS(backlight))
 	struct gpio_dt_spec lcd_backlight = GPIO_DT_SPEC_GET(DT_ALIAS(backlight), gpios);
 
 	if (!gpio_is_ready_dt(&lcd_backlight)) {
-		return 0;
+		return -ENODEV;
 	}
 
 	gpio_pin_configure_dt(&lcd_backlight, GPIO_OUTPUT_ACTIVE);
 	gpio_pin_set_dt(&lcd_backlight, 1);
 #endif
 
+	lvgl_lock();
 	lv_obj_set_style_bg_color(lv_screen_active(), lv_color_black(), LV_PART_MAIN);
 
 #ifdef CONFIG_LV_Z_DEMO_BENCHMARK
 	lv_demo_benchmark();
-	return 0;
+#else
+	app_display_logo();
+
+	display_start_timer = lv_timer_create(display_start, 5000, NULL);
+	if (!display_start_timer) {
+		display_start(NULL);
+	}
 #endif
+	lvgl_unlock();
 
-	return 0;
-}
-
-void app_display_hello()
-{
-	lv_obj_t *screen = lv_scr_act();
-	lv_obj_clean(screen);
-	lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
-
-	lv_obj_t *label = lv_label_create(screen);
-	lv_label_set_text(label, "Hello World");
-	lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-	lv_obj_set_style_text_color(label, lv_color_white(), LV_PART_MAIN);
+	int ret = display_blanking_off(display_dev);
+	return ret == -ENOSYS ? 0 : ret;
 }
 
 void app_display_index()
@@ -358,22 +363,13 @@ void app_display_mnemonic(int legth)
 	custom_mode = false;
 }
 
-void app_display_mnemonic_process(void *param)
+static void display_mnemonic(const uint8_t *data, size_t len)
 {
-	(void)param;
-
-	strcpy(check_mnemonic_buffer, app_mnemonic_buffer);
-
-	char words[24][12];
-	int word_count = 0;
-	char *token = strtok(app_mnemonic_buffer, " ");
-
-	while (token != NULL && word_count < 24) {
-		snprintf(words[word_count], sizeof(words[word_count]), "%d. %s", word_count + 1,
-			 token);
-		word_count++;
-		token = strtok(NULL, " ");
+	len = MIN(len, sizeof(check_mnemonic_buffer) - 1);
+	if (len > 0) {
+		memcpy(check_mnemonic_buffer, data, len);
 	}
+	check_mnemonic_buffer[len] = '\0';
 
 	lv_obj_clean(lv_scr_act());
 
@@ -393,9 +389,24 @@ void app_display_mnemonic_process(void *param)
 	lv_coord_t screen_width = lv_disp_get_hor_res(NULL);
 	lv_coord_t item_width = (screen_width - 50) / 2;
 
-	for (int i = 0; i < word_count; i++) {
+	const char *word = check_mnemonic_buffer;
+	const char *end = check_mnemonic_buffer + len;
+
+	for (int i = 0; i < 24 && word < end; i++) {
+		while (word < end && *word == ' ') {
+			word++;
+		}
+
+		const char *word_end = word;
+		while (word_end < end && *word_end != ' ') {
+			word_end++;
+		}
+		if (word == word_end) {
+			break;
+		}
+
 		lv_obj_t *label = lv_label_create(container);
-		lv_label_set_text(label, words[i]);
+		lv_label_set_text_fmt(label, "%d. %.*s", i + 1, (int)(word_end - word), word);
 		lv_obj_set_style_text_font(label, &lv_font_montserrat_16, 0);
 		lv_obj_set_style_text_color(label, lv_color_white(), 0);
 		lv_obj_set_style_border_side(label, LV_BORDER_SIDE_BOTTOM, 0);
@@ -404,6 +415,8 @@ void app_display_mnemonic_process(void *param)
 		lv_obj_set_style_border_opa(label, LV_OPA_50, 0);
 		lv_obj_set_style_pad_all(label, 8, 0);
 		lv_obj_set_width(label, item_width);
+
+		word = word_end;
 	}
 
 	lv_obj_t *hint_label = lv_label_create(container);
@@ -505,9 +518,8 @@ static void app_display_features_cb()
 	app_display_input("Set Init PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
 }
 
-static void display_sign(void *param)
+static void display_sign(const uint8_t *data, size_t len)
 {
-	ARG_UNUSED(param);
 	lv_obj_clean(lv_scr_act());
 
 	lv_obj_t *title = create_title_bar("Sign", lv_palette_main(LV_PALETTE_BLUE));
@@ -519,7 +531,7 @@ static void display_sign(void *param)
 	lv_obj_set_style_pad_all(container, 10, 0);
 
 	lv_obj_t *msg_label = lv_label_create(container);
-	lv_label_set_text(msg_label, sign_buffer);
+	lv_label_set_text_fmt(msg_label, "%.*s", (int)len, data ? (const char *)data : "");
 	lv_obj_set_style_text_font(msg_label, &lv_font_montserrat_16, 0);
 	lv_obj_set_style_text_color(msg_label, lv_color_white(), 0);
 	lv_obj_set_width(msg_label, LV_PCT(100));
@@ -530,50 +542,82 @@ static void display_sign(void *param)
 			       display_sign_approve_cb, NULL);
 }
 
-static void display_ready(void *param)
+static void display_ready(void)
 {
-	ARG_UNUSED(param);
 	memset(check_mnemonic_buffer, 0, sizeof(check_mnemonic_buffer));
-	memset(app_mnemonic_buffer, 0, sizeof(app_mnemonic_buffer));
 	memset(pin_buffer, 0, sizeof(pin_buffer));
 	app_display_index();
 }
 
-static void display_error(void *param)
+static void display_error(AppError error, uint32_t value)
 {
-	ARG_UNUSED(param);
-	show_fail(display_error_buffer);
-}
+	lv_obj_t *label = create_error_label();
 
-static void copy_display_text(char *buffer, size_t buffer_size, const uint8_t *data, size_t len)
-{
-	// TODO: Display long contract requests in pages instead of truncating them.
-	len = MIN(len, buffer_size - 1);
-	if (len > 0) {
-		memcpy(buffer, data, len);
+	switch (error) {
+	case AppError_Busy:
+		lv_label_set_text(label, "Device busy");
+		break;
+	case AppError_Rejected:
+		lv_label_set_text(label, "Request rejected");
+		break;
+	case AppError_Locked:
+		lv_label_set_text(label, "Wallet is locked");
+		break;
+	case AppError_NoPendingAction:
+		lv_label_set_text(label, "No action pending");
+		break;
+	case AppError_DisplayRequired:
+		lv_label_set_text(label, "Use the device display");
+		break;
+	case AppError_ExternalRequestRequired:
+		lv_label_set_text(label, "External request required");
+		break;
+	case AppError_TrustedActionRequired:
+		lv_label_set_text(label, "Trusted confirmation required");
+		break;
+	case AppError_InvalidAction:
+		lv_label_set_text(label, "Invalid action");
+		break;
+	case AppError_UnlockFailed:
+		lv_label_set_text_fmt(label, "Unlock failed (%u/10)", (unsigned int)value);
+		break;
+	case AppError_Unspecified:
+	case AppError_Failed:
+	default:
+		lv_label_set_text(label, "Operation failed");
+		break;
 	}
-	buffer[len] = '\0';
 }
 
-void app_display_message(AppDisplayAction action, const uint8_t *data, size_t len)
+void app_display_message(DisplayAction action, AppError error, uint32_t value, const uint8_t *data,
+			 size_t len)
 {
+	lvgl_lock();
+
+	if (display_start_timer) {
+		lv_timer_delete(display_start_timer);
+		display_start_timer = NULL;
+	}
+
 	switch (action) {
-	case AppDisplayAction_Ready:
-		lv_async_call(display_ready, NULL);
+	case DisplayAction_Ready:
+		display_ready();
 		break;
-	case AppDisplayAction_Mnemonic:
-		copy_display_text(app_mnemonic_buffer, sizeof(app_mnemonic_buffer), data, len);
-		lv_async_call(app_display_mnemonic_process, NULL);
+	case DisplayAction_Mnemonic:
+		display_mnemonic(data, len);
 		break;
-	case AppDisplayAction_Sign:
-		copy_display_text(sign_buffer, sizeof(sign_buffer), data, len);
-		lv_async_call(display_sign, NULL);
+	case DisplayAction_Sign:
+		// TODO: Display long contract requests in pages instead of truncating them.
+		display_sign(data, MIN(len, DISPLAY_SIGN_TEXT_MAX_LEN));
 		break;
-	case AppDisplayAction_Error:
-		copy_display_text(display_error_buffer, sizeof(display_error_buffer), data, len);
-		lv_async_call(display_error, NULL);
+	case DisplayAction_Error:
+		display_error(error, value);
+		break;
+	case DisplayAction_Unspecified:
 		break;
 	}
+
+	lvgl_unlock();
 }
 
 static void custom_button_toggle_cb(lv_event_t *e)
@@ -669,31 +713,6 @@ void app_display_logo()
 	lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 	lv_obj_set_style_text_color(label, lv_color_white(), LV_PART_MAIN);
 }
-
-// void app_display_logo()
-// {
-// 	lv_obj_t *screen = lv_scr_act();
-// 	lv_obj_clean(screen);
-// 	lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
-// 	lv_obj_set_scrollbar_mode(screen, LV_SCROLLBAR_MODE_OFF);
-
-// 	lv_obj_t *logo = lv_image_create(screen);
-// 	lv_image_set_src(logo, &logo_image);
-
-// 	lv_coord_t img_w = logo_image.header.w;
-// 	lv_coord_t img_h = logo_image.header.h;
-
-// 	if (img_w > 0 && img_h > 0) {
-// 		lv_image_set_pivot(logo, img_w / 2, img_h / 2);
-// 	}
-
-// 	if (img_h > 150) {
-// 		uint32_t scale = (LV_SCALE_NONE * 150U) / img_h;
-// 		lv_image_set_scale(logo, scale);
-// 	}
-
-// 	lv_obj_center(logo);
-// }
 
 static void keyboard_event_cb(lv_event_t *e)
 {
@@ -1162,17 +1181,12 @@ void app_display_entropy_collection(int page_param)
 	entropy_ui_update();
 }
 
-void app_display_loop()
+static void display_start(lv_timer_t *timer)
 {
-	lv_timer_handler();
-
-	display_blanking_off(display_dev);
-
-	app_display_logo();
-
-	lv_timer_handler();
-
-	k_msleep(5000);
+	if (timer) {
+		lv_timer_delete(timer);
+		display_start_timer = NULL;
+	}
 
 	uint8_t features[7];
 	app_check_feature(features, sizeof(features));
@@ -1184,30 +1198,21 @@ void app_display_loop()
 	} else {
 		app_display_features();
 	}
-
-	lv_timer_handler();
-
-	while (1) {
-		uint32_t sleep_ms = lv_timer_handler();
-		k_msleep(MIN(sleep_ms, INT32_MAX));
-	}
 }
 
 #else
 
-void app_display_loop()
-{
-	return;
-}
-
-int app_init_display()
+int app_init_display(void)
 {
 	return 0;
 }
 
-void app_display_message(AppDisplayAction action, const uint8_t *data, size_t len)
+void app_display_message(DisplayAction action, AppError error, uint32_t value, const uint8_t *data,
+			 size_t len)
 {
 	(void)action;
+	(void)error;
+	(void)value;
 	(void)data;
 	(void)len;
 }

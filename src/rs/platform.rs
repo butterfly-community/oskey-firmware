@@ -11,7 +11,7 @@ use crate::rs::ffi::{
     app_check_feature, app_check_storage, app_csrand_get, app_display_message, app_get_chip_model,
     app_get_device_id, app_get_eui64, app_restart, app_storage_reset, app_uart_send,
     app_version_get, oskey_bt_send, storage_general_check, storage_general_read,
-    storage_general_write, storage_ids, user_button_request, AppDisplayAction,
+    storage_general_write, storage_ids, user_button_request,
 };
 
 pub(crate) struct Platform;
@@ -127,22 +127,27 @@ impl Platform {
                     let Some(payload) = output.response.payload else {
                         continue;
                     };
-                    let (action, text) = match payload {
+                    let (action, error, value, text) = match payload {
                         res_data::Payload::DisplayResponse(response) => {
-                            let action = match proto::DisplayAction::try_from(response.action) {
-                                Ok(proto::DisplayAction::Ready) => AppDisplayAction::Ready,
-                                Ok(proto::DisplayAction::Mnemonic) => AppDisplayAction::Mnemonic,
-                                Ok(proto::DisplayAction::Sign) => AppDisplayAction::Sign,
-                                Ok(proto::DisplayAction::Error) => AppDisplayAction::Error,
-                                _ => continue,
+                            let Ok(action) = proto::DisplayAction::try_from(response.action) else {
+                                continue;
                             };
-                            (action, response.text)
+                            if action == proto::DisplayAction::Unspecified {
+                                continue;
+                            }
+                            (
+                                action,
+                                proto::AppError::try_from(response.error)
+                                    .unwrap_or(proto::AppError::Unspecified),
+                                response.value,
+                                response.text,
+                            )
                         }
                         _ => continue,
                     };
 
                     unsafe {
-                        app_display_message(action, text.as_ptr(), text.len());
+                        app_display_message(action, error, value, text.as_ptr(), text.len());
                     }
                 }
                 AppMessageSource::Button => {

@@ -6,12 +6,20 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef enum AppDisplayAction {
-  AppDisplayAction_Ready = 1,
-  AppDisplayAction_Mnemonic,
-  AppDisplayAction_Sign,
-  AppDisplayAction_Error,
-} AppDisplayAction;
+enum AppError {
+  AppError_Unspecified = 0,
+  AppError_Failed = 1,
+  AppError_Busy = 2,
+  AppError_Rejected = 3,
+  AppError_Locked = 4,
+  AppError_NoPendingAction = 5,
+  AppError_DisplayRequired = 6,
+  AppError_ExternalRequestRequired = 7,
+  AppError_TrustedActionRequired = 8,
+  AppError_InvalidAction = 9,
+  AppError_UnlockFailed = 10,
+};
+typedef int32_t AppError;
 
 typedef enum AppMessageAction {
   AppMessageAction_External = 0,
@@ -30,6 +38,15 @@ typedef enum AppMessageSource {
   AppMessageSource_Display = 2,
   AppMessageSource_Button = 3,
 } AppMessageSource;
+
+enum DisplayAction {
+  DisplayAction_Unspecified = 0,
+  DisplayAction_Ready = 1,
+  DisplayAction_Mnemonic = 2,
+  DisplayAction_Sign = 3,
+  DisplayAction_Error = 4,
+};
+typedef int32_t DisplayAction;
 
 void app_message_handle_rs(enum AppMessageSource source,
                            enum AppMessageAction action,

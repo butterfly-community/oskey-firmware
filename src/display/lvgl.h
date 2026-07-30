@@ -46,13 +46,10 @@ typedef enum {
 	MNEMONIC_LENGTH_24 = 24
 } app_mnemonic_length_t;
 
-void hide_error_label(lv_timer_t *timer);
 void app_display_init_cb(lv_event_t *e);
 void app_display_tools_cb(lv_event_t *e);
 void app_display_mnemonic_cb();
 void app_display_index_cb(lv_event_t *e);
-
-void app_display_mnemonic_process(void *param);
 
 void back_button_event_handler(lv_event_t *e);
 
@@ -66,7 +63,7 @@ void app_display_entropy_collection(int page_count);
 #endif /* CONFIG_OSKEY_DISPLAY */
 
 int app_init_display(void);
-void app_display_loop(void);
-void app_display_message(AppDisplayAction action, const uint8_t *data, size_t len);
+void app_display_message(DisplayAction action, AppError error, uint32_t value, const uint8_t *data,
+			 size_t len);
 
 #endif /* APP_SCREEN_H */

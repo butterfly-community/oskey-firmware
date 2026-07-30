@@ -17,11 +17,7 @@ LOG_MODULE_REGISTER(main);
 
 int main(void)
 {
-	init_usb_stack();
-
 	storage_init();
-
-	app_uart_irq_register();
 
 	user_button_init();
 
@@ -31,9 +27,18 @@ int main(void)
 		settings_load();
 	}
 
+	int ret = app_init_display();
+	if (ret < 0) {
+		LOG_ERR("Display startup failed: %d", ret);
+	}
+
+	init_usb_stack();
+
+	app_uart_irq_register();
+
 	oskey_bt_start();
 
-	int ret = wifi_start();
+	ret = wifi_start();
 
 	if (ret < 0) {
 		LOG_ERR("Wi-Fi startup failed: %d", ret);
@@ -46,13 +51,9 @@ int main(void)
 		}
 	}
 
-	app_init_display();
-
 	if (IS_ENABLED(CONFIG_MCUBOOT_BOOTLOADER_MODE_DIRECT_XIP_WITH_REVERT)) {
 		confirm_mcuboot_img();
 	}
-
-	app_display_loop();
 
 	return 0;
 }
