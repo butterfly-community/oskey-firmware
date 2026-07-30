@@ -18,6 +18,7 @@ config OSKEY_RUST
 	select PSA_WANT_ALG_DETERMINISTIC_ECDSA
 	select PSA_WANT_ALG_ECDSA
 	select PSA_WANT_ECC_SECP_K1_256
+	select PSA_WANT_ECC_SECP_R1_256
 	select PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY
 	select PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_DERIVE
 	select PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_IMPORT
@@ -309,6 +310,36 @@ config OSKEY_USBD_20_EXTENSION_DESC
 	default y
 	help
 	  Set bcdUSB value to 0201 and use default USB 2.0 Extension Descriptor.
+
+endif
+
+config OSKEY_FIDO2
+	bool "FIDO2 authenticator"
+	depends on OSKEY_RUST
+	select OSKEY_STORAGE
+	select OSKEY_USB
+	select FIDO2
+	select FIDO2_CREDENTIALS_CUSTOM
+	select FIDO2_TRANSPORT_USB_HID
+	help
+	  Enable the USB FIDO2 authenticator for OpenSSH and other FIDO2 clients.
+
+if OSKEY_FIDO2
+
+choice FIDO2_UP_BACKEND
+	default FIDO2_UP_CUSTOM
+endchoice
+
+choice FIDO2_STORAGE_BACKEND
+	default FIDO2_STORAGE_SETTINGS
+endchoice
+
+choice FIDO2_ATTESTATION_BACKEND
+	default FIDO2_ATTESTATION_NONE
+endchoice
+
+config FIDO2_AAGUID
+	default "8e0d2cfc850153abb0b523751d20e730"
 
 endif
 

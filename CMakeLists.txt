@@ -50,6 +50,7 @@ endif()
 target_sources(app PRIVATE
   src/main.c
   src/message.c
+  src/confirmation.c
   src/uart.c
   src/bluetooth/bluetooth.c
   src/storage.c
@@ -87,6 +88,10 @@ endif()
 target_sources_ifdef(CONFIG_OSKEY_USB app PRIVATE
   src/usb/bulk.c
   src/usb/init.c
+)
+
+target_sources_ifdef(CONFIG_OSKEY_FIDO2 app PRIVATE
+  src/usb/fido2.c
 )
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

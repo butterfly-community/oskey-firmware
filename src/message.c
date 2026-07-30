@@ -6,6 +6,7 @@
 #include <zephyr/logging/log.h>
 
 #include "bindings.h"
+#include "usb/fido2.h"
 
 #define APP_MESSAGE_DATA_SIZE   512
 #define APP_MESSAGE_QUEUE_DEPTH 4
@@ -82,4 +83,21 @@ bool app_message_submit(AppMessageSource source, AppMessageAction action, uint32
 	}
 
 	return true;
+}
+
+void app_message_reply(AppMessageSource target, bool success, const void *data, size_t len,
+		       const void *auxiliary, size_t auxiliary_len)
+{
+#ifdef CONFIG_OSKEY_FIDO2
+	if (target == AppMessageSource_Fido2) {
+		fido2_message_reply(success, data, len, auxiliary, auxiliary_len);
+	}
+#else
+	ARG_UNUSED(target);
+	ARG_UNUSED(success);
+	ARG_UNUSED(data);
+	ARG_UNUSED(len);
+	ARG_UNUSED(auxiliary);
+	ARG_UNUSED(auxiliary_len);
+#endif
 }

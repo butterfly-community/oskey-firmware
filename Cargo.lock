@@ -921,6 +921,7 @@ dependencies = [
  "anyhow",
  "bit-vec",
  "heapless",
+ "zeroize",
 ]
 
 [[package]]

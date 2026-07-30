@@ -1,11 +1,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/devicetree.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/atomic.h>
-#include "message.h"
+#include "confirmation.h"
 #include "wrapper.h"
-
-LOG_MODULE_REGISTER(app_gpio);
 
 #define SW0_NODE DT_ALIAS(sw0)
 
@@ -13,19 +9,10 @@ LOG_MODULE_REGISTER(app_gpio);
 
 static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(SW0_NODE, gpios);
 static struct gpio_callback button_cb_data;
-static atomic_t user_action_requested;
 
 static void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-	if (atomic_cas(&user_action_requested, true, false)) {
-		if (app_message_submit(AppMessageSource_Button, AppMessageAction_Approve, 0, NULL,
-				       0, NULL, 0)) {
-			LOG_INF("User action approved");
-		} else {
-			atomic_set(&user_action_requested, true);
-			LOG_ERR("Failed to queue user action");
-		}
-	}
+	app_confirmation_respond(true);
 }
 
 bool user_button_exists(void)
@@ -58,11 +45,6 @@ int user_button_init(void)
 	return 0;
 }
 
-void user_button_request(bool active)
-{
-	atomic_set(&user_action_requested, active);
-}
-
 #else
 
 bool user_button_exists(void)
@@ -75,8 +57,4 @@ int user_button_init(void)
 	return -1;
 }
 
-void user_button_request(bool active)
-{
-	ARG_UNUSED(active);
-}
 #endif

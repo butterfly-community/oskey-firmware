@@ -5,5 +5,4 @@
 
 bool user_button_exists(void);
 int user_button_init(void);
-void user_button_request(bool active);
 #endif

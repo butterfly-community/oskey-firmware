@@ -10,7 +10,8 @@ typedef enum AppMessageSource {
   AppMessageSource_Uart = 0,
   AppMessageSource_Bluetooth = 1,
   AppMessageSource_Display = 2,
-  AppMessageSource_Button = 3,
+  AppMessageSource_Fido2 = 4,
+  AppMessageSource_Confirmation = 5,
 } AppMessageSource;
 
 typedef enum AppMessageAction {
@@ -22,6 +23,9 @@ typedef enum AppMessageAction {
   AppMessageAction_Reject,
   AppMessageAction_Restart,
   AppMessageAction_ResetStorage,
+  AppMessageAction_Fido2Register,
+  AppMessageAction_Fido2Sign,
+  AppMessageAction_Confirmation,
 } AppMessageAction;
 
 enum DisplayAction
@@ -34,6 +38,7 @@ enum DisplayAction
   DisplayAction_Mnemonic = 2,
   DisplayAction_Sign = 3,
   DisplayAction_Error = 4,
+  DisplayAction_Confirm = 5,
 };
 #if __STDC_VERSION__ >= 202311L
 typedef enum DisplayAction DisplayAction;
@@ -62,6 +67,21 @@ enum AppError
 typedef enum AppError AppError;
 #else
 typedef int32_t AppError;
+#endif // __STDC_VERSION__ >= 202311L
+
+enum ConfirmationKind
+#if __STDC_VERSION__ >= 202311L
+  : int32_t
+#endif // __STDC_VERSION__ >= 202311L
+ {
+  ConfirmationKind_Unspecified = 0,
+  ConfirmationKind_Sign = 1,
+  ConfirmationKind_Fido2 = 2,
+};
+#if __STDC_VERSION__ >= 202311L
+typedef enum ConfirmationKind ConfirmationKind;
+#else
+typedef int32_t ConfirmationKind;
 #endif // __STDC_VERSION__ >= 202311L
 
 void app_message_handle_rs(enum AppMessageSource source,

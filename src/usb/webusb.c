@@ -7,6 +7,7 @@
 
 #ifdef CONFIG_OSKEY_USB
 
+#include <zephyr/authentication/fido2/fido2.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/usb/usbd.h>
 #include <zephyr/usb/msos_desc.h>
@@ -132,6 +133,14 @@ int init_usb_stack(void)
 	struct usbd_context *usbd;
 	int ret;
 
+	if (IS_ENABLED(CONFIG_OSKEY_FIDO2)) {
+		ret = fido2_init();
+		if (ret) {
+			LOG_ERR("Failed to initialize FIDO2 (%d)", ret);
+			return ret;
+		}
+	}
+
 	usbd = oskey_usbd_setup(msg_cb);
 	if (usbd == NULL) {
 		LOG_ERR("Failed to setup USB device");
@@ -160,6 +169,14 @@ int init_usb_stack(void)
 		ret = usbd_enable(usbd);
 		if (ret) {
 			LOG_ERR("Failed to enable device support");
+			return ret;
+		}
+	}
+
+	if (IS_ENABLED(CONFIG_OSKEY_FIDO2)) {
+		ret = fido2_start();
+		if (ret) {
+			LOG_ERR("Failed to start FIDO2 (%d)", ret);
 			return ret;
 		}
 	}

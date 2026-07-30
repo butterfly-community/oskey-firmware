@@ -26,6 +26,15 @@ const boards: Board[] = [
     features: ["STORAGE"],
   },
   {
+    name: "esp32s3_devkitc_fido2",
+    target: "esp32s3_devkitc/esp32s3/procpu",
+    features: ["FIDO2"],
+    overlays: [
+      "boards/overlay/cdc_acm.overlay",
+      "boards/overlay/fido2.overlay",
+    ],
+  },
+  {
     name: "esp32s3_core",
     target: "esp32s3_devkitc/esp32s3/procpu",
     features: ["STORAGE"],

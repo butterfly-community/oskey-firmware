@@ -8,10 +8,10 @@ use oskey_action::proto::{self, res_data};
 use oskey_action::{AppMessageSource, FrameParser, Message, WalletOutput, WalletPlatform};
 
 use crate::rs::ffi::{
-    app_check_feature, app_check_storage, app_csrand_get, app_display_message, app_get_chip_model,
-    app_get_device_id, app_get_eui64, app_restart, app_storage_reset, app_uart_send,
-    app_version_get, oskey_bt_send, storage_general_check, storage_general_read,
-    storage_general_write, storage_ids, user_button_request,
+    app_check_feature, app_check_storage, app_confirmation_complete, app_confirmation_prompt,
+    app_csrand_get, app_display_message, app_get_chip_model, app_get_device_id, app_get_eui64,
+    app_message_reply, app_restart, app_storage_reset, app_uart_send, app_version_get,
+    oskey_bt_send, storage_general_check, storage_general_read, storage_general_write, storage_ids,
 };
 
 pub(crate) struct Platform;
@@ -150,13 +150,46 @@ impl Platform {
                         app_display_message(action, error, value, text.as_ptr(), text.len());
                     }
                 }
-                AppMessageSource::Button => {
-                    let Some(res_data::Payload::UserActionPrompt(prompt)) = output.response.payload
+                AppMessageSource::Fido2 => match output.response.payload {
+                    Some(res_data::Payload::Fido2Response(response)) => unsafe {
+                        app_message_reply(
+                            AppMessageSource::Fido2,
+                            true,
+                            response.credential_id.as_ptr(),
+                            response.credential_id.len(),
+                            response.data.as_ptr(),
+                            response.data.len(),
+                        );
+                    },
+                    Some(res_data::Payload::ConfirmationResult(response)) => unsafe {
+                        app_confirmation_complete(response.approved);
+                    },
+                    _ => unsafe {
+                        app_message_reply(
+                            AppMessageSource::Fido2,
+                            false,
+                            core::ptr::null(),
+                            0,
+                            core::ptr::null(),
+                            0,
+                        );
+                    },
+                },
+                AppMessageSource::Confirmation => {
+                    let Some(res_data::Payload::ConfirmationPrompt(prompt)) =
+                        output.response.payload
                     else {
                         continue;
                     };
+                    let kind = proto::ConfirmationKind::try_from(prompt.kind)
+                        .unwrap_or(proto::ConfirmationKind::Unspecified);
                     unsafe {
-                        user_button_request(prompt.active);
+                        app_confirmation_prompt(
+                            kind,
+                            prompt.active,
+                            prompt.text.as_ptr(),
+                            prompt.text.len(),
+                        );
                     }
                 }
             }

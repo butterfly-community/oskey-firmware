@@ -13,6 +13,7 @@
 #include "wrapper.h"
 #include "storage.h"
 #include "app.h"
+#include "confirmation.h"
 #include "message.h"
 
 #ifdef CONFIG_LV_Z_DEMO_BENCHMARK
@@ -433,10 +434,10 @@ static void display_mnemonic(const uint8_t *data, size_t len)
 			       app_display_mnemonic_cb, NULL);
 }
 
-static void display_sign_approve_cb(lv_event_t *event)
+static void display_approve_cb(lv_event_t *event)
 {
 	ARG_UNUSED(event);
-	display_submit(AppMessageAction_Approve, 0, NULL, 0, NULL, 0);
+	app_confirmation_respond(true);
 }
 
 void app_display_index_cb(lv_event_t *e)
@@ -488,7 +489,7 @@ void back_button_event_handler(lv_event_t *e)
 		app_display_tools();
 		break;
 	case BACK_ACTION_REJECT:
-		display_submit(AppMessageAction_Reject, 0, NULL, 0, NULL, 0);
+		app_confirmation_respond(false);
 		break;
 	default:
 		break;
@@ -518,11 +519,12 @@ static void app_display_features_cb()
 	app_display_input("Set Init PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
 }
 
-static void display_sign(const uint8_t *data, size_t len)
+static void display_confirmation(const char *title_text, const char *button_text,
+				 const uint8_t *data, size_t len)
 {
 	lv_obj_clean(lv_scr_act());
 
-	lv_obj_t *title = create_title_bar("Sign", lv_palette_main(LV_PALETTE_BLUE));
+	lv_obj_t *title = create_title_bar(title_text, lv_palette_main(LV_PALETTE_BLUE));
 	lv_coord_t th = lv_obj_get_height(title);
 
 	create_back_button(th, BACK_ACTION_REJECT);
@@ -538,8 +540,20 @@ static void display_sign(const uint8_t *data, size_t len)
 	lv_obj_set_style_pad_top(msg_label, 20, 0);
 
 	lv_obj_t *btn_cont = create_button_container(container);
-	create_centered_button(btn_cont, "Sign", lv_palette_main(LV_PALETTE_RED), 100,
-			       display_sign_approve_cb, NULL);
+	create_centered_button(btn_cont, button_text, lv_palette_main(LV_PALETTE_RED), 100,
+			       display_approve_cb, NULL);
+}
+
+static void display_sign(const uint8_t *data, size_t len)
+{
+	display_confirmation("Sign", "Sign", data, len);
+}
+
+static void display_confirm(void)
+{
+	static const uint8_t text[] = "Confirm security key request";
+
+	display_confirmation("Confirm", "Approve", text, sizeof(text) - 1);
 }
 
 static void display_ready(void)
@@ -612,6 +626,9 @@ void app_display_message(DisplayAction action, AppError error, uint32_t value, c
 		break;
 	case DisplayAction_Error:
 		display_error(error, value);
+		break;
+	case DisplayAction_Confirm:
+		display_confirm();
 		break;
 	case DisplayAction_Unspecified:
 		break;

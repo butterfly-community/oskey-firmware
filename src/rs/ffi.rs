@@ -1,5 +1,5 @@
 use core::ffi::{c_char, c_int};
-use oskey_action::proto::{AppError, DisplayAction};
+use oskey_action::proto::{AppError, ConfirmationKind, DisplayAction};
 use oskey_action::{AppMessageAction, AppMessageSource, WalletRuntime};
 
 use crate::rs::platform::Platform;
@@ -29,6 +29,14 @@ extern "C" {
 
     pub(crate) fn app_uart_send(data: *const u8, len: usize);
     pub(crate) fn oskey_bt_send(data: *const u8, len: usize) -> c_int;
+    pub(crate) fn app_message_reply(
+        target: AppMessageSource,
+        success: bool,
+        data: *const u8,
+        len: usize,
+        auxiliary: *const u8,
+        auxiliary_len: usize,
+    );
     pub(crate) fn app_display_message(
         action: DisplayAction,
         error: AppError,
@@ -36,7 +44,13 @@ extern "C" {
         data: *const u8,
         len: usize,
     );
-    pub(crate) fn user_button_request(active: bool);
+    pub(crate) fn app_confirmation_prompt(
+        kind: ConfirmationKind,
+        active: bool,
+        data: *const u8,
+        len: usize,
+    );
+    pub(crate) fn app_confirmation_complete(approved: bool);
 }
 
 static mut APP_RUNTIME: Option<WalletRuntime<Platform>> = None;

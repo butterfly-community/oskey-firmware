@@ -6,7 +6,11 @@ fn main() {
     config.language = cbindgen::Language::C;
     config.include_guard = Some("OSKEY_BINDINGS_H".into());
     config.enumeration.prefix_with_name = true;
-    config.export.include = vec!["DisplayAction".into(), "AppError".into()];
+    config.export.include = vec![
+        "DisplayAction".into(),
+        "AppError".into(),
+        "ConfirmationKind".into(),
+    ];
     config.parse.parse_deps = true;
     config.parse.include = Some(vec!["oskey-action".into()]);
 
