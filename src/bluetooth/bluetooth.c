@@ -228,7 +228,7 @@ int oskey_bt_init(void)
 	err = bt_enable(NULL);
 	if (err) {
 		LOG_ERR("Bluetooth init failed (err %d)", err);
-		return 0;
+		return err;
 	}
 	LOG_INF("Bluetooth initialized");
 
@@ -237,8 +237,15 @@ int oskey_bt_init(void)
 
 int oskey_bt_start(void)
 {
-	bt_conn_auth_cb_register(&auth_callbacks);
-	bt_conn_auth_info_cb_register(&auth_info_callbacks);
+	int err = bt_conn_auth_cb_register(&auth_callbacks);
+	if (err) {
+		return err;
+	}
+
+	err = bt_conn_auth_info_cb_register(&auth_info_callbacks);
+	if (err) {
+		return err;
+	}
 
 	start_advertising();
 

@@ -4,7 +4,7 @@
 
 #include <zephyr/dfu/mcuboot.h>
 
-int confirm_mcuboot_img()
+int confirm_mcuboot_img(void)
 {
 	if (!boot_is_img_confirmed()) {
 		return boot_write_img_confirmed();
@@ -14,7 +14,7 @@ int confirm_mcuboot_img()
 
 #else
 
-int confirm_mcuboot_img()
+int confirm_mcuboot_img(void)
 {
 	return 0;
 }

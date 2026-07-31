@@ -82,14 +82,11 @@ int app_get_device_id(uint8_t *buffer, size_t len)
 
 bool app_check_storage(void)
 {
-	return storage_initd;
+	return storage_ready();
 }
 
 void app_storage_reset(void)
 {
-	if (app_check_storage()) {
-		storage_erase_zms();
-	}
 	storage_erase_flash();
 	sys_reboot(SYS_REBOOT_COLD);
 }

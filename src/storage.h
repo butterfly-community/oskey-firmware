@@ -10,13 +10,12 @@ struct storage_ids {
 };
 
 extern const struct storage_ids storage_ids;
-extern volatile bool storage_initd;
 
 int storage_init(void);
+bool storage_ready(void);
 bool storage_general_check(uint16_t id);
 bool storage_general_write(const uint8_t *data, size_t len, uint16_t id);
 int storage_general_read(uint8_t *data, size_t len, uint16_t id);
-int storage_erase_zms(void);
 int storage_erase_flash(void);
 
 #endif

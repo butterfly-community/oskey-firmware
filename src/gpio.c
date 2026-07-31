@@ -1,11 +1,11 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/sys/util.h>
 #include "confirmation.h"
-#include "wrapper.h"
 
 #define SW0_NODE DT_ALIAS(sw0)
 
-#if DT_HAS_ALIAS(sw0) && DT_NODE_HAS_STATUS(SW0_NODE, okay)
+#if defined(CONFIG_GPIO) && DT_HAS_ALIAS(sw0) && DT_NODE_HAS_STATUS(SW0_NODE, okay)
 
 static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(SW0_NODE, gpios);
 static struct gpio_callback button_cb_data;

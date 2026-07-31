@@ -1,12 +1,19 @@
 #include "storage.h"
 
-#include "wrapper.h"
+#include <errno.h>
+#include <string.h>
+#include <zephyr/sys/util.h>
 
 const struct storage_ids storage_ids = {
 	.seed = 2,
 };
 
-volatile bool storage_initd;
+static bool storage_initialized;
+
+bool storage_ready(void)
+{
+	return storage_initialized;
+}
 
 #ifdef CONFIG_OSKEY_STORAGE
 
@@ -39,22 +46,27 @@ int storage_init(void)
 		(const void *)fs->flash_device, fs->flash_device->name, (unsigned long)fs->offset,
 		fs->sector_size, fs->sector_count, fs->sector_size * fs->sector_count);
 
-	storage_initd = true;
+	storage_initialized = true;
 	return 0;
 }
 
 bool storage_general_check(uint16_t id)
 {
-	uint8_t read_value[2] = {0};
-	int res = zms_read(fs, id, &read_value, sizeof(read_value));
-	if (res < 0) {
+	if (!storage_initialized) {
 		return false;
 	}
-	return true;
+
+	uint8_t read_value[2] = {0};
+	int res = zms_read(fs, id, &read_value, sizeof(read_value));
+	return res > 0;
 }
 
 bool storage_general_write(const uint8_t *data, size_t len, uint16_t id)
 {
+	if (!storage_initialized) {
+		return false;
+	}
+
 	int res = zms_write(fs, id, data, len);
 	if (res < 0) {
 		return false;
@@ -64,17 +76,11 @@ bool storage_general_write(const uint8_t *data, size_t len, uint16_t id)
 
 int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 {
+	if (!storage_initialized) {
+		return -ENODEV;
+	}
+
 	return zms_read(fs, id, data, len);
-}
-
-int storage_erase_zms(void)
-{
-	return zms_clear(fs);
-}
-
-int storage_delete(uint16_t id)
-{
-	return zms_delete(fs, id);
 }
 
 int storage_erase_flash(void)
@@ -89,10 +95,6 @@ int storage_erase_flash(void)
 	const struct device *flash_dev = flash_area_get_device(fa);
 
 	ret = flash_erase(flash_dev, fa->fa_off, fa->fa_size);
-	if (ret != 0) {
-		return ret;
-	}
-
 	flash_area_close(fa);
 
 	return ret;
@@ -140,18 +142,6 @@ int storage_general_read(uint8_t *data, size_t len, uint16_t id)
 		return read_len;
 	}
 	return -ENOENT;
-}
-
-int storage_erase_zms(void)
-{
-	memset(storage_seed_buffer, 0, sizeof(storage_seed_buffer));
-	storage_seed_len = 0;
-	return 0;
-}
-
-int storage_delete(uint16_t id)
-{
-	return 0;
 }
 
 int storage_erase_flash(void)
