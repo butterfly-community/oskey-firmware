@@ -60,7 +60,6 @@ target_sources(app PRIVATE
   src/display/lvgl.c
   src/gpio.c
   src/usb/webusb.c
-  src/input/touch.c
   src/app.c
 )
 
