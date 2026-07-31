@@ -625,7 +625,6 @@ void app_display_message(DisplayAction action, AppError error, uint32_t value, c
 		display_mnemonic(data, len);
 		break;
 	case DisplayAction_Sign:
-		// TODO: Display long contract requests in pages instead of truncating them.
 		display_sign(data, MIN(len, DISPLAY_SIGN_TEXT_MAX_LEN));
 		break;
 	case DisplayAction_Error:
