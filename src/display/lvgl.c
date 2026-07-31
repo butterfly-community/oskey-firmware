@@ -3,6 +3,8 @@
 #ifdef CONFIG_OSKEY_DISPLAY
 
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
@@ -10,7 +12,7 @@
 #include <lvgl.h>
 #include <lvgl_private.h>
 #include <lvgl_zephyr.h>
-#include "wrapper.h"
+#include <zephyr/sys/util.h>
 #include "storage.h"
 #include "app.h"
 #include "confirmation.h"
@@ -20,7 +22,7 @@
 #include <lv_demos.h>
 #endif
 
-#define DISPLAY_SIGN_TEXT_MAX_LEN 1023
+#define DISPLAY_HEX_MAX_BYTES 64
 
 static const struct device *display_dev;
 static lv_timer_t *display_start_timer;
@@ -35,6 +37,7 @@ static uint8_t entropy_bytes[32];
 
 static void display_start(lv_timer_t *timer);
 static void hide_error_label(lv_timer_t *timer);
+static void app_display_mnemonic_cb(lv_event_t *event);
 
 static lv_obj_t *create_button_container(lv_obj_t *parent)
 {
@@ -244,7 +247,7 @@ int app_init_display(void)
 	return ret == -ENOSYS ? 0 : ret;
 }
 
-void app_display_index()
+void app_display_index(void)
 {
 	lv_obj_clean(lv_scr_act());
 
@@ -278,7 +281,7 @@ void app_display_index()
 	lv_obj_add_event_cb(tools_btn, app_display_index_cb, LV_EVENT_CLICKED, NULL);
 }
 
-void app_display_init()
+void app_display_init(void)
 {
 	lv_obj_clean(lv_scr_act());
 
@@ -305,7 +308,7 @@ void app_display_init()
 static lv_style_t tools_btn_style, tools_btn_pressed_style;
 static bool tools_styles_initialized = false;
 
-void app_display_tools()
+void app_display_tools(void)
 {
 	lv_obj_clean(lv_scr_act());
 
@@ -354,11 +357,11 @@ void app_display_tools()
 	}
 }
 
-void app_display_mnemonic(int legth)
+static void app_display_mnemonic(int length)
 {
-	size_t entropy_len = custom_mode ? legth * 4 / 3 : 0;
+	size_t entropy_len = custom_mode ? length * 4 / 3 : 0;
 
-	display_submit(AppMessageAction_GenerateMnemonic, legth,
+	display_submit(AppMessageAction_GenerateMnemonic, length,
 		       entropy_len > 0 ? entropy_bytes : NULL, entropy_len, NULL, 0);
 	memset(entropy_bytes, 0, sizeof(entropy_bytes));
 	custom_mode = false;
@@ -509,55 +512,155 @@ void app_display_init_show_custom_entropy_length_cb(lv_event_t *e)
 	app_display_entropy_collection(custom_length);
 }
 
-void app_display_mnemonic_cb()
+static void app_display_mnemonic_cb(lv_event_t *event)
 {
+	ARG_UNUSED(event);
+
 	app_display_input("Check", INPUT_ACTION_CHECK_MNEMONIC, BACK_ACTION_TO_SELECT_LENGTH);
 }
 
-static void app_display_features_cb()
+static void app_display_features_cb(lv_event_t *event)
 {
+	ARG_UNUSED(event);
+
 	app_display_input("Set Init PIN", INPUT_ACTION_PIN_SET, BACK_ACTION_TO_CHECK_FEATURES);
 }
 
-static void display_confirmation(const char *title_text, const char *button_text,
-				 const uint8_t *data, size_t len)
+static lv_obj_t *confirmation_field(lv_obj_t *parent, const char *name, const uint8_t *data,
+				    size_t len)
 {
+	if (data == NULL || len == 0) {
+		return NULL;
+	}
+
+	lv_obj_t *label = lv_label_create(parent);
+	lv_label_set_text_fmt(label, "%s\n%.*s", name, (int)len, (const char *)data);
+	lv_obj_set_style_text_font(label, &lv_font_montserrat_14, 0);
+	lv_obj_set_style_text_color(label, lv_color_white(), 0);
+	lv_obj_set_width(label, LV_PCT(100));
+	lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+	return label;
+}
+
+static void confirmation_number(lv_obj_t *parent, const char *name, uint64_t value)
+{
+	char text[24];
+
+	snprintf(text, sizeof(text), "%llu", (unsigned long long)value);
+	confirmation_field(parent, name, (const uint8_t *)text, strlen(text));
+}
+
+static void confirmation_hex(lv_obj_t *parent, const char *name, struct AppSlice value)
+{
+	if (value.data == NULL || value.len == 0) {
+		return;
+	}
+
+	size_t len = MIN(value.len, DISPLAY_HEX_MAX_BYTES);
+	char text[DISPLAY_HEX_MAX_BYTES * 2 + 6] = "0x";
+
+	bin2hex(value.data, len, &text[2], sizeof(text) - 2);
+	if (len < value.len) {
+		strcat(text, "...");
+	}
+	confirmation_field(parent, name, (const uint8_t *)text, strlen(text));
+}
+
+void app_display_confirmation(const struct AppConfirmationView *confirmation)
+{
+	const char *title = "Confirm";
+	const char *button = "Approve";
+
+	if (confirmation == NULL) {
+		return;
+	}
+
+	switch (confirmation->kind) {
+	case AppConfirmationKind_EthMessage:
+	case AppConfirmationKind_EthTransaction:
+		title = "Sign";
+		button = "Sign";
+		break;
+	case AppConfirmationKind_Fido:
+		switch (confirmation->operation) {
+		case FidoOperation_Register:
+			title = "Create credential";
+			break;
+		case FidoOperation_Authenticate:
+			title = "Authenticate";
+			break;
+		case FidoOperation_Select:
+			title = "Select OSKey";
+			break;
+		case FidoOperation_Unspecified:
+			break;
+		}
+		break;
+	}
+
+	lvgl_lock();
+	if (display_start_timer) {
+		lv_timer_delete(display_start_timer);
+		display_start_timer = NULL;
+	}
 	lv_obj_clean(lv_scr_act());
 
-	lv_obj_t *title = create_title_bar(title_text, lv_palette_main(LV_PALETTE_BLUE));
-	lv_coord_t th = lv_obj_get_height(title);
-
+	lv_obj_t *title_bar = create_title_bar(title, lv_palette_main(LV_PALETTE_BLUE));
+	lv_coord_t th = lv_obj_get_height(title_bar);
 	create_back_button(th, BACK_ACTION_REJECT);
 	lv_obj_t *container = create_content_container(th, LV_FLEX_ALIGN_START);
-	lv_obj_set_flex_flow(container, LV_FLEX_FLOW_ROW_WRAP);
 	lv_obj_set_style_pad_all(container, 10, 0);
+	lv_obj_set_style_pad_row(container, 12, 0);
 
-	lv_obj_t *msg_label = lv_label_create(container);
-	lv_label_set_text_fmt(msg_label, "%.*s", (int)len, data ? (const char *)data : "");
-	lv_obj_set_style_text_font(msg_label, &lv_font_montserrat_16, 0);
-	lv_obj_set_style_text_color(msg_label, lv_color_white(), 0);
-	lv_obj_set_width(msg_label, LV_PCT(100));
-	lv_obj_set_style_pad_top(msg_label, 20, 0);
+	switch (confirmation->kind) {
+	case AppConfirmationKind_EthMessage: {
+		lv_obj_t *preview =
+			confirmation_field(container, "Message", confirmation->preview.data,
+					   confirmation->preview.len);
+		if (preview != NULL && confirmation->truncated) {
+			lv_label_ins_text(preview, LV_LABEL_POS_LAST, "...");
+		}
+		confirmation_number(container, "Size (bytes)", confirmation->message_length);
+		confirmation_hex(container, "Signing hash", confirmation->signing_hash);
+		break;
+	}
+	case AppConfirmationKind_EthTransaction:
+		confirmation_number(container, "Chain ID", confirmation->chain_id);
+		confirmation_number(container, "Nonce", confirmation->nonce);
+		confirmation_field(container, "Gas price", confirmation->gas_price.data,
+				   confirmation->gas_price.len);
+		confirmation_number(container, "Gas limit", confirmation->gas_limit);
+		if (confirmation->contract_creation) {
+			static const uint8_t create[] = "Contract creation";
+			confirmation_field(container, "To", create, sizeof(create) - 1);
+		} else {
+			confirmation_hex(container, "To", confirmation->to);
+		}
+		confirmation_field(container, "Value", confirmation->value.data,
+				   confirmation->value.len);
+		confirmation_number(container, "Input size (bytes)", confirmation->input_length);
+		if (confirmation->input_length > 0) {
+			confirmation_hex(container, "Method selector", confirmation->selector);
+			confirmation_hex(container, "Input hash", confirmation->input_hash);
+		}
+		confirmation_hex(container, "Signing hash", confirmation->signing_hash);
+		break;
+	case AppConfirmationKind_Fido:
+		confirmation_field(container, "Service", confirmation->rp_id.data,
+				   confirmation->rp_id.len);
+		if (confirmation->account_is_text) {
+			confirmation_field(container, "Account", confirmation->account.data,
+					   confirmation->account.len);
+		} else {
+			confirmation_hex(container, "Account", confirmation->account);
+		}
+		break;
+	}
 
 	lv_obj_t *btn_cont = create_button_container(container);
-	create_centered_button(btn_cont, button_text, lv_palette_main(LV_PALETTE_RED), 100,
+	create_centered_button(btn_cont, button, lv_palette_main(LV_PALETTE_RED), 100,
 			       display_approve_cb, NULL);
-}
-
-static void display_sign(const uint8_t *data, size_t len)
-{
-	display_confirmation("Sign", "Sign", data, len);
-}
-
-static void display_confirm(const uint8_t *data, size_t len)
-{
-	static const uint8_t fallback[] = "Confirm security key request";
-
-	if (data == NULL || len == 0) {
-		data = fallback;
-		len = sizeof(fallback) - 1;
-	}
-	display_confirmation("Confirm", "Approve", data, len);
+	lvgl_unlock();
 }
 
 static void display_ready(void)
@@ -624,14 +727,8 @@ void app_display_message(DisplayAction action, AppError error, uint32_t value, c
 	case DisplayAction_Mnemonic:
 		display_mnemonic(data, len);
 		break;
-	case DisplayAction_Sign:
-		display_sign(data, MIN(len, DISPLAY_SIGN_TEXT_MAX_LEN));
-		break;
 	case DisplayAction_Error:
 		display_error(error, value);
-		break;
-	case DisplayAction_Confirm:
-		display_confirm(data, len);
 		break;
 	case DisplayAction_Unspecified:
 		break;
@@ -652,7 +749,7 @@ static void standard_button_toggle_cb(lv_event_t *e)
 	app_display_init_show_select_length();
 }
 
-void app_display_init_show_select_length()
+void app_display_init_show_select_length(void)
 {
 	lv_obj_clean(lv_scr_act());
 
@@ -720,7 +817,7 @@ void app_display_init_show_select_length()
 	}
 }
 
-void app_display_logo()
+void app_display_logo(void)
 {
 	lv_obj_t *screen = lv_scr_act();
 	lv_obj_clean(screen);
@@ -843,7 +940,7 @@ void app_display_input(char *title_text, uintptr_t action, uintptr_t back_action
 	lv_obj_add_event_cb(text_area, textarea_event_cb, LV_EVENT_CLICKED, keyboard);
 }
 
-void app_display_features()
+void app_display_features(void)
 {
 	uint8_t features[7];
 	if (!app_check_feature(features, sizeof(features))) {
@@ -913,7 +1010,7 @@ void app_display_features()
 	lv_obj_set_style_border_width(spacer, 0, 0);
 }
 
-void app_display_storage_error()
+void app_display_storage_error(void)
 {
 	lv_obj_clean(lv_scr_act());
 
@@ -1235,6 +1332,11 @@ void app_display_message(DisplayAction action, AppError error, uint32_t value, c
 	(void)value;
 	(void)data;
 	(void)len;
+}
+
+void app_display_confirmation(const struct AppConfirmationView *confirmation)
+{
+	(void)confirmation;
 }
 
 #endif

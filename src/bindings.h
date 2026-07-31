@@ -36,9 +36,7 @@ enum DisplayAction
   DisplayAction_Unspecified = 0,
   DisplayAction_Ready = 1,
   DisplayAction_Mnemonic = 2,
-  DisplayAction_Sign = 3,
   DisplayAction_Error = 4,
-  DisplayAction_Confirm = 5,
 };
 #if __STDC_VERSION__ >= 202311L
 typedef enum DisplayAction DisplayAction;
@@ -69,20 +67,54 @@ typedef enum AppError AppError;
 typedef int32_t AppError;
 #endif // __STDC_VERSION__ >= 202311L
 
-enum ConfirmationKind
+enum FidoOperation
 #if __STDC_VERSION__ >= 202311L
   : int32_t
 #endif // __STDC_VERSION__ >= 202311L
  {
-  ConfirmationKind_Unspecified = 0,
-  ConfirmationKind_Sign = 1,
-  ConfirmationKind_Fido2 = 2,
+  FidoOperation_Unspecified = 0,
+  FidoOperation_Register = 1,
+  FidoOperation_Authenticate = 2,
+  FidoOperation_Select = 3,
 };
 #if __STDC_VERSION__ >= 202311L
-typedef enum ConfirmationKind ConfirmationKind;
+typedef enum FidoOperation FidoOperation;
 #else
-typedef int32_t ConfirmationKind;
+typedef int32_t FidoOperation;
 #endif // __STDC_VERSION__ >= 202311L
+
+typedef enum AppConfirmationKind {
+  AppConfirmationKind_EthMessage = 1,
+  AppConfirmationKind_EthTransaction = 2,
+  AppConfirmationKind_Fido = 3,
+} AppConfirmationKind;
+
+typedef struct AppSlice {
+  const uint8_t *data;
+  uintptr_t len;
+} AppSlice;
+
+typedef struct AppConfirmationView {
+  enum AppConfirmationKind kind;
+  FidoOperation operation;
+  bool truncated;
+  bool contract_creation;
+  bool account_is_text;
+  uint64_t chain_id;
+  uint64_t nonce;
+  uint64_t gas_limit;
+  uint64_t message_length;
+  uint64_t input_length;
+  struct AppSlice preview;
+  struct AppSlice gas_price;
+  struct AppSlice to;
+  struct AppSlice value;
+  struct AppSlice selector;
+  struct AppSlice input_hash;
+  struct AppSlice signing_hash;
+  struct AppSlice rp_id;
+  struct AppSlice account;
+} AppConfirmationView;
 
 void app_message_handle_rs(enum AppMessageSource source,
                            enum AppMessageAction action,

@@ -1,5 +1,5 @@
 use core::ffi::{c_char, c_int};
-use oskey_action::proto::{AppError, ConfirmationKind, DisplayAction};
+use oskey_action::proto::{AppError, DisplayAction, FidoOperation};
 use oskey_action::{AppMessageAction, AppMessageSource, WalletRuntime};
 
 use crate::rs::platform::Platform;
@@ -7,6 +7,81 @@ use crate::rs::platform::Platform;
 #[repr(C)]
 pub struct StorageIds {
     pub seed: u16,
+}
+
+#[repr(C)]
+pub struct AppSlice {
+    pub data: *const u8,
+    pub len: usize,
+}
+
+impl AppSlice {
+    pub(crate) fn new(data: &[u8]) -> Self {
+        Self {
+            data: if data.is_empty() {
+                core::ptr::null()
+            } else {
+                data.as_ptr()
+            },
+            len: data.len(),
+        }
+    }
+}
+
+#[repr(C)]
+pub enum AppConfirmationKind {
+    EthMessage = 1,
+    EthTransaction = 2,
+    Fido = 3,
+}
+
+#[repr(C)]
+pub struct AppConfirmationView {
+    pub kind: AppConfirmationKind,
+    pub operation: FidoOperation,
+    pub truncated: bool,
+    pub contract_creation: bool,
+    pub account_is_text: bool,
+    pub chain_id: u64,
+    pub nonce: u64,
+    pub gas_limit: u64,
+    pub message_length: u64,
+    pub input_length: u64,
+    pub preview: AppSlice,
+    pub gas_price: AppSlice,
+    pub to: AppSlice,
+    pub value: AppSlice,
+    pub selector: AppSlice,
+    pub input_hash: AppSlice,
+    pub signing_hash: AppSlice,
+    pub rp_id: AppSlice,
+    pub account: AppSlice,
+}
+
+impl AppConfirmationView {
+    pub(crate) fn new(kind: AppConfirmationKind) -> Self {
+        Self {
+            kind,
+            operation: FidoOperation::Unspecified,
+            truncated: false,
+            contract_creation: false,
+            account_is_text: false,
+            chain_id: 0,
+            nonce: 0,
+            gas_limit: 0,
+            message_length: 0,
+            input_length: 0,
+            preview: AppSlice::new(&[]),
+            gas_price: AppSlice::new(&[]),
+            to: AppSlice::new(&[]),
+            value: AppSlice::new(&[]),
+            selector: AppSlice::new(&[]),
+            input_hash: AppSlice::new(&[]),
+            signing_hash: AppSlice::new(&[]),
+            rp_id: AppSlice::new(&[]),
+            account: AppSlice::new(&[]),
+        }
+    }
 }
 
 #[allow(unused_doc_comments)]
@@ -44,12 +119,7 @@ extern "C" {
         data: *const u8,
         len: usize,
     );
-    pub(crate) fn app_confirmation_prompt(
-        kind: ConfirmationKind,
-        active: bool,
-        data: *const u8,
-        len: usize,
-    );
+    pub(crate) fn app_confirmation_prompt(active: bool, confirmation: *const AppConfirmationView);
     pub(crate) fn app_confirmation_complete(approved: bool);
 }
 

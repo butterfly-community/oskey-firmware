@@ -48,7 +48,6 @@ typedef enum {
 
 void app_display_init_cb(lv_event_t *e);
 void app_display_tools_cb(lv_event_t *e);
-void app_display_mnemonic_cb();
 void app_display_index_cb(lv_event_t *e);
 
 void back_button_event_handler(lv_event_t *e);
@@ -65,5 +64,6 @@ void app_display_entropy_collection(int page_count);
 int app_init_display(void);
 void app_display_message(DisplayAction action, AppError error, uint32_t value, const uint8_t *data,
 			 size_t len);
+void app_display_confirmation(const struct AppConfirmationView *confirmation);
 
 #endif /* APP_SCREEN_H */

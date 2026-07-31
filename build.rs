@@ -9,7 +9,10 @@ fn main() {
     config.export.include = vec![
         "DisplayAction".into(),
         "AppError".into(),
-        "ConfirmationKind".into(),
+        "FidoOperation".into(),
+        "AppSlice".into(),
+        "AppConfirmationKind".into(),
+        "AppConfirmationView".into(),
     ];
     config.parse.parse_deps = true;
     config.parse.include = Some(vec!["oskey-action".into()]);

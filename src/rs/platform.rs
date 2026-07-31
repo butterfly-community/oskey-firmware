@@ -12,6 +12,7 @@ use crate::rs::ffi::{
     app_csrand_get, app_display_message, app_get_chip_model, app_get_device_id, app_get_eui64,
     app_message_reply, app_restart, app_storage_reset, app_uart_send, app_version_get,
     oskey_bt_send, storage_general_check, storage_general_read, storage_general_write, storage_ids,
+    AppConfirmationKind, AppConfirmationView, AppSlice,
 };
 
 pub(crate) struct Platform;
@@ -181,15 +182,58 @@ impl Platform {
                     else {
                         continue;
                     };
-                    let kind = proto::ConfirmationKind::try_from(prompt.kind)
-                        .unwrap_or(proto::ConfirmationKind::Unspecified);
+
+                    if !prompt.active {
+                        unsafe {
+                            app_confirmation_prompt(false, core::ptr::null());
+                        }
+                        continue;
+                    }
+
+                    let Some(content) = prompt.content else {
+                        continue;
+                    };
+                    let mut view = match &content {
+                        proto::confirmation_prompt::Content::EthMessage(_) => {
+                            AppConfirmationView::new(AppConfirmationKind::EthMessage)
+                        }
+                        proto::confirmation_prompt::Content::EthTransaction(_) => {
+                            AppConfirmationView::new(AppConfirmationKind::EthTransaction)
+                        }
+                        proto::confirmation_prompt::Content::Fido(_) => {
+                            AppConfirmationView::new(AppConfirmationKind::Fido)
+                        }
+                    };
+                    match &content {
+                        proto::confirmation_prompt::Content::EthMessage(confirmation) => {
+                            view.truncated = confirmation.truncated;
+                            view.message_length = confirmation.byte_length;
+                            view.preview = AppSlice::new(confirmation.preview.as_bytes());
+                            view.signing_hash = AppSlice::new(&confirmation.signing_hash);
+                        }
+                        proto::confirmation_prompt::Content::EthTransaction(confirmation) => {
+                            view.contract_creation = confirmation.contract_creation;
+                            view.chain_id = confirmation.chain_id;
+                            view.nonce = confirmation.nonce;
+                            view.gas_limit = confirmation.gas_limit;
+                            view.input_length = confirmation.input_length;
+                            view.gas_price = AppSlice::new(confirmation.gas_price.as_bytes());
+                            view.to = AppSlice::new(&confirmation.to);
+                            view.value = AppSlice::new(confirmation.value.as_bytes());
+                            view.selector = AppSlice::new(&confirmation.selector);
+                            view.input_hash = AppSlice::new(&confirmation.input_hash);
+                            view.signing_hash = AppSlice::new(&confirmation.signing_hash);
+                        }
+                        proto::confirmation_prompt::Content::Fido(confirmation) => {
+                            view.operation = proto::FidoOperation::try_from(confirmation.operation)
+                                .unwrap_or(proto::FidoOperation::Unspecified);
+                            view.account_is_text = confirmation.account_is_text;
+                            view.rp_id = AppSlice::new(confirmation.rp_id.as_bytes());
+                            view.account = AppSlice::new(&confirmation.account);
+                        }
+                    }
                     unsafe {
-                        app_confirmation_prompt(
-                            kind,
-                            prompt.active,
-                            prompt.text.as_ptr(),
-                            prompt.text.len(),
-                        );
+                        app_confirmation_prompt(true, &view);
                     }
                 }
             }

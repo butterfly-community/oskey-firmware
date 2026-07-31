@@ -31,8 +31,9 @@ static void confirmation_control(AppMessageSource source, bool active)
 	}
 }
 
-int app_confirmation_wait(AppMessageSource source, int32_t timeout_ms, const uint8_t *data,
-			  size_t len)
+int app_confirmation_wait(AppMessageSource source, int32_t timeout_ms, FidoOperation operation,
+			  const uint8_t *data, size_t len, const uint8_t *auxiliary,
+			  size_t auxiliary_len)
 {
 	if (!atomic_cas(&confirmation_state, CONFIRMATION_IDLE, CONFIRMATION_WAITING)) {
 		return -EBUSY;
@@ -40,7 +41,8 @@ int app_confirmation_wait(AppMessageSource source, int32_t timeout_ms, const uin
 
 	k_sem_reset(&confirmation_done);
 
-	if (!app_message_submit(source, AppMessageAction_Confirmation, true, data, len, NULL, 0)) {
+	if (!app_message_submit(source, AppMessageAction_Confirmation, operation, data, len,
+				auxiliary, auxiliary_len)) {
 		atomic_set(&confirmation_state, CONFIRMATION_IDLE);
 		return -EIO;
 	}
@@ -85,15 +87,13 @@ void app_confirmation_respond(bool approved)
 	}
 }
 
-void app_confirmation_prompt(ConfirmationKind kind, bool active, const uint8_t *data, size_t len)
+void app_confirmation_prompt(bool active, const struct AppConfirmationView *confirmation)
 {
 	atomic_set(&confirmation_active, active);
 
 	if (!active) {
 		app_display_message(DisplayAction_Ready, AppError_Unspecified, 0, NULL, 0);
-	} else if (kind == ConfirmationKind_Sign) {
-		app_display_message(DisplayAction_Sign, AppError_Unspecified, 0, data, len);
-	} else if (kind == ConfirmationKind_Fido2) {
-		app_display_message(DisplayAction_Confirm, AppError_Unspecified, 0, data, len);
+	} else if (confirmation != NULL) {
+		app_display_confirmation(confirmation);
 	}
 }
