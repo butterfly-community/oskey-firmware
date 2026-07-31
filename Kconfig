@@ -112,6 +112,7 @@ config OSKEY_BLUETOOTH
 	select BT_APP_PASSKEY
 	select BT_ZEPHYR_NUS
 	select BT_KEYS_OVERWRITE_OLDEST
+	# TODO: Investigate scanless reconnect failures with BlueZ/Realtek adapters.
 	select BT_PRIVACY
 	select BT_SETTINGS
 
