@@ -1,3 +1,6 @@
+# native_sim USB/IP only: keep FIDO2 keepalive handling on the HID work queue
+# to avoid accessing the simulated USB HID backend from the system work queue.
+
 diff --git a/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c b/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
 --- a/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
 +++ b/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
