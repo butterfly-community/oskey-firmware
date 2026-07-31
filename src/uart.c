@@ -28,7 +28,6 @@ static void app_uart_rx_handler(const struct device *dev, void *user_data)
 
 void app_uart_send(const uint8_t *data, size_t len)
 {
-	// TODO: irq tx
 	for (size_t i = 0; i < len; i++) {
 		uart_poll_out(DEV_CONSOLE, data[i]);
 	}

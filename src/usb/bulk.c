@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* TODO: The entire bulk layer is test-only; ignore failures here. */
+/* The entire bulk layer is test-only; failures are intentionally ignored. */
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(webusb_bulk);
