@@ -86,11 +86,12 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	LOG_INF("Disconnected from %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
 
 	set_active_conn(NULL);
-	/* TODO: Handle partial requests and pending signatures lost on BLE disconnect. */
+	/* Protocol and signing state is not cleared; partial requests or responses may be lost. */
 }
 
 static void start_advertising(void)
 {
+	/* Some BlueZ/Realtek adapters require scanning before reconnecting to private addresses. */
 	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 
 	if (err) {
