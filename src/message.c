@@ -84,15 +84,12 @@ bool app_message_submit(AppMessageSource source, AppMessageAction action, uint32
 	return true;
 }
 
-void app_message_reply(AppMessageSource target, bool success, const void *data, size_t len,
-		       const void *auxiliary, size_t auxiliary_len)
+void app_fido2_reply(bool success, const void *data, size_t len, const void *auxiliary,
+		     size_t auxiliary_len)
 {
 #ifdef CONFIG_OSKEY_FIDO2
-	if (target == AppMessageSource_Fido2) {
-		fido2_message_reply(success, data, len, auxiliary, auxiliary_len);
-	}
+	fido2_message_reply(success, data, len, auxiliary, auxiliary_len);
 #else
-	ARG_UNUSED(target);
 	ARG_UNUSED(success);
 	ARG_UNUSED(data);
 	ARG_UNUSED(len);

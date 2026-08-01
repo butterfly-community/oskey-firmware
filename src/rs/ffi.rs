@@ -104,8 +104,7 @@ extern "C" {
 
     pub(crate) fn app_uart_send(data: *const u8, len: usize);
     pub(crate) fn oskey_bt_send(data: *const u8, len: usize) -> c_int;
-    pub(crate) fn app_message_reply(
-        target: AppMessageSource,
+    pub(crate) fn app_fido2_reply(
         success: bool,
         data: *const u8,
         len: usize,

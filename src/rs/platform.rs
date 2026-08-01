@@ -9,9 +9,9 @@ use oskey_action::{AppMessageSource, FrameParser, Message, WalletOutput, WalletP
 
 use crate::rs::ffi::{
     app_check_feature, app_check_storage, app_confirmation_complete, app_confirmation_prompt,
-    app_csrand_get, app_display_message, app_get_chip_model, app_get_device_id, app_get_eui64,
-    app_message_reply, app_restart, app_storage_reset, app_uart_send, app_version_get,
-    oskey_bt_send, storage_general_check, storage_general_read, storage_general_write, storage_ids,
+    app_csrand_get, app_display_message, app_fido2_reply, app_get_chip_model, app_get_device_id,
+    app_get_eui64, app_restart, app_storage_reset, app_uart_send, app_version_get, oskey_bt_send,
+    storage_general_check, storage_general_read, storage_general_write, storage_ids,
     AppConfirmationKind, AppConfirmationView, AppSlice,
 };
 
@@ -153,8 +153,7 @@ impl Platform {
                 }
                 AppMessageSource::Fido2 => match output.response.payload {
                     Some(res_data::Payload::Fido2Response(response)) => unsafe {
-                        app_message_reply(
-                            AppMessageSource::Fido2,
+                        app_fido2_reply(
                             true,
                             response.credential_id.as_ptr(),
                             response.credential_id.len(),
@@ -166,14 +165,7 @@ impl Platform {
                         app_confirmation_complete(response.approved);
                     },
                     _ => unsafe {
-                        app_message_reply(
-                            AppMessageSource::Fido2,
-                            false,
-                            core::ptr::null(),
-                            0,
-                            core::ptr::null(),
-                            0,
-                        );
+                        app_fido2_reply(false, core::ptr::null(), 0, core::ptr::null(), 0);
                     },
                 },
                 AppMessageSource::Confirmation => {
