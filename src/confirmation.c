@@ -8,7 +8,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/atomic.h>
 
-#include "display/lvgl.h"
+#include "display/display.h"
 #include "message.h"
 
 static K_SEM_DEFINE(confirmation_done, 0, 1);
@@ -92,7 +92,7 @@ void app_confirmation_prompt(bool active, const struct AppConfirmationView *conf
 	atomic_set(&confirmation_active, active);
 
 	if (!active) {
-		app_display_message(DisplayAction_Ready, AppError_Unspecified, 0, NULL, 0);
+		app_display_confirmation(NULL);
 	} else if (confirmation != NULL) {
 		app_display_confirmation(confirmation);
 	}

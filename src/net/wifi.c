@@ -18,6 +18,7 @@
 
 #include "http.h"
 #include "wifi_portal.h"
+#include "display/display.h"
 
 #include <zephyr/net/dhcpv4_server.h>
 
@@ -53,6 +54,33 @@ static char pending_ssid[WIFI_SSID_MAX_LEN + 1];
 static char pending_password[WIFI_PSK_MAX_LEN + 1];
 static size_t pending_ssid_len;
 static size_t pending_password_len;
+
+static void update_display_status(void)
+{
+	enum app_display_wifi_state state = APP_DISPLAY_WIFI_DISCONNECTED;
+
+	if (sta_state == APP_WIFI_STA_CONNECTED) {
+		state = APP_DISPLAY_WIFI_CONNECTED;
+	} else if (sta_state == APP_WIFI_STA_CONNECTING_STORED ||
+		   sta_state == APP_WIFI_STA_CONNECTING_NEW) {
+		state = APP_DISPLAY_WIFI_CONNECTING;
+	} else if (ap_state != APP_WIFI_AP_OFF) {
+		state = APP_DISPLAY_WIFI_AP;
+	}
+	app_display_wifi_status(state);
+}
+
+static void set_ap_state(enum app_wifi_ap_state state)
+{
+	ap_state = state;
+	update_display_status();
+}
+
+static void set_sta_state(enum app_wifi_sta_state state)
+{
+	sta_state = state;
+	update_display_status();
+}
 
 static void wifi_work_handler(struct k_work *work);
 static K_WORK_DELAYABLE_DEFINE(wifi_work, wifi_work_handler);
@@ -184,11 +212,11 @@ static int enable_ap_mode(void)
 	config.channel = WIFI_CHANNEL_ANY;
 	config.band = WIFI_FREQ_BAND_2_4_GHZ;
 
-	ap_state = APP_WIFI_AP_STARTING;
+	set_ap_state(APP_WIFI_AP_STARTING);
 	ret = net_mgmt(NET_REQUEST_WIFI_AP_ENABLE, ap_iface, &config, sizeof(config));
 	if (ret < 0) {
 		LOG_ERR("Failed to enable AP mode: %d", ret);
-		ap_state = APP_WIFI_AP_OFF;
+		set_ap_state(APP_WIFI_AP_OFF);
 		stop_ap_network();
 		k_work_reschedule(&wifi_work, K_SECONDS(1));
 	}
@@ -217,13 +245,13 @@ static void disable_ap_mode(void)
 	}
 
 	LOG_INF("Stopping Wi-Fi AP");
-	ap_state = APP_WIFI_AP_STOPPING;
+	set_ap_state(APP_WIFI_AP_STOPPING);
 
 	int ret = net_mgmt(NET_REQUEST_WIFI_AP_DISABLE, ap_iface, NULL, 0);
 
 	if (ret < 0) {
 		LOG_ERR("Failed to disable AP mode: %d", ret);
-		ap_state = APP_WIFI_AP_ACTIVE;
+		set_ap_state(APP_WIFI_AP_ACTIVE);
 		k_work_reschedule(&wifi_work, K_SECONDS(1));
 	}
 }
@@ -247,13 +275,13 @@ static int connect_to_new_wifi(void)
 	config.band = WIFI_FREQ_BAND_2_4_GHZ;
 
 	LOG_INF("Connecting to SSID: %s", pending_ssid);
-	sta_state = APP_WIFI_STA_CONNECTING_NEW;
+	set_sta_state(APP_WIFI_STA_CONNECTING_NEW);
 
 	int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT, sta_iface, &config, sizeof(config));
 
 	if (ret < 0) {
 		LOG_ERR("Failed to request connection to %s: %d", pending_ssid, ret);
-		sta_state = APP_WIFI_STA_DISCONNECTED;
+		set_sta_state(APP_WIFI_STA_DISCONNECTED);
 	}
 
 	return ret;
@@ -262,13 +290,13 @@ static int connect_to_new_wifi(void)
 static int connect_to_stored_wifi(void)
 {
 	LOG_INF("Connecting with stored Wi-Fi credentials");
-	sta_state = APP_WIFI_STA_CONNECTING_STORED;
+	set_sta_state(APP_WIFI_STA_CONNECTING_STORED);
 
 	int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT_STORED, sta_iface, NULL, 0);
 
 	if (ret < 0) {
 		LOG_ERR("Failed to request stored Wi-Fi connection: %d", ret);
-		sta_state = APP_WIFI_STA_DISCONNECTED;
+		set_sta_state(APP_WIFI_STA_DISCONNECTED);
 		k_work_reschedule(&wifi_work, K_SECONDS(10));
 	}
 
@@ -289,7 +317,7 @@ static void handle_sta_connection_failure(void)
 {
 	bool new_credentials = sta_state == APP_WIFI_STA_CONNECTING_NEW;
 
-	sta_state = APP_WIFI_STA_DISCONNECTED;
+	set_sta_state(APP_WIFI_STA_DISCONNECTED);
 	if (new_credentials) {
 		clear_pending_credentials();
 	} else if (pending_ssid_len > 0) {
@@ -330,7 +358,7 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		} else {
 			LOG_INF("Connected with stored Wi-Fi credentials");
 		}
-		sta_state = APP_WIFI_STA_CONNECTED;
+		set_sta_state(APP_WIFI_STA_CONNECTED);
 		if (new_credentials) {
 			clear_pending_credentials();
 		}
@@ -353,12 +381,12 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		http_public_ip_check_cancel();
 
 		if (sta_state == APP_WIFI_STA_DISCONNECTING) {
-			sta_state = APP_WIFI_STA_DISCONNECTED;
+			set_sta_state(APP_WIFI_STA_DISCONNECTED);
 			k_work_reschedule(&wifi_work, K_NO_WAIT);
 		} else if (sta_is_connecting()) {
 			handle_sta_connection_failure();
 		} else if (sta_state == APP_WIFI_STA_CONNECTED) {
-			sta_state = APP_WIFI_STA_DISCONNECTED;
+			set_sta_state(APP_WIFI_STA_DISCONNECTED);
 			k_work_reschedule(&wifi_work, K_NO_WAIT);
 		}
 		break;
@@ -372,13 +400,13 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 
 		if (status != 0) {
 			LOG_ERR("AP enable failed: %d", status);
-			ap_state = APP_WIFI_AP_OFF;
+			set_ap_state(APP_WIFI_AP_OFF);
 			stop_ap_network();
 			k_work_reschedule(&wifi_work, K_SECONDS(1));
 			break;
 		}
 
-		ap_state = APP_WIFI_AP_ACTIVE;
+		set_ap_state(APP_WIFI_AP_ACTIVE);
 		LOG_INF("AP %s ready at http://%s", CONFIG_OSKEY_WIFI_AP_SSID,
 			CONFIG_OSKEY_WIFI_AP_IP_ADDRESS);
 		/* The result may arrive before the AP enable request returns. */
@@ -394,13 +422,13 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 
 		if (status != 0) {
 			LOG_ERR("AP disable failed: %d", status);
-			ap_state = APP_WIFI_AP_ACTIVE;
+			set_ap_state(APP_WIFI_AP_ACTIVE);
 			k_work_reschedule(&wifi_work, K_SECONDS(1));
 			break;
 		}
 
 		stop_ap_network();
-		ap_state = APP_WIFI_AP_OFF;
+		set_ap_state(APP_WIFI_AP_OFF);
 		LOG_INF("Wi-Fi AP stopped");
 		if (sta_state != APP_WIFI_STA_CONNECTED || pending_ssid_len > 0) {
 			k_work_reschedule(&wifi_work, K_NO_WAIT);
@@ -438,11 +466,11 @@ static void wifi_work_handler(struct k_work *work)
 			return;
 		}
 
-		sta_state = APP_WIFI_STA_DISCONNECTING;
+		set_sta_state(APP_WIFI_STA_DISCONNECTING);
 		int ret = net_mgmt(NET_REQUEST_WIFI_DISCONNECT, sta_iface, NULL, 0);
 		if (ret < 0) {
 			LOG_ERR("Failed to disconnect before changing Wi-Fi: %d", ret);
-			sta_state = APP_WIFI_STA_CONNECTED;
+			set_sta_state(APP_WIFI_STA_CONNECTED);
 			clear_pending_credentials();
 		}
 		return;

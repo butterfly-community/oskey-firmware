@@ -1,0 +1,18 @@
+# Native Simulator advances simulated time only when control returns to its
+# hardware models. Skip the benchmark's busy-loop timing check, which otherwise
+# waits forever for lv_tick_get() to advance.
+
+diff --git a/demos/benchmark/lv_demo_benchmark.c b/demos/benchmark/lv_demo_benchmark.c
+--- a/demos/benchmark/lv_demo_benchmark.c
++++ b/demos/benchmark/lv_demo_benchmark.c
+@@ -991,6 +991,10 @@ static uint32_t loop_not_optimizable(void)
+ 
+ static bool is_optimization_enabled(void)
+ {
++#if defined(CONFIG_BOARD_NATIVE_SIM)
++    return true;
++#endif
++
+     uint32_t i;
+     uint32_t t;
+     uint32_t t_unoptimized;

@@ -8,14 +8,19 @@
 #ifdef CONFIG_OSKEY_USB
 
 #include <zephyr/authentication/fido2/fido2.h>
-#include <zephyr/sys/byteorder.h>
-#include <zephyr/usb/usbd.h>
-#include <zephyr/usb/msos_desc.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/usb/msos_desc.h>
+#include <zephyr/usb/usbd.h>
+
+#include "display/display.h"
 #include "init.h"
 #include "webusb.h"
+
 LOG_MODULE_REGISTER(webusb);
+
 #include "msosv2.h"
+
 /*
  * WebUSB platform capability and WebUSB URL descriptor.
  * See https://wicg.github.io/webusb for reference.
@@ -113,18 +118,43 @@ static void msg_cb(struct usbd_context *const usbd_ctx, const struct usbd_msg *c
 {
 	LOG_INF("USBD message: %s", usbd_msg_type_string(msg->type));
 
-	if (usbd_can_detect_vbus(usbd_ctx)) {
-		if (msg->type == USBD_MSG_VBUS_READY) {
-			if (usbd_enable(usbd_ctx)) {
+	switch (msg->type) {
+	case USBD_MSG_VBUS_READY:
+		if (usbd_can_detect_vbus(usbd_ctx)) {
+			if (usbd_enable(usbd_ctx) != 0) {
 				LOG_ERR("Failed to enable device support");
+				break;
 			}
 		}
-
-		if (msg->type == USBD_MSG_VBUS_REMOVED) {
-			if (usbd_disable(usbd_ctx)) {
+		app_display_usb_status(APP_DISPLAY_USB_ATTACHED);
+		break;
+	case USBD_MSG_VBUS_REMOVED:
+		if (usbd_can_detect_vbus(usbd_ctx)) {
+			if (usbd_disable(usbd_ctx) != 0) {
 				LOG_ERR("Failed to disable device support");
 			}
 		}
+		app_display_usb_status(APP_DISPLAY_USB_DISCONNECTED);
+		break;
+	case USBD_MSG_CONFIGURATION:
+		app_display_usb_status(msg->status == 0 ? APP_DISPLAY_USB_ATTACHED
+							: APP_DISPLAY_USB_CONFIGURED);
+		break;
+	case USBD_MSG_SUSPEND:
+		app_display_usb_status(APP_DISPLAY_USB_SUSPENDED);
+		break;
+	case USBD_MSG_RESUME:
+		app_display_usb_status(APP_DISPLAY_USB_CONFIGURED);
+		break;
+	case USBD_MSG_RESET:
+		app_display_usb_status(APP_DISPLAY_USB_ATTACHED);
+		break;
+	case USBD_MSG_UDC_ERROR:
+	case USBD_MSG_STACK_ERROR:
+		app_display_usb_status(APP_DISPLAY_USB_DISCONNECTED);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -171,6 +201,7 @@ int init_usb_stack(void)
 			LOG_ERR("Failed to enable device support");
 			return ret;
 		}
+		app_display_usb_status(APP_DISPLAY_USB_ATTACHED);
 	}
 
 	if (IS_ENABLED(CONFIG_OSKEY_FIDO2)) {

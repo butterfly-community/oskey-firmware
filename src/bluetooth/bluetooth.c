@@ -2,6 +2,7 @@
 
 #include <zephyr/logging/log.h>
 
+#include "display/display.h"
 #include "message.h"
 
 #ifdef CONFIG_OSKEY_BLUETOOTH
@@ -69,6 +70,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	LOG_INF("Connected %s", addr);
 
 	set_active_conn(conn);
+	app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_CONNECTED);
 
 	err = bt_conn_set_security(conn, BT_SECURITY_L4);
 	if (err) {
@@ -86,6 +88,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	LOG_INF("Disconnected from %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
 
 	set_active_conn(NULL);
+	app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_IDLE);
 	/* Protocol and signing state is not cleared; partial requests or responses may be lost. */
 }
 
@@ -96,8 +99,10 @@ static void start_advertising(void)
 
 	if (err) {
 		LOG_ERR("Failed to start advertising: %d", err);
+		app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_IDLE);
 	} else {
 		LOG_INF("Advertising started");
+		app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_ADVERTISING);
 	}
 }
 
@@ -231,6 +236,7 @@ int oskey_bt_init(void)
 		return err;
 	}
 	LOG_INF("Bluetooth initialized");
+	app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_IDLE);
 
 	return 0;
 }

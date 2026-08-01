@@ -25,8 +25,9 @@
 
 	sdl_dc {
 		compatible = "zephyr,sdl-dc";
-		height = < 480 >;
-		width = < 640 >;
+		pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+		height = < 240 >;
+		width = < 320 >;
 	};
 
 	gpio_keys {

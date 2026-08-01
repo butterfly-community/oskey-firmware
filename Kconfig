@@ -55,6 +55,8 @@ config MPU_ALLOW_FLASH_WRITE
 
 menuconfig OSKEY_DISPLAY
 	bool "Display and input"
+	select CPP
+	select REQUIRES_FULL_LIBCPP
 	select I2C
 	select DISPLAY
 	select INPUT
@@ -62,21 +64,34 @@ menuconfig OSKEY_DISPLAY
 	select LV_Z_AUTO_INIT
 	select LV_Z_RUN_LVGL_ON_WORKQUEUE
 	select LV_Z_LVGL_MUTEX
-	select LV_Z_MEMORY_POOL_CUSTOM_SECTION
-	select LV_Z_VDB_CUSTOM_SECTION
+	select LV_Z_MEMORY_POOL_CUSTOM_SECTION if OSKEY_ESP_SPIRAM
+	select LV_Z_VDB_CUSTOM_SECTION if OSKEY_ESP_SPIRAM
+	select LV_USE_VECTOR_GRAPHIC
+	select LV_USE_THORVG
+	select LV_USE_SVG
 	select LV_USE_FONT_COMPRESSED
-	select LV_FONT_MONTSERRAT_32
-	select LV_FONT_MONTSERRAT_18
 	select LV_FONT_MONTSERRAT_16
+	select LV_FONT_MONTSERRAT_14
+	select LV_FONT_MONTSERRAT_12
+	select LV_FONT_MONTSERRAT_10
 
 if OSKEY_DISPLAY
 
+choice STD_CPP
+	default STD_CPP14
+endchoice
+
+config MAIN_STACK_SIZE
+	default 16384 if OSKEY_LVGL_BENCHMARK
+
 config LV_Z_LVGL_WORKQUEUE_STACK_SIZE
+	default 32768 if OSKEY_LVGL_BENCHMARK
 	default 8192
 
 config LV_Z_MEM_POOL_SIZE
+	default 204800 if BOARD_NATIVE_SIM
 	default 81920 if OSKEY_LVGL_BENCHMARK
-	default 40960
+	default 65536
 
 choice LV_COLOR_DEPTH
 	default LV_COLOR_DEPTH_16
@@ -84,18 +99,11 @@ endchoice
 
 config OSKEY_LVGL_BENCHMARK
 	bool "LVGL benchmark"
-	select LV_Z_DEMO_BENCHMARK
+	select LV_USE_DEMO_BENCHMARK
 	select LV_USE_SYSMON
 	select LV_USE_PERF_MONITOR
-	select LV_Z_SHELL
-	select SHELL
-
-config LV_Z_DEMO_BENCHMARK
-	bool "LVGL benchmark demo"
-	select LV_USE_DEMO_BENCHMARK
-	select LV_USE_DEMO_WIDGETS
 	help
-	  Build benchmarking demo application.
+	  Run the LVGL benchmark instead of the OSKey interface.
 
 endif
 

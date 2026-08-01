@@ -3,49 +3,7 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oskey)
 
-set(PROJECT_ROOT_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "Project root directory")
-
-set(LVGL_DIR ${ZEPHYR_LVGL_MODULE_DIR})
-
-if(CONFIG_LV_USE_DEMO_BENCHMARK)
-    target_include_directories(app PRIVATE
-        ${LVGL_DIR}/demos/
-    )
-endif()
-
-target_sources_ifdef(CONFIG_LV_USE_DEMO_BENCHMARK app PRIVATE
-    ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_avatar.c
-    ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_lvgl_logo_argb.c
-    ${LVGL_DIR}/demos/benchmark/assets/img_benchmark_lvgl_logo_rgb.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_12_aligned.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_14_aligned.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_16_aligned.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_18_aligned.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_20_aligned.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_24_aligned.c
-    ${LVGL_DIR}/demos/benchmark/assets/lv_font_benchmark_montserrat_26_aligned.c
-    ${LVGL_DIR}/demos/benchmark/lv_demo_benchmark.c
-)
-
-
-target_sources_ifdef(CONFIG_LV_USE_DEMO_WIDGETS app PRIVATE
-    ${LVGL_DIR}/demos/widgets/assets/img_clothes.c
-    ${LVGL_DIR}/demos/widgets/assets/img_demo_widgets_avatar.c
-    ${LVGL_DIR}/demos/widgets/assets/img_demo_widgets_needle.c
-    ${LVGL_DIR}/demos/widgets/assets/img_lvgl_logo.c
-    ${LVGL_DIR}/demos/widgets/lv_demo_widgets.c
-)
-
-# FILE(GLOB app_sources src/*.c)
-# target_sources(app PRIVATE ${app_sources})
-
-zephyr_get_compile_options_for_lang(C options_list)
-
-file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_options.txt" CONTENT "${options_list}")
-
-if(CONFIG_OSKEY_RUST)
-  add_subdirectory(lib/core/wallet/psa)
-endif()
+include(cmake/lvgl.cmake)
 
 target_sources(app PRIVATE
   src/main.c
@@ -57,10 +15,19 @@ target_sources(app PRIVATE
   src/boot.c
   src/net/wifi.c
   src/net/mqtt.c
-  src/display/lvgl.c
   src/gpio.c
   src/usb/webusb.c
   src/app.c
+  src/display/display.c
+)
+
+target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
+  src/display/ui.c
+  src/display/ui_status.c
+  src/display/ui_dialog.c
+  src/display/ui_pages.c
+  src/display/ui_confirmation.c
+  src/display/assets/assets.c
 )
 
 target_sources_ifdef(CONFIG_OSKEY_WIFI app PRIVATE
@@ -68,21 +35,7 @@ target_sources_ifdef(CONFIG_OSKEY_WIFI app PRIVATE
   src/net/wifi_portal.c
 )
 
-if(CONFIG_OSKEY_WIFI)
-  set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated)
-  generate_inc_file_for_target(app
-    src/net/wifi_portal.html
-    ${gen_dir}/wifi_portal.html.gz.inc
-    --gzip
-  )
-
-  zephyr_linker_sources(SECTIONS src/net/wifi_portal-sections.ld)
-  # Enable when supporting CMake linker generator targets.
-  # zephyr_iterable_section(
-  #   NAME http_resource_desc_wifi_portal_service
-  #   GROUP RODATA_REGION
-  # )
-endif()
+include(cmake/wifi.cmake)
 
 target_sources_ifdef(CONFIG_OSKEY_USB app PRIVATE
   src/usb/bulk.c
@@ -95,13 +48,4 @@ target_sources_ifdef(CONFIG_OSKEY_FIDO2 app PRIVATE
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-if(CONFIG_OSKEY_RUST)
-  rust_cargo_application()
-
-  target_compile_options(crypto PRIVATE)
-  target_link_libraries(crypto PRIVATE zephyr_interface mbedTLS)
-  target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/core/wallet)
-  target_link_libraries(app PRIVATE crypto)
-else()
-  target_sources(app PRIVATE src/bindings.c)
-endif()
+include(cmake/rust.cmake)

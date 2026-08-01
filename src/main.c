@@ -8,7 +8,7 @@
 #include "app.h"
 #include "net/wifi.h"
 #include "net/mqtt.h"
-#include "display/lvgl.h"
+#include "display/display.h"
 #include "gpio.h"
 #include "usb/webusb.h"
 
@@ -32,7 +32,15 @@ int main(void)
 		}
 	}
 
-	ret = app_init_display();
+	struct app_display_startup display_startup = {.state = APP_DISPLAY_SETUP};
+	app_check_feature(display_startup.features, sizeof(display_startup.features));
+	if (IS_ENABLED(CONFIG_OSKEY_STORAGE) && !app_check_storage()) {
+		display_startup.state = APP_DISPLAY_STORAGE_ERROR;
+	} else if (storage_general_check(storage_ids.seed)) {
+		display_startup.state = APP_DISPLAY_LOCKED;
+	}
+
+	ret = app_init_display(&display_startup);
 	if (ret < 0) {
 		LOG_ERR("Display startup failed: %d", ret);
 	}
