@@ -62,7 +62,7 @@ We provide pre-compiled firmware for development boards we own. Please check the
 
 If your development board is not included in pre-compiled firmware, please check the following links to set up the development environment and compile firmware for your board.
 
-[Click here](doc/start/Compile.md)
+[Click here](doc/start/compile.md)
 
 ## Development Boards
 

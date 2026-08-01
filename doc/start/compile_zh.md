@@ -34,6 +34,16 @@ wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/h
 git apply rust.patch
 ```
 
+启用显示时还需要应用 LVGL 局部刷新补丁。
+
+```bash
+cd <YOUR_ZEPHYR_PATH>/modules/lib/gui/lvgl
+
+wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/lvgl-svg-partial.patch
+
+git apply lvgl-svg-partial.patch
+```
+
 另外可以参考 [Docker](../../Dockerfile)
 
 **如果芯片为 Xtensa 架构的 ESP32、ESP32-S2 或 ESP32-S3，其他芯片可忽略此项**

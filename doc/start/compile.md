@@ -31,6 +31,16 @@ wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/h
 git apply rust.patch
 ```
 
+Display builds also require the LVGL partial-buffer fix.
+
+```bash
+cd <YOUR_ZEPHYR_PATH>/modules/lib/gui/lvgl
+
+wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/lvgl-svg-partial.patch
+
+git apply lvgl-svg-partial.patch
+```
+
 Also refer to [Docker](../../Dockerfile)
 
 **When using an Xtensa ESP32, ESP32-S2, or ESP32-S3, configure the Espressif Rust toolchain.**
