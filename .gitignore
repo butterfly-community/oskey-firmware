@@ -1,10 +1,11 @@
 .vscode
 .cache
 .cargo
-build
+/build*/
+/boards/build/
 *.bin
 target
-temp*
+/temp*/
 kconfig.json
 *.log
 AGENTS.md
