@@ -7,12 +7,15 @@ on:
 
 jobs:
   build:
-    if: github.ref_type == 'tag' && github.event.base_ref == 'refs/heads/master'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: "recursive"
+          fetch-depth: 0
+
+      - name: Verify tag commit is on master
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/master
 
       - name: Build using Dockerfile
         run: docker build -t oskey-builder .
