@@ -5,6 +5,24 @@ menu "OSKey core"
 config TF_PSA_CRYPTO_USER_CONFIG_FILE
 	default "oskey_tf_psa_config.h" if TF_PSA_CRYPTO_BUILTIN && OSKEY_RUST
 
+config OSKEY_MESSAGE_BUS
+	bool
+	default y
+	select NET_BUF
+	select ZBUS
+
+config OSKEY_BUS_PAYLOAD_COUNT
+	int
+	default 8 if OSKEY_RUST
+	default 1
+	range 1 64
+
+config OSKEY_BUS_PAYLOAD_SIZE
+	int
+	default 512 if OSKEY_RUST
+	default 1
+	range 1 65535
+
 config OSKEY_RUST
 	bool "OSKey Rust application"
 	default y
@@ -32,12 +50,18 @@ config OSKEY_RUST
 	  Build the OSKey Rust application and its PSA wallet backend.
 	  Disable this to build the C application without Rust wallet support.
 
-config OSKEY_MESSAGE_STACK_SIZE
-	int "OSKey message thread stack size"
+config OSKEY_CORE_STACK_SIZE
+	int "OSKey core stack size"
 	default 20480 if OSKEY_RUST
 	default 2048
 	help
-	  Stack size for the thread that processes OSKey protocol messages.
+	  Stack size for the thread that owns and executes the Rust core.
+
+config OSKEY_TRANSPORT_STACK_SIZE
+	int "OSKey transport stack size"
+	default 2048
+	help
+	  Stack size for external protocol response delivery.
 
 endmenu
 
@@ -160,7 +184,6 @@ menuconfig OSKEY_WIFI
 	select WIFI
 	select WIFI_NM
 	select WIFI_CREDENTIALS
-	select WIFI_CREDENTIALS_CONNECT_STORED
 	select NETWORKING
 	select POSIX_API
 	select NET_CONNECTION_MANAGER
@@ -177,6 +200,7 @@ menuconfig OSKEY_WIFI
 	select NET_DHCPV4_SERVER_OPTION_CAPTIVE_PORTAL
 	select DNS_RESOLVER
 	select HTTP_SERVER
+	select HTTP_SERVER_CAPTURE_HEADERS
 	select HTTP_CLIENT
 
 if OSKEY_WIFI
@@ -259,9 +283,11 @@ endif
 menuconfig OSKEY_USB
 	bool "USB"
 	select USB_DEVICE_STACK_NEXT
-	select UART_LINE_CTRL
 
 if OSKEY_USB
+
+config USBD_THREAD_STACK_SIZE
+	default 4096
 
 config ESP_USB_SERIAL_JTAG_ENABLED
 	default n
@@ -329,6 +355,7 @@ config OSKEY_FIDO2
 	select FIDO2
 	select FIDO2_CREDENTIALS_CUSTOM
 	select FIDO2_CREDENTIALS_BACKUP_ELIGIBLE
+	select FIDO2_EXT_CRED_PROTECT
 	select FIDO2_TRANSPORT_USB_HID
 	help
 	  Enable the USB FIDO2 authenticator for OpenSSH and other FIDO2 clients.

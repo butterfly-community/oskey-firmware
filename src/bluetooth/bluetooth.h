@@ -6,6 +6,6 @@
 
 int oskey_bt_init(void);
 int oskey_bt_start(void);
-int oskey_bt_send(const uint8_t *data, size_t len);
+int oskey_bt_send(uint32_t session_id, const uint8_t *data, size_t len);
 
 #endif

@@ -7,9 +7,10 @@
 #include <lvgl.h>
 
 #include "bindings.h"
+#include "app.h"
 #include "display.h"
 
-#define UI_PIN_SIZE         30
+#define UI_PIN_SIZE         64
 #define UI_MNEMONIC_SIZE    256
 #define UI_NAVIGATION_DEPTH 8
 #define UI_STATUS_HEIGHT    36
@@ -25,6 +26,8 @@ enum ui_page {
 	UI_PAGE_SETTINGS,
 	UI_PAGE_PIN_NEW,
 	UI_PAGE_PIN_CONFIRM,
+	UI_PAGE_FIDO_PIN_NEW,
+	UI_PAGE_FIDO_PIN_CONFIRM,
 	UI_PAGE_SOURCE,
 	UI_PAGE_LENGTH,
 	UI_PAGE_IMPORT,
@@ -32,6 +35,7 @@ enum ui_page {
 	UI_PAGE_VERIFY,
 	UI_PAGE_ENTROPY,
 	UI_PAGE_STORAGE_ERROR,
+	UI_PAGE_CONFIRMATION,
 };
 
 enum ui_tone {
@@ -49,13 +53,15 @@ enum ui_navigation {
 };
 
 struct ui_context {
-	struct app_display_startup startup;
+	struct app_display_status status;
+	uint8_t features[APP_FEATURE_COUNT];
 	enum ui_page page;
 	enum ui_page history[UI_NAVIGATION_DEPTH];
-	enum ui_page confirmation_return;
+	uint32_t confirmation_id;
 	uint8_t history_len;
 	bool custom_entropy;
 	char pin[UI_PIN_SIZE];
+	char fido_pin[UI_PIN_SIZE];
 	char mnemonic[UI_MNEMONIC_SIZE];
 	uint8_t entropy[32];
 	uint16_t entropy_bits;
@@ -79,7 +85,7 @@ struct ui_context {
 
 extern struct ui_context ui;
 
-void ui_init(const struct app_display_startup *startup);
+void ui_init(const uint8_t features[APP_FEATURE_COUNT], const struct app_display_status *status);
 void ui_show_startup(void);
 void ui_open(enum ui_page page);
 void ui_push(enum ui_page page);
@@ -103,10 +109,11 @@ bool ui_keyboard_hide(void);
 void ui_dialog_show(const void *icon, const char *title, const char *message, const char *confirm,
 		    enum ui_tone tone, ui_dialog_action_t action);
 void ui_dialog_close(void);
-void ui_submit(AppMessageAction action, uint32_t value, const void *data, size_t len,
+void ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
 	       const void *auxiliary, size_t auxiliary_len);
 
-void ui_show_confirmation(const struct AppConfirmationView *confirmation);
+void ui_show_confirmation(uint32_t id);
+bool ui_render_confirmation(void);
 void ui_dismiss_confirmation(void);
 void ui_status_init(const struct app_display_status *status);
 void ui_status_navigation(enum ui_navigation navigation);

@@ -4,8 +4,10 @@
 #include <zephyr/random/random.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/sys/reboot.h>
+#include <zephyr/sys/util.h>
 #include "gpio.h"
 #include "app.h"
+#include "display/display.h"
 #include "storage.h"
 
 bool app_csrand_get(void *dst, size_t len)
@@ -25,6 +27,14 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	}
 	memset(buffer, 0, len);
 
+#if defined(CONFIG_SECURE_BOOT)
+	buffer[APP_FEATURE_SECURE_BOOT] = true;
+#endif
+
+#if defined(CONFIG_ESP_FLASH_ENCRYPTION)
+	buffer[APP_FEATURE_FLASH_ENCRYPTION] = true;
+#endif
+
 #if defined(CONFIG_OSKEY_MCUBOOT)
 	buffer[APP_FEATURE_BOOTLOADER] = true;
 #endif
@@ -37,9 +47,7 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	buffer[APP_FEATURE_HARDWARE_RNG] = true;
 #endif
 
-#if defined(CONFIG_OSKEY_DISPLAY)
-	buffer[APP_FEATURE_DISPLAY_INPUT] = true;
-#endif
+	buffer[APP_FEATURE_DISPLAY_INPUT] = app_display_ready();
 
 #if defined(CONFIG_GPIO)
 	if (user_button_exists()) {
@@ -74,10 +82,13 @@ bool app_check_storage(void)
 	return storage_ready();
 }
 
-void app_storage_reset(void)
+bool app_storage_reset(void)
 {
-	storage_erase_flash();
+	if (storage_erase_flash() < 0) {
+		return false;
+	}
 	sys_reboot(SYS_REBOOT_COLD);
+	return true;
 }
 
 void app_restart(void)

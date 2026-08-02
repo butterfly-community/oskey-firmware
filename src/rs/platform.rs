@@ -1,18 +1,19 @@
+// Platform calls pass live Rust buffers to C only for the duration of each call.
+#![allow(clippy::undocumented_unsafe_blocks)]
+
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 use anyhow::{anyhow, Result};
 use core::ffi::{c_char, CStr};
 use core::fmt::Write;
-use oskey_action::proto::{self, res_data};
-use oskey_action::{AppMessageSource, FrameParser, Message, WalletOutput, WalletPlatform};
+use core::mem::size_of_val;
+use oskey_action::WalletPlatform;
 
 use crate::rs::ffi::{
-    app_check_feature, app_check_storage, app_confirmation_complete, app_confirmation_prompt,
-    app_csrand_get, app_display_message, app_fido2_reply, app_get_chip_model, app_get_device_id,
-    app_get_eui64, app_restart, app_storage_reset, app_uart_send, app_version_get, oskey_bt_send,
+    app_check_feature, app_check_storage, app_csrand_get, app_display_ready, app_get_chip_model,
+    app_get_device_id, app_get_eui64, app_restart, app_storage_reset, app_version_get,
     storage_general_check, storage_general_read, storage_general_write, storage_ids,
-    AppConfirmationKind, AppConfirmationView, AppSlice,
 };
 
 pub(crate) struct Platform;
@@ -64,12 +65,20 @@ impl WalletPlatform for Platform {
         }
     }
 
+    fn local_ui_enabled(&self) -> bool {
+        unsafe { app_display_ready() }
+    }
+
     fn storage_ready(&self) -> bool {
         unsafe { app_check_storage() }
     }
 
-    fn seed_exists(&self) -> bool {
-        unsafe { storage_general_check(storage_ids.seed) }
+    fn seed_exists(&self) -> Result<bool> {
+        match unsafe { storage_general_check(storage_ids.seed) } {
+            0 => Ok(false),
+            1 => Ok(true),
+            result => Err(anyhow!("Failed to check seed: {result}")),
+        }
     }
 
     fn random(&self, len: usize) -> Vec<u8> {
@@ -98,137 +107,43 @@ impl WalletPlatform for Platform {
         }
     }
 
-    fn reset_storage(&self) {
-        unsafe { app_storage_reset() };
+    fn unlock_failures(&self) -> Result<u8> {
+        match unsafe { storage_general_check(storage_ids.unlock_failures) } {
+            0 => return Ok(0),
+            1 => {}
+            result => return Err(anyhow!("Failed to check unlock counter: {result}")),
+        }
+
+        let mut failures = 0;
+        let read = unsafe {
+            storage_general_read(
+                &mut failures,
+                size_of_val(&failures),
+                storage_ids.unlock_failures,
+            )
+        };
+        if read == size_of_val(&failures) as i32 {
+            Ok(failures)
+        } else {
+            Err(anyhow!("Failed to read unlock counter: {read}"))
+        }
+    }
+
+    fn write_unlock_failures(&self, failures: u8) -> bool {
+        unsafe {
+            storage_general_write(
+                &failures,
+                size_of_val(&failures),
+                storage_ids.unlock_failures,
+            )
+        }
+    }
+
+    fn reset_storage(&self) -> bool {
+        unsafe { app_storage_reset() }
     }
 
     fn restart(&self) {
         unsafe { app_restart() };
-    }
-}
-
-impl Platform {
-    pub(crate) fn output(outputs: Vec<WalletOutput>) {
-        for output in outputs {
-            match output.target {
-                AppMessageSource::Uart | AppMessageSource::Bluetooth => {
-                    let encoded = output.response.encode_to_vec();
-                    let frame = FrameParser::pack(&encoded);
-                    if output.target == AppMessageSource::Bluetooth {
-                        unsafe {
-                            oskey_bt_send(frame.as_ptr(), frame.len());
-                        }
-                    } else {
-                        unsafe {
-                            app_uart_send(frame.as_ptr(), frame.len());
-                        }
-                    }
-                }
-                AppMessageSource::Display => {
-                    let Some(payload) = output.response.payload else {
-                        continue;
-                    };
-                    let (action, error, value, text) = match payload {
-                        res_data::Payload::DisplayResponse(response) => {
-                            let Ok(action) = proto::DisplayAction::try_from(response.action) else {
-                                continue;
-                            };
-                            if action == proto::DisplayAction::Unspecified {
-                                continue;
-                            }
-                            (
-                                action,
-                                proto::AppError::try_from(response.error)
-                                    .unwrap_or(proto::AppError::Unspecified),
-                                response.value,
-                                response.text,
-                            )
-                        }
-                        _ => continue,
-                    };
-
-                    unsafe {
-                        app_display_message(action, error, value, text.as_ptr(), text.len());
-                    }
-                }
-                AppMessageSource::Fido2 => match output.response.payload {
-                    Some(res_data::Payload::Fido2Response(response)) => unsafe {
-                        app_fido2_reply(
-                            true,
-                            response.credential_id.as_ptr(),
-                            response.credential_id.len(),
-                            response.data.as_ptr(),
-                            response.data.len(),
-                        );
-                    },
-                    Some(res_data::Payload::ConfirmationResult(response)) => unsafe {
-                        app_confirmation_complete(response.approved);
-                    },
-                    _ => unsafe {
-                        app_fido2_reply(false, core::ptr::null(), 0, core::ptr::null(), 0);
-                    },
-                },
-                AppMessageSource::Confirmation => {
-                    let Some(res_data::Payload::ConfirmationPrompt(prompt)) =
-                        output.response.payload
-                    else {
-                        continue;
-                    };
-
-                    if !prompt.active {
-                        unsafe {
-                            app_confirmation_prompt(false, core::ptr::null());
-                        }
-                        continue;
-                    }
-
-                    let Some(content) = prompt.content else {
-                        continue;
-                    };
-                    let mut view = match &content {
-                        proto::confirmation_prompt::Content::EthMessage(_) => {
-                            AppConfirmationView::new(AppConfirmationKind::EthMessage)
-                        }
-                        proto::confirmation_prompt::Content::EthTransaction(_) => {
-                            AppConfirmationView::new(AppConfirmationKind::EthTransaction)
-                        }
-                        proto::confirmation_prompt::Content::Fido(_) => {
-                            AppConfirmationView::new(AppConfirmationKind::Fido)
-                        }
-                    };
-                    match &content {
-                        proto::confirmation_prompt::Content::EthMessage(confirmation) => {
-                            view.truncated = confirmation.truncated;
-                            view.message_length = confirmation.byte_length;
-                            view.preview = AppSlice::new(confirmation.preview.as_bytes());
-                            view.signing_hash = AppSlice::new(&confirmation.signing_hash);
-                        }
-                        proto::confirmation_prompt::Content::EthTransaction(confirmation) => {
-                            view.contract_creation = confirmation.contract_creation;
-                            view.chain_id = confirmation.chain_id;
-                            view.nonce = confirmation.nonce;
-                            view.gas_limit = confirmation.gas_limit;
-                            view.input_length = confirmation.input_length;
-                            view.gas_price = AppSlice::new(confirmation.gas_price.as_bytes());
-                            view.to = AppSlice::new(&confirmation.to);
-                            view.value = AppSlice::new(confirmation.value.as_bytes());
-                            view.selector = AppSlice::new(&confirmation.selector);
-                            view.input_hash = AppSlice::new(&confirmation.input_hash);
-                            view.signing_hash = AppSlice::new(&confirmation.signing_hash);
-                        }
-                        proto::confirmation_prompt::Content::Fido(confirmation) => {
-                            view.operation = proto::FidoOperation::try_from(confirmation.operation)
-                                .unwrap_or(proto::FidoOperation::Unspecified);
-                            view.account_is_text = confirmation.account_is_text;
-                            view.rp_id = AppSlice::new(confirmation.rp_id.as_bytes());
-                            view.account = AppSlice::new(&confirmation.account);
-                        }
-                    }
-                    unsafe {
-                        app_confirmation_prompt(true, &view);
-                    }
-                }
-            }
-        }
     }
 }

@@ -301,7 +301,7 @@
       const tabs = document.querySelectorAll("nav button");
 
       document.getElementById("wifiMode").textContent =
-        location.hostname === "192.168.4.1" ? "AP" : "STA";
+        location.hostname === "@CONFIG_OSKEY_WIFI_AP_IP_ADDRESS@" ? "AP" : "STA";
 
       tabs.forEach((button) => {
         button.onclick = () => {
@@ -326,7 +326,10 @@
         try {
           return await fetch(path, {
             method: "POST",
-            headers: { "Content-Type": "text/plain;charset=UTF-8" },
+            headers: {
+              "Content-Type": "text/plain;charset=UTF-8",
+              "X-OSKey-Request": "1",
+            },
             body,
             signal: controller.signal,
           });
@@ -361,8 +364,10 @@
         wifiButton.textContent = "Connect";
         status(
           wifiStatus,
-          response
-            ? "Check the network name and password."
+          response?.status === 409
+            ? "A Wi-Fi change is already in progress."
+            : response
+              ? "Check the network name and password."
             : "No response. Try again.",
           "error",
         );

@@ -2,47 +2,46 @@
 
 #include "assets/assets.h"
 
-static enum ui_tone wifi_tone(enum app_display_wifi_state state)
+static enum ui_tone wifi_tone(const struct app_wifi_state *state)
+{
+	if (state->sta == APP_WIFI_STA_CONNECTED) {
+		return UI_TONE_SUCCESS;
+	}
+	if (state->sta == APP_WIFI_STA_CONNECTING_STORED ||
+	    state->sta == APP_WIFI_STA_CONNECTING_NEW) {
+		return UI_TONE_WARNING;
+	}
+	if (state->ap != APP_WIFI_AP_DISABLED && state->ap != APP_WIFI_AP_OFF) {
+		return UI_TONE_ACTIVE;
+	}
+	return UI_TONE_MUTED;
+}
+
+static enum ui_tone bluetooth_tone(enum app_bluetooth_state state)
 {
 	switch (state) {
-	case APP_DISPLAY_WIFI_AP:
+	case APP_BLUETOOTH_ADVERTISING:
 		return UI_TONE_ACTIVE;
-	case APP_DISPLAY_WIFI_CONNECTING:
-		return UI_TONE_WARNING;
-	case APP_DISPLAY_WIFI_CONNECTED:
+	case APP_BLUETOOTH_CONNECTED:
 		return UI_TONE_SUCCESS;
-	case APP_DISPLAY_WIFI_DISCONNECTED:
-	case APP_DISPLAY_WIFI_DISABLED:
+	case APP_BLUETOOTH_IDLE:
+	case APP_BLUETOOTH_DISABLED:
 	default:
 		return UI_TONE_MUTED;
 	}
 }
 
-static enum ui_tone bluetooth_tone(enum app_display_bluetooth_state state)
+static enum ui_tone usb_tone(enum app_usb_state state)
 {
 	switch (state) {
-	case APP_DISPLAY_BLUETOOTH_ADVERTISING:
+	case APP_USB_ATTACHED:
 		return UI_TONE_ACTIVE;
-	case APP_DISPLAY_BLUETOOTH_CONNECTED:
+	case APP_USB_CONFIGURED:
 		return UI_TONE_SUCCESS;
-	case APP_DISPLAY_BLUETOOTH_IDLE:
-	case APP_DISPLAY_BLUETOOTH_DISABLED:
-	default:
-		return UI_TONE_MUTED;
-	}
-}
-
-static enum ui_tone usb_tone(enum app_display_usb_state state)
-{
-	switch (state) {
-	case APP_DISPLAY_USB_ATTACHED:
-		return UI_TONE_ACTIVE;
-	case APP_DISPLAY_USB_CONFIGURED:
-		return UI_TONE_SUCCESS;
-	case APP_DISPLAY_USB_SUSPENDED:
+	case APP_USB_SUSPENDED:
 		return UI_TONE_WARNING;
-	case APP_DISPLAY_USB_DISCONNECTED:
-	case APP_DISPLAY_USB_DISABLED:
+	case APP_USB_DISCONNECTED:
+	case APP_USB_DISABLED:
 	default:
 		return UI_TONE_MUTED;
 	}
@@ -118,7 +117,7 @@ void ui_status_navigation(enum ui_navigation navigation)
 
 void ui_status_update(const struct app_display_status *status)
 {
-	ui_icon_color(ui.wifi_icon, ui_tone_color(wifi_tone(status->wifi)));
+	ui_icon_color(ui.wifi_icon, ui_tone_color(wifi_tone(&status->wifi)));
 	ui_icon_color(ui.bluetooth_icon, ui_tone_color(bluetooth_tone(status->bluetooth)));
 	ui_icon_color(ui.usb_icon, ui_tone_color(usb_tone(status->usb)));
 }

@@ -4,6 +4,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 #include <zephyr/kernel.h>
 #include <zephyr/net/http/server.h>
 #include <zephyr/net/http/service.h>
@@ -14,6 +15,9 @@
 
 #define WIFI_PORTAL_REQUEST_SIZE (WIFI_SSID_MAX_LEN + 1 + 63)
 
+BUILD_ASSERT(CONFIG_HTTP_SERVER_MAX_CLIENTS == 1,
+	     "The Wi-Fi portal uses one shared request buffer");
+
 static const uint8_t portal_page[] = {
 #include "wifi_portal.html.gz.inc"
 };
@@ -23,7 +27,10 @@ static const uint8_t captive_portal_status[] =
 
 static char request_body[WIFI_PORTAL_REQUEST_SIZE];
 static size_t request_body_len;
+static bool request_authorized;
 static wifi_portal_submit_cb_t portal_submit_cb;
+
+HTTP_SERVER_REGISTER_HEADER_CAPTURE(oskey_request_header, "X-OSKey-Request");
 
 struct post_endpoint {
 	enum http_status (*handle)(enum http_transaction_status status, char *body, size_t len);
@@ -37,6 +44,49 @@ static void reboot_work_handler(struct k_work *work)
 
 static K_WORK_DELAYABLE_DEFINE(reboot_work, reboot_work_handler);
 
+static void request_body_reset(void)
+{
+	volatile char *body = request_body;
+
+	while (request_body_len > 0) {
+		body[--request_body_len] = 0;
+	}
+}
+
+static bool request_has_authorization(const struct http_request_ctx *request)
+{
+	if (request->headers_status != HTTP_HEADER_STATUS_OK) {
+		return false;
+	}
+
+	for (size_t i = 0; i < request->header_count; ++i) {
+		if (strcasecmp(request->headers[i].name, "X-OSKey-Request") == 0 &&
+		    strcmp(request->headers[i].value, "1") == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool hostname_is_valid(const char *hostname, size_t len)
+{
+	if (len == 0 || len > NET_HOSTNAME_MAX_LEN || hostname[0] == '-' ||
+	    hostname[len - 1] == '-') {
+		return false;
+	}
+
+	for (size_t i = 0; i < len; ++i) {
+		char c = hostname[i];
+
+		if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+		      c == '-')) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static int hostname_settings_set(const char *name, size_t len, settings_read_cb read_cb,
 				 void *cb_arg)
 {
@@ -46,20 +96,28 @@ static int hostname_settings_set(const char *name, size_t len, settings_read_cb 
 		return -ENOENT;
 	}
 
-	if (len == 0 || len > sizeof(hostname)) {
+	if (len > sizeof(hostname)) {
 		return -EINVAL;
 	}
 
 	ssize_t ret = read_cb(cb_arg, hostname, len);
 
-	return ret < 0 ? ret : net_hostname_set(hostname, ret);
+	if (ret < 0) {
+		return ret;
+	}
+	if (!hostname_is_valid(hostname, ret)) {
+		return -EINVAL;
+	}
+
+	return net_hostname_set(hostname, ret);
 }
 
 SETTINGS_STATIC_HANDLER_DEFINE(wifi_portal, "oskey", NULL, hostname_settings_set, NULL, NULL);
 
 static enum http_status wifi_post(enum http_transaction_status status, char *body, size_t len)
 {
-	if (status == HTTP_SERVER_TRANSACTION_ABORTED) {
+	if (status == HTTP_SERVER_TRANSACTION_ABORTED ||
+	    status == HTTP_SERVER_TRANSACTION_COMPLETE) {
 		return HTTP_200_OK;
 	}
 
@@ -76,8 +134,12 @@ static enum http_status wifi_post(enum http_transaction_status status, char *bod
 		return HTTP_400_BAD_REQUEST;
 	}
 
-	if (status == HTTP_SERVER_TRANSACTION_COMPLETE && portal_submit_cb != NULL) {
-		portal_submit_cb(body, ssid_len, password + 1, password_len);
+	if (status == HTTP_SERVER_REQUEST_DATA_FINAL && portal_submit_cb != NULL) {
+		int ret = portal_submit_cb(body, ssid_len, password + 1, password_len);
+
+		if (ret < 0) {
+			return ret == -EBUSY ? HTTP_409_CONFLICT : HTTP_500_INTERNAL_SERVER_ERROR;
+		}
 	}
 
 	return HTTP_200_OK;
@@ -89,7 +151,7 @@ static enum http_status hostname_post(enum http_transaction_status status, char 
 		return HTTP_200_OK;
 	}
 
-	if (len == 0 || len > NET_HOSTNAME_MAX_LEN) {
+	if (!hostname_is_valid(body, len)) {
 		return HTTP_400_BAD_REQUEST;
 	}
 
@@ -128,14 +190,22 @@ static int post_handler(struct http_client_ctx *client, enum http_transaction_st
 
 	if (status == HTTP_SERVER_TRANSACTION_ABORTED ||
 	    status == HTTP_SERVER_TRANSACTION_COMPLETE) {
-		endpoint->handle(status, request_body, request_body_len);
-		request_body_len = 0;
+		if (request_authorized) {
+			endpoint->handle(status, request_body, request_body_len);
+		}
+		request_body_reset();
+		request_authorized = false;
 		return 0;
+	}
+
+	if (request_ctx->headers_status != HTTP_HEADER_STATUS_NONE) {
+		request_authorized = request_has_authorization(request_ctx);
 	}
 
 	if (request_ctx->data_len > sizeof(request_body) - request_body_len) {
 		endpoint->handle(HTTP_SERVER_TRANSACTION_ABORTED, request_body, request_body_len);
-		request_body_len = 0;
+		request_body_reset();
+		request_authorized = false;
 		return -ENOMEM;
 	}
 
@@ -148,7 +218,10 @@ static int post_handler(struct http_client_ctx *client, enum http_transaction_st
 		return 0;
 	}
 
-	response_ctx->status = endpoint->handle(status, request_body, request_body_len);
+	response_ctx->status = request_authorized
+				       ? endpoint->handle(status, request_body, request_body_len)
+				       : HTTP_403_FORBIDDEN;
+	request_body_reset();
 	response_ctx->final_chunk = true;
 
 	return 0;
@@ -222,6 +295,8 @@ HTTP_RESOURCE_DEFINE(wifi_portal_reboot, wifi_portal_service, "/reboot", &reboot
 
 int wifi_portal_init(wifi_portal_submit_cb_t submit_cb)
 {
+	request_body_reset();
+	request_authorized = false;
 	portal_submit_cb = submit_cb;
 	return http_server_start();
 }

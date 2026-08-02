@@ -1,10 +1,11 @@
 #include "ui.h"
 
+#include <errno.h>
 #include <string.h>
 #include <zephyr/sys/util.h>
 
 #include "assets/assets.h"
-#include "message.h"
+#include "bus.h"
 
 struct ui_context ui;
 
@@ -115,10 +116,11 @@ static void content_bounds(void)
 	lv_obj_align(ui.content, LV_ALIGN_TOP_MID, 0, UI_STATUS_HEIGHT);
 }
 
-void ui_init(const struct app_display_startup *startup)
+void ui_init(const uint8_t features[APP_FEATURE_COUNT], const struct app_display_status *status)
 {
 	memset(&ui, 0, sizeof(ui));
-	ui.startup = *startup;
+	memcpy(ui.features, features, sizeof(ui.features));
+	ui.status = *status;
 	ui.screen = lv_screen_active();
 	ui.width = lv_display_get_horizontal_resolution(NULL);
 	ui.height = lv_display_get_vertical_resolution(NULL);
@@ -376,7 +378,7 @@ void ui_input_error(const char *text)
 
 void ui_keyboard_show(void)
 {
-	if (ui.keyboard == NULL) {
+	if (ui.keyboard == NULL || ui.input == NULL) {
 		return;
 	}
 
@@ -388,9 +390,7 @@ void ui_keyboard_show(void)
 			  ui.height - UI_STATUS_HEIGHT - lv_obj_get_height(ui.keyboard));
 	lv_obj_move_foreground(ui.keyboard);
 	lv_obj_update_layout(ui.content);
-	if (ui.input != NULL) {
-		lv_obj_scroll_to_view_recursive(ui.input, LV_ANIM_OFF);
-	}
+	lv_obj_scroll_to_view_recursive(ui.input, LV_ANIM_OFF);
 }
 
 bool ui_keyboard_hide(void)
@@ -408,12 +408,14 @@ bool ui_keyboard_hide(void)
 	return true;
 }
 
-void ui_submit(AppMessageAction action, uint32_t value, const void *data, size_t len,
+void ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
 	       const void *auxiliary, size_t auxiliary_len)
 {
-	if (!app_message_submit(AppMessageSource_Display, action, value, data, len, auxiliary,
-				auxiliary_len)) {
-		ui_error("Device busy");
+	int ret =
+		app_core_submit_local(kind, value, data, len, auxiliary, auxiliary_len, K_NO_WAIT);
+
+	if (ret < 0) {
+		ui_error(ret == -ENOTSUP ? "Wallet unavailable" : "Device busy");
 		return;
 	}
 	ui_set_busy(true);
@@ -421,8 +423,10 @@ void ui_submit(AppMessageAction action, uint32_t value, const void *data, size_t
 
 void ui_open(enum ui_page page)
 {
+	if (page == UI_PAGE_LOCKED || page == UI_PAGE_STORAGE_ERROR) {
+		ui_clear_sensitive();
+	}
 	ui.history_len = 0;
-	ui.confirmation_return = UI_PAGE_NONE;
 	ui.page = page;
 	ui_render();
 }
@@ -444,6 +448,9 @@ void ui_back(void)
 	if (ui.history_len == 0) {
 		return;
 	}
+	if (ui.page == UI_PAGE_MNEMONIC) {
+		ui_wipe(ui.mnemonic, sizeof(ui.mnemonic));
+	}
 	ui.page = ui.history[--ui.history_len];
 	ui_render();
 }
@@ -451,6 +458,7 @@ void ui_back(void)
 void ui_clear_sensitive(void)
 {
 	ui_wipe(ui.pin, sizeof(ui.pin));
+	ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
 	ui_wipe(ui.mnemonic, sizeof(ui.mnemonic));
 	ui_wipe(ui.entropy, sizeof(ui.entropy));
 	ui.entropy_bits = 0;

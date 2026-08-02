@@ -16,6 +16,7 @@ oskey-action = { path = "lib/core/action", default-features = false, features = 
 ] }
 
 anyhow = { version = "1.0", default-features = false }
+zeroize = { version = "1.9", default-features = false, features = ["alloc"] }
 
 [build-dependencies]
 cbindgen = "0.29"

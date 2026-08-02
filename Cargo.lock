@@ -883,19 +883,10 @@ name = "oskey-action"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "oskey-bus",
  "oskey-chain",
+ "oskey-protocol",
  "oskey-wallet",
  "zeroize",
-]
-
-[[package]]
-name = "oskey-bus"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "prost",
- "prost-build",
 ]
 
 [[package]]
@@ -905,8 +896,17 @@ dependencies = [
  "alloy-consensus",
  "anyhow",
  "heapless",
- "oskey-bus",
  "oskey-wallet",
+]
+
+[[package]]
+name = "oskey-protocol"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "prost",
+ "prost-build",
+ "zeroize",
 ]
 
 [[package]]
@@ -1218,6 +1218,7 @@ dependencies = [
  "cbindgen",
  "oskey-action",
  "zephyr",
+ "zeroize",
 ]
 
 [[package]]

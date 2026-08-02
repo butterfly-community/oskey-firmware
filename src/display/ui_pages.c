@@ -1,10 +1,12 @@
 #include "ui.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/sys/util.h>
 
 #include "assets/assets.h"
+#include "usb/fido2_pin.h"
 
 static bool valid_pin(const char *pin)
 {
@@ -29,6 +31,13 @@ static bool valid_pin(const char *pin)
 	return digit && lower && upper && symbol;
 }
 
+#if defined(CONFIG_OSKEY_FIDO2)
+static bool valid_fido_pin(const char *pin)
+{
+	return strlen(pin) >= CONFIG_FIDO2_MIN_PIN_LENGTH;
+}
+#endif
+
 static void input_changed(lv_event_t *event)
 {
 	ARG_UNUSED(event);
@@ -51,7 +60,7 @@ static void keyboard_done(lv_event_t *event)
 	const char *text = lv_textarea_get_text(ui.input);
 	switch (ui.page) {
 	case UI_PAGE_LOCKED:
-		ui_submit(AppMessageAction_Unlock, 0, text, strlen(text), NULL, 0);
+		ui_submit(LocalRequestKind_Unlock, 0, text, strlen(text), NULL, 0);
 		break;
 	case UI_PAGE_PIN_NEW:
 		if (!valid_pin(text)) {
@@ -68,8 +77,36 @@ static void keyboard_done(lv_event_t *event)
 		}
 		ui_push(UI_PAGE_SOURCE);
 		break;
+#if defined(CONFIG_OSKEY_FIDO2)
+	case UI_PAGE_FIDO_PIN_NEW:
+		if (!valid_fido_pin(text)) {
+			ui_input_error("FIDO PIN is too short");
+			return;
+		}
+		snprintf(ui.fido_pin, sizeof(ui.fido_pin), "%s", text);
+		ui_push(UI_PAGE_FIDO_PIN_CONFIRM);
+		break;
+	case UI_PAGE_FIDO_PIN_CONFIRM: {
+		if (strcmp(ui.fido_pin, text) != 0) {
+			ui_input_error("PINs do not match");
+			return;
+		}
+
+		int ret = oskey_fido_pin_set(text, strlen(text));
+		ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
+		if (ret == 0 || ret == -EALREADY) {
+			ui_back();
+			ui_back();
+		} else {
+			ui_back();
+			ui_input_error(ret == -EBUSY ? "FIDO is busy; try again"
+						     : "Could not save FIDO PIN");
+		}
+		break;
+	}
+#endif
 	case UI_PAGE_IMPORT:
-		ui_submit(AppMessageAction_InitCustom, 0, text, strlen(text), ui.pin,
+		ui_submit(LocalRequestKind_InitCustom, 0, text, strlen(text), ui.pin,
 			  strlen(ui.pin));
 		break;
 	case UI_PAGE_VERIFY:
@@ -78,7 +115,7 @@ static void keyboard_done(lv_event_t *event)
 			ui_input_error("Recovery phrase does not match");
 			return;
 		}
-		ui_submit(AppMessageAction_InitCustom, 0, ui.mnemonic, strlen(ui.mnemonic), ui.pin,
+		ui_submit(LocalRequestKind_InitCustom, 0, ui.mnemonic, strlen(ui.mnemonic), ui.pin,
 			  strlen(ui.pin));
 		break;
 	default:
@@ -238,7 +275,7 @@ static void select_mnemonic_length(lv_event_t *event)
 {
 	uint32_t words = (uint32_t)(uintptr_t)lv_event_get_user_data(event);
 
-	ui_submit(AppMessageAction_GenerateMnemonic, words, NULL, 0, NULL, 0);
+	ui_submit(LocalRequestKind_GenerateMnemonic, words, NULL, 0, NULL, 0);
 }
 
 static void select_entropy_size(lv_event_t *event)
@@ -250,12 +287,12 @@ static void select_entropy_size(lv_event_t *event)
 
 static void restart_device(void)
 {
-	ui_submit(AppMessageAction_Restart, 0, NULL, 0, NULL, 0);
+	ui_submit(LocalRequestKind_Restart, 0, NULL, 0, NULL, 0);
 }
 
 static void erase_storage(void)
 {
-	ui_submit(AppMessageAction_ResetStorage, 0, NULL, 0, NULL, 0);
+	ui_submit(LocalRequestKind_ResetStorage, 0, NULL, 0, NULL, 0);
 }
 
 static void confirm_restart(lv_event_t *event)
@@ -269,13 +306,9 @@ static void confirm_restart(lv_event_t *event)
 static void confirm_reset(lv_event_t *event)
 {
 	ARG_UNUSED(event);
-	bool all_storage = ui.page == UI_PAGE_STORAGE_ERROR;
-
-	ui_dialog_show(&oskey_trash, all_storage ? "Erase storage?" : "Erase wallet?",
-		       all_storage ? "All device data will be permanently removed."
-				   : "Back up the recovery phrase first. This cannot be undone.",
-		       all_storage ? "Erase storage" : "Erase wallet", UI_TONE_DANGER,
-		       erase_storage);
+	ui_dialog_show(&oskey_trash, "Erase device data?",
+		       "Wallet, passkeys and network settings will be permanently removed.",
+		       "Erase data", UI_TONE_DANGER, erase_storage);
 }
 
 static void show_splash(void)
@@ -313,13 +346,15 @@ static void show_capabilities(void)
 	lv_obj_t *content = ui_page_begin("OSKey capabilities", UI_NAVIGATION_NONE);
 	ui_section(content, "CAPABILITIES");
 	for (size_t i = 0; i < ARRAY_SIZE(names); ++i) {
-		bool enabled = ui.startup.features[i];
+		bool enabled = ui.features[i];
 		ui_list_row(content, enabled ? &oskey_success : &oskey_failure, names[i], NULL,
 			    NULL, enabled ? UI_TONE_SUCCESS : UI_TONE_MUTED, NULL, NULL);
 	}
-	ui_section(content, "SETUP");
-	ui_list_row(content, &oskey_wallet, "Set up OSKey", "Create or restore a wallet", NULL,
-		    UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_PIN_NEW);
+	if (ui.status.wallet != WalletState_Disabled) {
+		ui_section(content, "SETUP");
+		ui_list_row(content, &oskey_wallet, "Set up OSKey", "Create or restore a wallet",
+			    NULL, UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_PIN_NEW);
+	}
 }
 
 static void show_locked(void)
@@ -349,6 +384,31 @@ static void show_home(void)
 static void show_settings(void)
 {
 	lv_obj_t *content = ui_page_begin("Device settings", UI_NAVIGATION_BACK);
+	ui_clear_sensitive();
+#if defined(CONFIG_OSKEY_FIDO2)
+	struct oskey_fido_pin_info pin;
+	int ret = oskey_fido_pin_info_get(&pin);
+	char detail[48];
+
+	ui_section(content, "PASSKEYS");
+	if (ret < 0) {
+		ui_list_row(content, &oskey_passkey, "FIDO PIN", "Status unavailable", NULL,
+			    UI_TONE_WARNING, NULL, NULL);
+	} else if (!pin.set) {
+		ui_list_row(content, &oskey_passkey, "Set FIDO PIN",
+			    "Protect passkeys with a separate PIN", NULL, UI_TONE_DEFAULT, navigate,
+			    (void *)(uintptr_t)UI_PAGE_FIDO_PIN_NEW);
+	} else {
+		if (pin.retries == 0) {
+			snprintf(detail, sizeof(detail), "Blocked after failed attempts");
+		} else {
+			snprintf(detail, sizeof(detail), "Configured · %u attempts remaining",
+				 pin.retries);
+		}
+		ui_list_row(content, &oskey_passkey, "FIDO PIN", detail, NULL,
+			    pin.retries == 0 ? UI_TONE_DANGER : UI_TONE_SUCCESS, NULL, NULL);
+	}
+#endif
 	ui_section(content, "MAINTENANCE");
 	ui_list_row(content, &oskey_refresh, "Restart", "Restart without changing data", NULL,
 		    UI_TONE_DEFAULT, confirm_restart, NULL);
@@ -406,6 +466,15 @@ static void mnemonic_saved(lv_event_t *event)
 	ui_push(UI_PAGE_VERIFY);
 }
 
+static void wipe_label(lv_event_t *event)
+{
+	const char *text = lv_label_get_text(lv_event_get_target_obj(event));
+
+	if (text != NULL) {
+		ui_wipe((void *)text, strlen(text));
+	}
+}
+
 static void show_mnemonic(void)
 {
 	lv_obj_t *content = ui_page_begin("Recovery phrase", UI_NAVIGATION_BACK);
@@ -447,6 +516,8 @@ static void show_mnemonic(void)
 		lv_obj_set_style_border_width(label, 1, 0);
 		lv_obj_set_style_pad_ver(label, 5, 0);
 		lv_label_set_text(label, row);
+		lv_obj_add_event_cb(label, wipe_label, LV_EVENT_DELETE, NULL);
+		ui_wipe(row, sizeof(row));
 		word = end == NULL ? word + len : end + 1;
 	}
 
@@ -482,7 +553,7 @@ static void entropy_finish(lv_event_t *event)
 	uint8_t entropy[sizeof(ui.entropy)];
 	size_t len = ui.entropy_bits / 8;
 	memcpy(entropy, ui.entropy, len);
-	ui_submit(AppMessageAction_GenerateMnemonic, len / 4 * 3, entropy, len, NULL, 0);
+	ui_submit(LocalRequestKind_GenerateMnemonic, len / 4 * 3, entropy, len, NULL, 0);
 	ui_wipe(entropy, sizeof(entropy));
 }
 
@@ -569,6 +640,16 @@ void ui_render(void)
 	case UI_PAGE_PIN_CONFIRM:
 		show_input("Confirm PIN", "Enter the same PIN again", true);
 		break;
+	case UI_PAGE_FIDO_PIN_NEW:
+#if defined(CONFIG_OSKEY_FIDO2)
+		show_input("Set FIDO PIN", "This PIN is separate from the wallet PIN", true);
+#endif
+		break;
+	case UI_PAGE_FIDO_PIN_CONFIRM:
+#if defined(CONFIG_OSKEY_FIDO2)
+		show_input("Confirm FIDO PIN", "Enter the same PIN again", true);
+#endif
+		break;
 	case UI_PAGE_SOURCE:
 		show_source();
 		break;
@@ -590,6 +671,13 @@ void ui_render(void)
 	case UI_PAGE_STORAGE_ERROR:
 		show_storage_error();
 		break;
+	case UI_PAGE_CONFIRMATION:
+		if (!ui_render_confirmation()) {
+			ui.confirmation_id = 0;
+			ui_back();
+			return;
+		}
+		break;
 	case UI_PAGE_NONE:
 		break;
 	}
@@ -599,14 +687,20 @@ void ui_render(void)
 
 void ui_show_startup(void)
 {
-	switch (ui.startup.state) {
-	case APP_DISPLAY_LOCKED:
+	if (ui.status.storage == APP_STORAGE_ERROR) {
+		ui_open(UI_PAGE_STORAGE_ERROR);
+		return;
+	}
+
+	switch (ui.status.wallet) {
+	case WalletState_Locked:
 		ui_open(UI_PAGE_LOCKED);
 		break;
-	case APP_DISPLAY_STORAGE_ERROR:
-		ui_open(UI_PAGE_STORAGE_ERROR);
+	case WalletState_Ready:
+		ui_open(UI_PAGE_HOME);
 		break;
-	case APP_DISPLAY_SETUP:
+	case WalletState_Setup:
+	case WalletState_Busy:
 	default:
 		ui_open(UI_PAGE_CAPABILITIES);
 		break;

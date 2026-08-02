@@ -1,7 +1,12 @@
 if(CONFIG_OSKEY_WIFI)
   set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated)
-  generate_inc_file_for_target(app
+  configure_file(
     src/net/wifi_portal.html
+    ${gen_dir}/wifi_portal.html
+    @ONLY
+  )
+  generate_inc_file_for_target(app
+    ${gen_dir}/wifi_portal.html
     ${gen_dir}/wifi_portal.html.gz.inc
     --gzip
   )

@@ -7,8 +7,7 @@ include(cmake/lvgl.cmake)
 
 target_sources(app PRIVATE
   src/main.c
-  src/message.c
-  src/confirmation.c
+  src/bus.c
   src/uart.c
   src/bluetooth/bluetooth.c
   src/storage.c
@@ -19,6 +18,11 @@ target_sources(app PRIVATE
   src/usb/webusb.c
   src/app.c
   src/display/display.c
+)
+
+target_sources_ifdef(CONFIG_OSKEY_RUST app PRIVATE
+  src/core.c
+  src/transport.c
 )
 
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE

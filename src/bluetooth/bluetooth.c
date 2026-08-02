@@ -2,8 +2,7 @@
 
 #include <zephyr/logging/log.h>
 
-#include "display/display.h"
-#include "message.h"
+#include "bus.h"
 
 #ifdef CONFIG_OSKEY_BLUETOOTH
 
@@ -21,6 +20,8 @@ LOG_MODULE_REGISTER(oskey_bt);
 
 K_MUTEX_DEFINE(oskey_bt_conn_lock);
 static struct bt_conn *active_conn;
+static uint32_t active_session_id;
+static uint32_t session_sequence;
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -37,7 +38,11 @@ static void set_active_conn(struct bt_conn *conn)
 
 	k_mutex_lock(&oskey_bt_conn_lock, K_FOREVER);
 	old_conn = active_conn;
-	active_conn = conn == NULL ? NULL : bt_conn_ref(conn);
+	active_conn = bt_conn_ref(conn);
+	if (++session_sequence == 0) {
+		session_sequence++;
+	}
+	active_session_id = session_sequence;
 	k_mutex_unlock(&oskey_bt_conn_lock);
 
 	if (old_conn != NULL) {
@@ -45,12 +50,41 @@ static void set_active_conn(struct bt_conn *conn)
 	}
 }
 
-static struct bt_conn *get_active_conn(void)
+static void clear_active_conn(struct bt_conn *conn)
+{
+	struct bt_conn *old_conn = NULL;
+
+	k_mutex_lock(&oskey_bt_conn_lock, K_FOREVER);
+	if (active_conn == conn) {
+		old_conn = active_conn;
+		active_conn = NULL;
+		active_session_id = 0;
+	}
+	k_mutex_unlock(&oskey_bt_conn_lock);
+
+	if (old_conn != NULL) {
+		bt_conn_unref(old_conn);
+	}
+}
+
+static uint32_t get_session_id(struct bt_conn *conn)
+{
+	uint32_t session_id;
+
+	k_mutex_lock(&oskey_bt_conn_lock, K_FOREVER);
+	session_id = active_conn == conn ? active_session_id : 0;
+	k_mutex_unlock(&oskey_bt_conn_lock);
+
+	return session_id;
+}
+
+static struct bt_conn *get_active_conn(uint32_t session_id)
 {
 	struct bt_conn *conn;
 
 	k_mutex_lock(&oskey_bt_conn_lock, K_FOREVER);
-	conn = active_conn == NULL ? NULL : bt_conn_ref(active_conn);
+	conn = active_conn == NULL || active_session_id != session_id ? NULL
+								      : bt_conn_ref(active_conn);
 	k_mutex_unlock(&oskey_bt_conn_lock);
 
 	return conn;
@@ -70,11 +104,11 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	LOG_INF("Connected %s", addr);
 
 	set_active_conn(conn);
-	app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_CONNECTED);
+	app_bluetooth_state_publish(APP_BLUETOOTH_CONNECTED);
 
-	err = bt_conn_set_security(conn, BT_SECURITY_L4);
-	if (err) {
-		LOG_ERR("Failed to set security (%d)", err);
+	int ret = bt_conn_set_security(conn, BT_SECURITY_L4);
+	if (ret) {
+		LOG_ERR("Failed to set security (%d)", ret);
 		(void)bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 	}
 }
@@ -87,8 +121,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 
 	LOG_INF("Disconnected from %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
 
-	set_active_conn(NULL);
-	app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_IDLE);
+	clear_active_conn(conn);
+	app_bluetooth_state_publish(APP_BLUETOOTH_IDLE);
 	/* Protocol and signing state is not cleared; partial requests or responses may be lost. */
 }
 
@@ -99,10 +133,10 @@ static void start_advertising(void)
 
 	if (err) {
 		LOG_ERR("Failed to start advertising: %d", err);
-		app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_IDLE);
+		app_bluetooth_state_publish(APP_BLUETOOTH_IDLE);
 	} else {
 		LOG_INF("Advertising started");
-		app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_ADVERTISING);
+		app_bluetooth_state_publish(APP_BLUETOOTH_ADVERTISING);
 	}
 }
 
@@ -208,11 +242,21 @@ static void nus_received(struct bt_conn *conn, const void *data, uint16_t len, v
 		return;
 	}
 
-	if (app_message_submit(AppMessageSource_Bluetooth, AppMessageAction_External, 0, data, len,
-			       NULL, 0)) {
+	uint32_t session_id = get_session_id(conn);
+	if (session_id == 0) {
+		return;
+	}
+
+	struct TransportRoute route = {
+		.transport = Transport_Bluetooth,
+		.session_id = session_id,
+	};
+	int err = app_core_submit_protocol(route, data, len, K_FOREVER);
+
+	if (err == 0) {
 		LOG_DBG("Received %u bytes", len);
 	} else {
-		LOG_ERR("Failed to queue %u Bluetooth bytes", len);
+		LOG_ERR("Failed to queue %u Bluetooth bytes: %d", len, err);
 	}
 }
 
@@ -236,7 +280,7 @@ int oskey_bt_init(void)
 		return err;
 	}
 	LOG_INF("Bluetooth initialized");
-	app_display_bluetooth_status(APP_DISPLAY_BLUETOOTH_IDLE);
+	app_bluetooth_state_publish(APP_BLUETOOTH_IDLE);
 
 	return 0;
 }
@@ -258,7 +302,7 @@ int oskey_bt_start(void)
 	return 0;
 }
 
-int oskey_bt_send(const uint8_t *data, size_t len)
+int oskey_bt_send(uint32_t session_id, const uint8_t *data, size_t len)
 {
 	struct bt_conn *conn;
 	size_t max_payload;
@@ -271,7 +315,7 @@ int oskey_bt_send(const uint8_t *data, size_t len)
 		return 0;
 	}
 
-	conn = get_active_conn();
+	conn = get_active_conn(session_id);
 	if (conn == NULL) {
 		return -ENOTCONN;
 	}
@@ -316,8 +360,9 @@ int oskey_bt_start(void)
 	return 0;
 }
 
-int oskey_bt_send(const uint8_t *data, size_t len)
+int oskey_bt_send(uint32_t session_id, const uint8_t *data, size_t len)
 {
+	ARG_UNUSED(session_id);
 	ARG_UNUSED(data);
 	ARG_UNUSED(len);
 

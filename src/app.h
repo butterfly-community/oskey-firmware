@@ -23,7 +23,7 @@ bool app_check_storage(void);
 void app_get_chip_model(char *buffer, size_t len);
 int app_get_eui64(uint8_t *buffer, size_t len);
 int app_get_device_id(uint8_t *buffer, size_t len);
-void app_storage_reset(void);
+bool app_storage_reset(void);
 void app_restart(void);
 
 #endif

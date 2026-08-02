@@ -13,7 +13,7 @@
 #include <zephyr/usb/msos_desc.h>
 #include <zephyr/usb/usbd.h>
 
-#include "display/display.h"
+#include "bus.h"
 #include "init.h"
 #include "webusb.h"
 
@@ -126,7 +126,7 @@ static void msg_cb(struct usbd_context *const usbd_ctx, const struct usbd_msg *c
 				break;
 			}
 		}
-		app_display_usb_status(APP_DISPLAY_USB_ATTACHED);
+		app_usb_state_publish(APP_USB_ATTACHED);
 		break;
 	case USBD_MSG_VBUS_REMOVED:
 		if (usbd_can_detect_vbus(usbd_ctx)) {
@@ -134,24 +134,23 @@ static void msg_cb(struct usbd_context *const usbd_ctx, const struct usbd_msg *c
 				LOG_ERR("Failed to disable device support");
 			}
 		}
-		app_display_usb_status(APP_DISPLAY_USB_DISCONNECTED);
+		app_usb_state_publish(APP_USB_DISCONNECTED);
 		break;
 	case USBD_MSG_CONFIGURATION:
-		app_display_usb_status(msg->status == 0 ? APP_DISPLAY_USB_ATTACHED
-							: APP_DISPLAY_USB_CONFIGURED);
+		app_usb_state_publish(msg->status == 0 ? APP_USB_ATTACHED : APP_USB_CONFIGURED);
 		break;
 	case USBD_MSG_SUSPEND:
-		app_display_usb_status(APP_DISPLAY_USB_SUSPENDED);
+		app_usb_state_publish(APP_USB_SUSPENDED);
 		break;
 	case USBD_MSG_RESUME:
-		app_display_usb_status(APP_DISPLAY_USB_CONFIGURED);
+		app_usb_state_publish(APP_USB_CONFIGURED);
 		break;
 	case USBD_MSG_RESET:
-		app_display_usb_status(APP_DISPLAY_USB_ATTACHED);
+		app_usb_state_publish(APP_USB_ATTACHED);
 		break;
 	case USBD_MSG_UDC_ERROR:
 	case USBD_MSG_STACK_ERROR:
-		app_display_usb_status(APP_DISPLAY_USB_DISCONNECTED);
+		app_usb_state_publish(APP_USB_DISCONNECTED);
 		break;
 	default:
 		break;
@@ -201,7 +200,7 @@ int init_usb_stack(void)
 			LOG_ERR("Failed to enable device support");
 			return ret;
 		}
-		app_display_usb_status(APP_DISPLAY_USB_ATTACHED);
+		app_usb_state_publish(APP_USB_ATTACHED);
 	}
 
 	if (IS_ENABLED(CONFIG_OSKEY_FIDO2)) {

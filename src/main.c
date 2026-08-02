@@ -1,6 +1,5 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/settings/settings.h>
 #include "uart.h"
 #include "bluetooth/bluetooth.h"
 #include "storage.h"
@@ -9,7 +8,10 @@
 #include "net/wifi.h"
 #include "net/mqtt.h"
 #include "display/display.h"
+#include "bus.h"
+#include "core.h"
 #include "gpio.h"
+#include "transport.h"
 #include "usb/webusb.h"
 
 LOG_MODULE_REGISTER(main);
@@ -21,26 +23,30 @@ int main(void)
 		LOG_ERR("Storage startup failed: %d", ret);
 	}
 
-	user_button_init();
+	ret = user_button_init();
+	if (ret < 0 && ret != -ENOTSUP) {
+		LOG_ERR("User button startup failed: %d", ret);
+	}
 
 	int bluetooth_status = oskey_bt_init();
 
 	if (IS_ENABLED(CONFIG_OSKEY_STORAGE) && app_check_storage()) {
-		ret = settings_load();
+		ret = storage_settings_load();
 		if (ret < 0) {
 			LOG_ERR("Settings load failed: %d", ret);
 		}
 	}
 
-	struct app_display_startup display_startup = {.state = APP_DISPLAY_SETUP};
-	app_check_feature(display_startup.features, sizeof(display_startup.features));
-	if (IS_ENABLED(CONFIG_OSKEY_STORAGE) && !app_check_storage()) {
-		display_startup.state = APP_DISPLAY_STORAGE_ERROR;
-	} else if (storage_general_check(storage_ids.seed)) {
-		display_startup.state = APP_DISPLAY_LOCKED;
+	int core_status = app_core_init();
+	if (core_status < 0) {
+		LOG_ERR("Core startup failed: %d", core_status);
 	}
 
-	ret = app_init_display(&display_startup);
+	if (core_status == 0) {
+		app_transport_init();
+	}
+
+	ret = app_init_display();
 	if (ret < 0) {
 		LOG_ERR("Display startup failed: %d", ret);
 	}
@@ -50,9 +56,11 @@ int main(void)
 		LOG_ERR("USB startup failed: %d", ret);
 	}
 
-	ret = app_uart_irq_register();
-	if (ret < 0) {
-		LOG_ERR("UART startup failed: %d", ret);
+	if (IS_ENABLED(CONFIG_OSKEY_RUST) && core_status == 0) {
+		ret = app_uart_irq_register();
+		if (ret < 0) {
+			LOG_ERR("UART startup failed: %d", ret);
+		}
 	}
 
 	if (bluetooth_status == 0) {
