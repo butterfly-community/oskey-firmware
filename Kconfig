@@ -2,6 +2,9 @@
 
 menu "OSKey core"
 
+config TF_PSA_CRYPTO_USER_CONFIG_FILE
+	default "oskey_tf_psa_config.h" if TF_PSA_CRYPTO_BUILTIN && OSKEY_RUST
+
 config OSKEY_RUST
 	bool "OSKey Rust application"
 	default y

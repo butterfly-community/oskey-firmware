@@ -1,0 +1,7 @@
+#ifndef OSKEY_TF_PSA_CONFIG_H
+#define OSKEY_TF_PSA_CONFIG_H
+
+#define MBEDTLS_THREADING_ALT
+#define MBEDTLS_THREADING_C
+
+#endif

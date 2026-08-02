@@ -46,6 +46,12 @@ target_sources_ifdef(CONFIG_OSKEY_FIDO2 app PRIVATE
   src/usb/fido2.c
 )
 
+if(CONFIG_OSKEY_RUST AND CONFIG_TF_PSA_CRYPTO_BUILTIN AND
+   CONFIG_TF_PSA_CRYPTO_USER_CONFIG_FILE STREQUAL "oskey_tf_psa_config.h")
+  zephyr_include_directories(src/crypto)
+  target_sources(app PRIVATE src/crypto/threading.c)
+endif()
+
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 include(cmake/rust.cmake)
