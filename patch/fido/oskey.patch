@@ -1,0 +1,683 @@
+diff --git a/include/zephyr/authentication/fido2/fido2.h b/include/zephyr/authentication/fido2/fido2.h
+index d183a36..d85db50 100644
+--- a/include/zephyr/authentication/fido2/fido2.h
++++ b/include/zephyr/authentication/fido2/fido2.h
+@@ -53,6 +53,15 @@ enum fido2_runtime_state {
+  */
+ typedef void (*fido2_state_callback_t)(enum fido2_runtime_state state, void *user_data);
+ 
++/**
++ * @brief Callback executed exclusively with FIDO2 command processing.
++ *
++ * @param user_data Opaque context pointer provided by the caller.
++ *
++ * @return Callback-defined result.
++ */
++typedef int (*fido2_exclusive_callback_t)(void *user_data);
++
+ /**
+  * @brief Initialize the FIDO2 subsystem.
+  *
+@@ -107,6 +116,18 @@ int fido2_set_state_callback(fido2_state_callback_t cb, void *user_data);
+  */
+ enum fido2_runtime_state fido2_get_state(void);
+ 
++/**
++ * @brief Run an operation exclusively with FIDO2 command processing.
++ *
++ * @param cb Callback to execute.
++ * @param user_data Opaque context passed to @p cb.
++ *
++ * @retval -EBUSY If a command is already being processed.
++ * @retval -EINVAL If @p cb is NULL.
++ * @return Callback-defined result otherwise.
++ */
++int fido2_run_exclusive(fido2_exclusive_callback_t cb, void *user_data);
++
+ /**
+  * @brief Perform a factory reset.
+  *
+diff --git a/include/zephyr/authentication/fido2/fido2_credentials.h b/include/zephyr/authentication/fido2/fido2_credentials.h
+new file mode 100644
+index 0000000..c7d0144
+--- /dev/null
++++ b/include/zephyr/authentication/fido2/fido2_credentials.h
+@@ -0,0 +1,30 @@
++/*
++ * SPDX-License-Identifier: Apache-2.0
++ */
++
++#ifndef ZEPHYR_INCLUDE_AUTHENTICATION_FIDO2_FIDO2_CREDENTIALS_H_
++#define ZEPHYR_INCLUDE_AUTHENTICATION_FIDO2_FIDO2_CREDENTIALS_H_
++
++#include <zephyr/authentication/fido2/fido2_types.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++int fido2_credentials_make(const char *rp_id, uint8_t cred_protect,
++			   uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
++			   uint8_t public_key[FIDO2_P256_UNCOMPRESSED_KEY_SIZE]);
++
++int fido2_credentials_validate(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
++			       const uint8_t rp_id_hash[FIDO2_SHA256_SIZE], uint8_t *cred_protect);
++
++int fido2_credentials_sign(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
++			   const uint8_t rp_id_hash[FIDO2_SHA256_SIZE],
++			   const uint8_t hash[FIDO2_SHA256_SIZE], uint8_t *signature,
++			   size_t signature_size, size_t *signature_len);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
+diff --git a/include/zephyr/authentication/fido2/fido2_types.h b/include/zephyr/authentication/fido2/fido2_types.h
+index f82b137..17cf54a 100644
+--- a/include/zephyr/authentication/fido2/fido2_types.h
++++ b/include/zephyr/authentication/fido2/fido2_types.h
+@@ -108,6 +108,8 @@ extern "C" {
+ #define AUTH_DATA_FLAG_UP BIT(0)
+ /** @brief User Verified (UV) result */
+ #define AUTH_DATA_FLAG_UV BIT(2)
++/** @brief Backup Eligible (BE) */
++#define AUTH_DATA_FLAG_BE BIT(3)
+ /** @brief Attested credential data included (AT) */
+ #define AUTH_DATA_FLAG_AT BIT(6)
+ /** @brief Extension data included (ED) */
+diff --git a/include/zephyr/authentication/fido2/fido2_up.h b/include/zephyr/authentication/fido2/fido2_up.h
+index 721270e..31546e4 100644
+--- a/include/zephyr/authentication/fido2/fido2_up.h
++++ b/include/zephyr/authentication/fido2/fido2_up.h
+@@ -24,6 +24,12 @@
+ extern "C" {
+ #endif
+ 
++#if defined(CONFIG_FIDO2_UP_CUSTOM)
++/** Provide request details to the custom user-presence backend. */
++void fido2_up_set_request(uint8_t command, const char *rp_id, const uint8_t *user_id,
++			  size_t user_id_len, const char *user_name, const char *user_display_name);
++#endif
++
+ /**
+  * @brief Check for user presence.
+  *
+diff --git a/subsys/authentication/fido2/Kconfig b/subsys/authentication/fido2/Kconfig
+index 5ca6594..ca0bbc1 100644
+--- a/subsys/authentication/fido2/Kconfig
++++ b/subsys/authentication/fido2/Kconfig
+@@ -6,7 +6,7 @@ menuconfig FIDO2
+ 	select ZCBOR
+ 	select ZCBOR_CANONICAL
+ 	select PSA_CRYPTO
+-	select SECURE_STORAGE if !BUILD_WITH_TFM
++	select SECURE_STORAGE if !BUILD_WITH_TFM && !FIDO2_CREDENTIALS_CUSTOM
+ 	select PSA_WANT_KEY_TYPE_AES
+ 	select PSA_WANT_KEY_TYPE_HMAC
+ 	select PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE
+@@ -15,7 +15,7 @@ menuconfig FIDO2
+ 	select PSA_WANT_ALG_ECDSA
+ 	select PSA_WANT_ALG_ECDH
+ 	select PSA_WANT_ALG_SHA_256
+-	select PSA_WANT_ALG_GCM
++	select PSA_WANT_ALG_GCM if !FIDO2_CREDENTIALS_CUSTOM
+ 	select PSA_WANT_ALG_HMAC
+ 	select PSA_WANT_ALG_CBC_NO_PADDING
+ 	select PSA_WANT_ECC_SECP_R1_256
+@@ -36,6 +36,22 @@ config FIDO2_THREAD_PRIORITY
+ 	int "FIDO2 processing thread priority"
+ 	default 7
+ 
++config FIDO2_CREDENTIALS_CUSTOM
++	bool "Application-provided credentials"
++	depends on FIDO2_STORAGE_SETTINGS
++	depends on FIDO2_ATTESTATION_NONE
++	help
++	  Use application-provided credential creation, validation, and signing.
++	  This is intended for applications that derive credentials from an external key hierarchy.
++
++config FIDO2_CREDENTIALS_BACKUP_ELIGIBLE
++	bool "Non-discoverable custom credentials are backup eligible"
++	depends on FIDO2_CREDENTIALS_CUSTOM
++	help
++	  Set the backup eligibility flag for non-discoverable custom credentials.
++	  The backup state remains unset because the authenticator cannot determine
++	  whether the external key hierarchy has actually been backed up.
++
+ config FIDO2_CBOR_MAX_SIZE
+ 	int "Maximum CBOR message buffer size"
+ 	default 1024
+diff --git a/subsys/authentication/fido2/fido2_core.c b/subsys/authentication/fido2/fido2_core.c
+index e376734..7422e2d 100644
+--- a/subsys/authentication/fido2/fido2_core.c
++++ b/subsys/authentication/fido2/fido2_core.c
+@@ -13,6 +13,7 @@
+ #include <zephyr/logging/log.h>
+ #include <zephyr/authentication/fido2/fido2.h>
+ #include <zephyr/authentication/fido2/fido2_attestation.h>
++#include <zephyr/authentication/fido2/fido2_credentials.h>
+ #include <zephyr/authentication/fido2/fido2_storage.h>
+ #include <zephyr/authentication/fido2/fido2_transport.h>
+ #include <zephyr/authentication/fido2/fido2_types.h>
+@@ -42,6 +43,7 @@ static struct fido2_msg rx_enqueue_msg;
+ static struct fido2_msg rx_dequeue_msg;
+ 
+ K_MSGQ_DEFINE(fido2_msgq, sizeof(struct fido2_msg), 2, 4);
++K_MUTEX_DEFINE(fido2_operation_lock);
+ 
+ static K_THREAD_STACK_DEFINE(fido2_stack, CONFIG_FIDO2_THREAD_STACK_SIZE);
+ static struct k_thread fido2_thread;
+@@ -102,47 +104,83 @@ static void notify_wire(const struct fido2_transport *transport, uint32_t cid,
+ 	}
+ }
+ 
+-static bool mc_check_exclude_list(void)
++static int credential_validate(struct fido2_credential *cred,
++			       const uint8_t rp_id_hash[FIDO2_SHA256_SIZE])
+ {
+-	for (int i = 0; i < mc_params.num_exclude; ++i) {
+-		if (mc_params.exclude_id_lens[i] == FIDO2_DISCOVERABLE_CRED_ID_SIZE) {
+-			struct fido2_credential existing_cred;
++	if (memcmp(cred->rp_id_hash, rp_id_hash, FIDO2_SHA256_SIZE) != 0) {
++		return -ENOENT;
++	}
+ 
+-			if (fido2_storage_load(mc_params.exclude_ids[i],
+-					       mc_params.exclude_id_lens[i], &existing_cred) != 0) {
+-				continue;
+-			}
+-			/* This check is needed per spec */
+-			if (memcmp(existing_cred.rp_id_hash, mc_credential.rp_id_hash,
+-				   FIDO2_SHA256_SIZE) != 0) {
+-				continue;
+-			}
+-#if defined(CONFIG_FIDO2_EXT_CRED_PROTECT)
+-			if (existing_cred.cred_protect == FIDO2_CRED_PROTECT_UV_REQUIRED) {
+-				continue;
+-			}
++#if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++	if (cred->id_len != FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE) {
++		return -ENOENT;
++	}
++	return fido2_credentials_validate(cred->id, rp_id_hash, &cred->cred_protect);
++#else
++	return 0;
+ #endif
+-			return true;
+-		} else if (mc_params.exclude_id_lens[i] == FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE) {
+-			uint32_t key_id;
++}
+ 
+-			if (fido2_crypto_unwrap_credential(mc_params.exclude_ids[i],
+-							   mc_credential.rp_id_hash,
+-							   &key_id) != 0) {
+-				continue;
+-			}
++static int credential_load(const uint8_t *id, size_t id_len,
++			   const uint8_t rp_id_hash[FIDO2_SHA256_SIZE],
++			   struct fido2_credential *cred)
++{
++	int ret = fido2_storage_load(id, id_len, cred);
+ 
+-			return true;
++	if (ret == 0) {
++		return credential_validate(cred, rp_id_hash);
++	}
++	if (ret != -ENOENT || id_len != FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE) {
++		return ret;
++	}
++
++	memset(cred, 0, sizeof(*cred));
++#if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++	ret = fido2_credentials_validate(id, rp_id_hash, &cred->cred_protect);
++#else
++	ret = fido2_crypto_unwrap_credential(id, rp_id_hash, &cred->key_id);
++#endif
++	if (ret) {
++#if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++		return ret;
++#else
++		return -ENOENT;
++#endif
++	}
++
++	memcpy(cred->rp_id_hash, rp_id_hash, FIDO2_SHA256_SIZE);
++	memcpy(cred->id, id, id_len);
++	cred->id_len = id_len;
++	cred->algorithm = FIDO2_COSE_ES256;
++	return 0;
++}
++
++static int mc_check_exclude_list(bool user_verified)
++{
++	for (int i = 0; i < mc_params.num_exclude; ++i) {
++		struct fido2_credential cred;
++		int ret = credential_load(mc_params.exclude_ids[i], mc_params.exclude_id_lens[i],
++					  mc_credential.rp_id_hash, &cred);
++
++		if (ret == -ENOENT) {
++			continue;
+ 		}
++		if (ret < 0) {
++			return ret;
++		}
++#if defined(CONFIG_FIDO2_EXT_CRED_PROTECT)
++		if (!user_verified && cred.cred_protect == FIDO2_CRED_PROTECT_UV_REQUIRED) {
++			continue;
++		}
++#endif
++		return 1;
+ 	}
+ 
+-	return false;
++	return 0;
+ }
+ 
+ static int mc_populate_credential(void)
+ {
+-	int ret;
+-
+ 	strncpy(mc_credential.rp_id, mc_params.rp_id, sizeof(mc_credential.rp_id) - 1);
+ 	strncpy(mc_credential.rp_name, mc_params.rp_name, sizeof(mc_credential.rp_name) - 1);
+ 	memcpy(mc_credential.user_id, mc_params.user_id, mc_params.user_id_len);
+@@ -155,7 +193,9 @@ static int mc_populate_credential(void)
+ 	mc_credential.discoverable = mc_params.resident_key;
+ 
+ #if defined(CONFIG_FIDO2_EXT_CRED_PROTECT)
+-	mc_credential.cred_protect = mc_params.ext_cred_protect_level;
++	mc_credential.cred_protect = mc_params.ext_cred_protect_level == 0
++					     ? FIDO2_CRED_PROTECT_UV_OPTIONAL
++					     : mc_params.ext_cred_protect_level;
+ #endif
+ #if defined(CONFIG_FIDO2_EXT_HMAC_SECRET)
+ 	if (mc_params.ext_hmac_secret) {
+@@ -163,6 +203,9 @@ static int mc_populate_credential(void)
+ 	}
+ #endif
+ 
++#if !defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++	int ret;
++
+ 	if (mc_params.resident_key) {
+ 		mc_credential.id_len = FIDO2_DISCOVERABLE_CRED_ID_SIZE;
+ 		ret = sys_csrand_get(mc_credential.id, mc_credential.id_len);
+@@ -179,6 +222,7 @@ static int mc_populate_credential(void)
+ 			return ret;
+ 		}
+ 	}
++#endif
+ 
+ 	return 0;
+ }
+@@ -217,10 +261,14 @@ static int mc_store_discoverable(void)
+ 	return 0;
+ }
+ 
++static const uint8_t cred_protect_extension_prefix[] = {
++	0xa1, 0x6b, 'c', 'r', 'e', 'd', 'P', 'r', 'o', 't', 'e', 'c', 't',
++};
++
+ static int mc_build_auth_data(const uint8_t rp_id_hash[FIDO2_SHA256_SIZE], const uint8_t *cred_id,
+ 			      size_t cred_id_len, const uint8_t *pub_key, size_t pub_key_len,
+-			      uint32_t sign_count, uint8_t flags, uint8_t *auth_data,
+-			      size_t auth_data_size, size_t *auth_data_len)
++			      uint32_t sign_count, uint8_t flags, uint8_t cred_protect,
++			      uint8_t *auth_data, size_t auth_data_size, size_t *auth_data_len)
+ {
+ 	uint8_t cose_key[FIDO2_COSE_KEY_MAX_SIZE];
+ 	size_t cose_key_len;
+@@ -236,6 +284,9 @@ static int mc_build_auth_data(const uint8_t rp_id_hash[FIDO2_SHA256_SIZE], const
+ 	}
+ 
+ 	total = FIDO2_AUTH_DATA_HEADER_SIZE + FIDO2_AAGUID_SIZE + 2 + cred_id_len + cose_key_len;
++	if (cred_protect != 0) {
++		total += sizeof(cred_protect_extension_prefix) + sizeof(cred_protect);
++	}
+ 
+ 	if (total > auth_data_size) {
+ 		return -ENOMEM;
+@@ -267,6 +318,13 @@ static int mc_build_auth_data(const uint8_t rp_id_hash[FIDO2_SHA256_SIZE], const
+ 	memcpy(auth_data + offset, cose_key, cose_key_len);
+ 	offset += cose_key_len;
+ 
++	if (cred_protect != 0) {
++		memcpy(auth_data + offset, cred_protect_extension_prefix,
++		       sizeof(cred_protect_extension_prefix));
++		offset += sizeof(cred_protect_extension_prefix);
++		auth_data[offset++] = cred_protect;
++	}
++
+ 	*auth_data_len = offset;
+ 
+ 	return 0;
+@@ -279,9 +337,10 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 	bool supported_alg = false;
+ 	uint8_t pub_key[FIDO2_P256_UNCOMPRESSED_KEY_SIZE];
+ 	size_t pub_key_len;
+-	uint8_t auth_data[FIDO2_AUTH_DATA_MAX_SIZE];
++	uint8_t auth_data[FIDO2_AUTH_DATA_MAX_SIZE + sizeof(cred_protect_extension_prefix) + 1];
+ 	size_t auth_data_len;
+ 	bool user_verified = false;
++	uint8_t cred_protect_output;
+ 	uint8_t flags;
+ 	bool pin_is_set;
+ 	struct fido2_attestation_result att_result;
+@@ -295,6 +354,14 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 		LOG_WRN("MakeCredential CBOR decode failed: %d (len=%zu)", ret, cbor_in_len);
+ 		return FIDO2_ERR_INVALID_CBOR;
+ 	}
++	cred_protect_output =
++		IS_ENABLED(CONFIG_FIDO2_EXT_CRED_PROTECT) ? mc_params.ext_cred_protect_level : 0;
++
++#if defined(CONFIG_FIDO2_UP_CUSTOM)
++	fido2_up_set_request(FIDO2_CMD_MAKE_CREDENTIAL, mc_params.rp_id, mc_params.user_id,
++			     mc_params.user_id_len, mc_params.user_name,
++			     mc_params.user_display_name);
++#endif
+ 
+ 	/* UP must not be false. */
+ 	if (mc_params.has_up_option && !mc_params.up) {
+@@ -384,7 +451,11 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 		return FIDO2_ERR_OPERATION_DENIED;
+ 	}
+ 
+-	if (mc_check_exclude_list()) {
++	ret = mc_check_exclude_list(user_verified);
++	if (ret < 0) {
++		return FIDO2_ERR_OTHER;
++	}
++	if (ret > 0) {
+ 		set_runtime_state(FIDO2_RUNTIME_STATE_WAITING_USER_PRESENCE);
+ 		notify_wire(transport, cid, FIDO2_WIRE_STATUS_UP_NEEDED);
+ 
+@@ -402,6 +473,18 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 		return FIDO2_ERR_CREDENTIAL_EXCLUDED;
+ 	}
+ 
++#if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++	uint8_t cred_protect =
++		cred_protect_output == 0 ? FIDO2_CRED_PROTECT_UV_OPTIONAL : cred_protect_output;
++
++	ret = fido2_credentials_make(mc_params.rp_id, cred_protect, mc_credential.id, pub_key);
++	if (ret) {
++		LOG_ERR("Credential derivation failed: %d", ret);
++		return FIDO2_ERR_OTHER;
++	}
++	mc_credential.id_len = FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE;
++	pub_key_len = FIDO2_P256_UNCOMPRESSED_KEY_SIZE;
++#else
+ 	ret = fido2_crypto_generate_keypair(&mc_credential.key_id);
+ 	if (ret) {
+ 		LOG_ERR("Keypair generation failed: %d", ret);
+@@ -415,6 +498,7 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 		status = FIDO2_ERR_OTHER;
+ 		goto cleanup;
+ 	}
++#endif
+ 
+ 	if (pub_key_len != FIDO2_P256_UNCOMPRESSED_KEY_SIZE ||
+ 	    pub_key[0] != FIDO2_EC_POINT_UNCOMPRESSED) {
+@@ -448,13 +532,22 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 
+ 	flags = AUTH_DATA_FLAG_AT | AUTH_DATA_FLAG_UP;
+ 
++	if (IS_ENABLED(CONFIG_FIDO2_CREDENTIALS_BACKUP_ELIGIBLE) &&
++	    !mc_credential.discoverable) {
++		flags |= AUTH_DATA_FLAG_BE;
++	}
++
+ 	if (user_verified) {
+ 		flags |= AUTH_DATA_FLAG_UV;
+ 	}
+ 
++	if (cred_protect_output != 0) {
++		flags |= AUTH_DATA_FLAG_ED;
++	}
++
+ 	ret = mc_build_auth_data(mc_credential.rp_id_hash, mc_credential.id, mc_credential.id_len,
+-				 pub_key, pub_key_len, 0, flags, auth_data, sizeof(auth_data),
+-				 &auth_data_len);
++				 pub_key, pub_key_len, 0, flags, cred_protect_output, auth_data,
++				 sizeof(auth_data), &auth_data_len);
+ 	if (ret) {
+ 		LOG_ERR("authData build failed: %d", ret);
+ 		status = FIDO2_ERR_OTHER;
+@@ -486,7 +579,9 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 
+ cleanup:
+ 	if (status != FIDO2_OK) {
++#if !defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
+ 		fido2_crypto_destroy_key(mc_credential.key_id);
++#endif
+ 		return status;
+ 	}
+ 
+@@ -499,31 +594,17 @@ static int ga_check_allow_list(uint8_t rp_id_hash[FIDO2_SHA256_SIZE], size_t *fo
+ {
+ 	for (int i = 0; i < ga_params.num_allow; ++i) {
+ 		struct fido2_credential cred;
+-		int ret;
++		int ret = credential_load(ga_params.allow_ids[i], ga_params.allow_id_lens[i],
++					  rp_id_hash, &cred);
+ 
+-		if (ga_params.allow_id_lens[i] == FIDO2_DISCOVERABLE_CRED_ID_SIZE) {
+-			ret = fido2_storage_load(ga_params.allow_ids[i], ga_params.allow_id_lens[i],
+-						 &cred);
+-			if (!ret && !memcmp(cred.rp_id_hash, rp_id_hash, FIDO2_SHA256_SIZE) &&
+-			    *found_count < CONFIG_FIDO2_MAX_CREDENTIALS) {
+-				memcpy(&ga_credentials[(*found_count)++], &cred, sizeof(cred));
+-			}
+-		} else if (ga_params.allow_id_lens[i] == FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE) {
+-			uint32_t key_id;
+-
+-			ret = fido2_crypto_unwrap_credential(ga_params.allow_ids[i], rp_id_hash,
+-							     &key_id);
+-			if (!ret && *found_count < CONFIG_FIDO2_MAX_CREDENTIALS) {
+-				memset(&cred, 0, sizeof(cred));
+-				memcpy(cred.rp_id_hash, rp_id_hash, FIDO2_SHA256_SIZE);
+-				memcpy(cred.id, ga_params.allow_ids[i],
+-				       FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE);
+-				cred.id_len = FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE;
+-				cred.key_id = key_id;
+-				cred.algorithm = FIDO2_COSE_ES256;
+-				cred.discoverable = false;
+-				memcpy(&ga_credentials[(*found_count)++], &cred, sizeof(cred));
+-			}
++		if (ret == -ENOENT) {
++			continue;
++		}
++		if (ret < 0) {
++			return ret;
++		}
++		if (*found_count < CONFIG_FIDO2_MAX_CREDENTIALS) {
++			memcpy(&ga_credentials[(*found_count)++], &cred, sizeof(cred));
+ 		}
+ 	}
+ 
+@@ -565,9 +646,18 @@ static int build_assertion_response(const struct fido2_credential *cred,
+ 		return ret;
+ 	}
+ 
++#if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++	ret = fido2_credentials_sign(cred->id, rp_id_hash, sig_input_hash, sig, sizeof(sig),
++				     &sig_len);
++#else
+ 	ret = fido2_crypto_sign(cred->key_id, sig_input_hash, sig, sizeof(sig), &sig_len);
++#endif
+ 	if (ret) {
++#if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++		LOG_ERR("Assertion sign failed: %d", ret);
++#else
+ 		LOG_ERR("Assertion sign failed key_id=0x%08x: %d", (unsigned int)cred->key_id, ret);
++#endif
+ 		return ret;
+ 	}
+ 
+@@ -630,6 +720,10 @@ static enum fido2_status handle_get_assertion(uint8_t *cbor_in, size_t cbor_in_l
+ 
+ 	if (ga_params.has_pin_uv_auth_param) {
+ 		if (ga_params.pin_uv_auth_param_len == 0) {
++#if defined(CONFIG_FIDO2_UP_CUSTOM)
++			fido2_up_set_request(FIDO2_CMD_GET_ASSERTION, ga_params.rp_id, NULL, 0,
++					     NULL, NULL);
++#endif
+ 			set_runtime_state(FIDO2_RUNTIME_STATE_WAITING_USER_PRESENCE);
+ 			notify_wire(transport, cid, FIDO2_WIRE_STATUS_UP_NEEDED);
+ 
+@@ -680,12 +774,47 @@ static enum fido2_status handle_get_assertion(uint8_t *cbor_in, size_t cbor_in_l
+ 		if (ret) {
+ 			return FIDO2_ERR_OTHER;
+ 		}
++#if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++		for (size_t i = 0; i < found_creds_count; ++i) {
++			if (credential_validate(&ga_credentials[i], rp_id_hash) != 0) {
++				return FIDO2_ERR_OTHER;
++			}
++		}
++#endif
+ 	}
+ 
++#if defined(CONFIG_FIDO2_EXT_CRED_PROTECT)
++	if (!user_verified) {
++		size_t accepted = 0;
++
++		for (size_t i = 0; i < found_creds_count; ++i) {
++			uint8_t level = ga_credentials[i].cred_protect;
++
++			if (level == FIDO2_CRED_PROTECT_UV_REQUIRED ||
++			    (ga_params.num_allow == 0 &&
++			     level == FIDO2_CRED_PROTECT_UV_OPTIONAL_WITH_LIST)) {
++				continue;
++			}
++
++			ga_credentials[accepted++] = ga_credentials[i];
++		}
++		found_creds_count = accepted;
++	}
++#endif
+ 	if (found_creds_count == 0) {
+ 		return FIDO2_ERR_NO_CREDENTIALS;
+ 	}
+ 
++#if defined(CONFIG_FIDO2_UP_CUSTOM)
++	bool show_account = ga_params.num_allow > 0 || found_creds_count == 1;
++
++	fido2_up_set_request(FIDO2_CMD_GET_ASSERTION, ga_params.rp_id,
++			     show_account ? ga_credentials[0].user_id : NULL,
++			     show_account ? ga_credentials[0].user_id_len : 0,
++			     show_account ? ga_credentials[0].user_name : NULL,
++			     show_account ? ga_credentials[0].user_display_name : NULL);
++#endif
++
+ 	if (ga_params.up) {
+ 		set_runtime_state(FIDO2_RUNTIME_STATE_WAITING_USER_PRESENCE);
+ 		notify_wire(transport, cid, FIDO2_WIRE_STATUS_UP_NEEDED);
+@@ -707,6 +836,11 @@ static enum fido2_status handle_get_assertion(uint8_t *cbor_in, size_t cbor_in_l
+ 		flags = AUTH_DATA_FLAG_UP;
+ 	}
+ 
++	if (IS_ENABLED(CONFIG_FIDO2_CREDENTIALS_BACKUP_ELIGIBLE) &&
++	    !ga_credentials[0].discoverable) {
++		flags |= AUTH_DATA_FLAG_BE;
++	}
++
+ 	if (user_verified) {
+ 		flags |= AUTH_DATA_FLAG_UV;
+ 	}
+@@ -902,6 +1036,10 @@ static enum fido2_status handle_client_pin(uint8_t *cbor_in, size_t cbor_in_len,
+ 		return FIDO2_ERR_INVALID_PARAMETER;
+ 	}
+ 
++#if defined(CONFIG_FIDO2_UP_CUSTOM)
++	fido2_up_set_request(FIDO2_CMD_CLIENT_PIN, rp_id, &permissions, sizeof(permissions), NULL,
++			     NULL);
++#endif
+ 	set_runtime_state(FIDO2_RUNTIME_STATE_WAITING_USER_PRESENCE);
+ 	notify_wire(transport, cid, FIDO2_WIRE_STATUS_UP_NEEDED);
+ 	ret = fido2_up_wait();
+@@ -957,6 +1095,10 @@ static enum fido2_status handle_selection(const struct fido2_transport *transpor
+ {
+ 	int ret;
+ 
++#if defined(CONFIG_FIDO2_UP_CUSTOM)
++	fido2_up_set_request(FIDO2_CMD_SELECTION, NULL, NULL, 0, NULL, NULL);
++#endif
++
+ 	set_runtime_state(FIDO2_RUNTIME_STATE_WAITING_USER_PRESENCE);
+ 	notify_wire(transport, cid, FIDO2_WIRE_STATUS_UP_NEEDED);
+ 
+@@ -1063,12 +1205,15 @@ static void fido2_thread_fn(void *p1, void *p2, void *p3)
+ 		enum fido2_status status;
+ 		int ret;
+ 
++		k_mutex_lock(&fido2_operation_lock, K_FOREVER);
+ 		status =
+ 			process_command(cmd, rx_dequeue_msg.data + 1, rx_dequeue_msg.len - 1,
+ 					ctap_tx_frame + 1, sizeof(ctap_tx_frame) - 1, &cbor_out_len,
+ 					rx_dequeue_msg.transport, rx_dequeue_msg.cid);
+ 
+ 		set_runtime_state(FIDO2_RUNTIME_STATE_IDLE);
++		k_mutex_unlock(&fido2_operation_lock);
++
+ 		notify_wire(rx_dequeue_msg.transport, rx_dequeue_msg.cid, FIDO2_WIRE_STATUS_DONE);
+ 
+ 		ctap_tx_frame[0] = (uint8_t)status;
+@@ -1199,6 +1344,23 @@ enum fido2_runtime_state fido2_get_state(void)
+ 	return state;
+ }
+ 
++int fido2_run_exclusive(fido2_exclusive_callback_t cb, void *user_data)
++{
++	int ret;
++
++	if (cb == NULL) {
++		return -EINVAL;
++	}
++	if (k_mutex_lock(&fido2_operation_lock, K_NO_WAIT) != 0) {
++		return -EBUSY;
++	}
++
++	ret = cb(user_data);
++	k_mutex_unlock(&fido2_operation_lock);
++
++	return ret;
++}
++
+ int fido2_reset(void)
+ {
+ 	if (sys_timepoint_expired(reset_timeout)) {
+diff --git a/subsys/authentication/fido2/fido2_crypto.c b/subsys/authentication/fido2/fido2_crypto.c
+index 7685f44..cb504d3 100644
+--- a/subsys/authentication/fido2/fido2_crypto.c
++++ b/subsys/authentication/fido2/fido2_crypto.c
+@@ -35,6 +35,7 @@ LOG_MODULE_DECLARE(fido2, CONFIG_FIDO2_LOG_LEVEL);
+ /* tag (16) */
+ #define FIDO2_WRAP_TAG_SIZE     PSA_AEAD_TAG_LENGTH(PSA_KEY_TYPE_AES, 256, PSA_ALG_GCM)
+ 
++#if !defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
+ static psa_status_t ensure_wrap_key(void)
+ {
+ 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+@@ -70,6 +71,7 @@ static psa_status_t ensure_wrap_key(void)
+ 
+ 	return status;
+ }
++#endif
+ 
+ static psa_status_t ecdsa_int32_to_der(const uint8_t in[32], uint8_t *out, size_t out_size,
+ 				       size_t *out_len)
+@@ -155,11 +157,13 @@ int fido2_crypto_init(void)
+ 		return status;
+ 	}
+ 
++#if !defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
+ 	status = ensure_wrap_key();
+ 	if (status != PSA_SUCCESS) {
+ 		LOG_ERR("Credential wrap key init failed: %d", status);
+ 		return status;
+ 	}
++#endif
+ 
+ 	return status;
+ }

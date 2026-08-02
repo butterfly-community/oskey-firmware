@@ -1,0 +1,58 @@
+diff --git a/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c b/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
+index 81a326a..d5446a9 100644
+--- a/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
++++ b/subsys/authentication/fido2/transport/fido2_transport_usb_hid.c
+@@ -109,6 +109,7 @@ struct ctaphid_ctx {
+ 	k_timepoint_t msg_timeout;
+ 
+ 	/* Keepalive */
++	atomic_t active_cid;
+ 	atomic_t keepalive_cid;
+ 	atomic_t keepalive_status_byte;
+ 
+@@ -277,16 +278,13 @@ static void dispatch_message(uint32_t cid, uint8_t cmd, uint8_t *data, size_t le
+ 		usb_hid_send_frame(cmd, cid, data, len);
+ 		break;
+ 	case CTAPHID_CBOR:
+-		/*
+-		 * Implicitly cancel any pending UP wait before dispatching the
+-		 * new command. Some WebAuthn clients don't send CTAPHID_CANCEL
+-		 * command, Safari/AuthenticationServices framework has this issue.
+-		 */
+-		if (ctx.cancel_cb) {
+-			ctx.cancel_cb();
++		if (atomic_get(&ctx.active_cid) != 0) {
++			send_ctaphid_error(cid, CTAPHID_ERR_CHANNEL_BUSY);
++			break;
+ 		}
+ 		/* Forward to core layer */
+ 		if (ctx.recv_cb) {
++			atomic_set(&ctx.active_cid, cid);
+ 			ctx.recv_cb(&usb_hid_transport, cid, data, len);
+ 		}
+ 		break;
+@@ -296,7 +294,7 @@ static void dispatch_message(uint32_t cid, uint8_t cmd, uint8_t *data, size_t le
+ 		 * response, it just aborts a pending keepalive/UP cycle.
+ 		 */
+ 		LOG_DBG("CTAPHID CANCEL on CID 0x%08x", cid);
+-		if (ctx.cancel_cb) {
++		if ((uint32_t)atomic_get(&ctx.active_cid) == cid && ctx.cancel_cb) {
+ 			ctx.cancel_cb();
+ 		}
+ 		break;
+@@ -577,6 +575,7 @@ static void usb_hid_notify(uint32_t cid, enum fido2_wire_status status)
+ 	uint8_t status_byte;
+ 
+ 	if (status == FIDO2_WIRE_STATUS_DONE) {
++		atomic_cas(&ctx.active_cid, cid, 0);
+ 		keepalive_stop();
+ 		return;
+ 	}
+@@ -601,6 +600,7 @@ static void usb_hid_shutdown(void)
+ 	keepalive_stop();
+ 
+ 	atomic_set(&ctx.hid_iface_ready, 0);
++	atomic_set(&ctx.active_cid, 0);
+ 
+ 	ctx.recv_cb = NULL;
+ 	ctx.cancel_cb = NULL;

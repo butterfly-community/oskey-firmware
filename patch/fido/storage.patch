@@ -1,0 +1,201 @@
+diff --git a/subsys/authentication/fido2/fido2_core.c b/subsys/authentication/fido2/fido2_core.c
+index cc39e99..e376734 100644
+--- a/subsys/authentication/fido2/fido2_core.c
++++ b/subsys/authentication/fido2/fido2_core.c
+@@ -188,16 +188,22 @@ static int mc_store_discoverable(void)
+ 	size_t creds_found;
+ 	int ret;
+ 
+-	if (fido2_storage_find_by_rp(mc_credential.rp_id_hash, ga_credentials,
+-				     CONFIG_FIDO2_MAX_CREDENTIALS, &creds_found) == 0) {
+-		for (int i = 0; i < creds_found; ++i) {
+-			if (mc_credential.user_id_len == ga_credentials[i].user_id_len &&
+-			    memcmp(mc_credential.user_id, ga_credentials[i].user_id,
+-				   mc_credential.user_id_len) == 0) {
+-				fido2_storage_remove(ga_credentials[i].id,
+-						     ga_credentials[i].id_len);
+-				break;
++	ret = fido2_storage_find_by_rp(mc_credential.rp_id_hash, ga_credentials,
++				       CONFIG_FIDO2_MAX_CREDENTIALS, &creds_found);
++	if (ret) {
++		return ret;
++	}
++
++	for (int i = 0; i < creds_found; ++i) {
++		if (mc_credential.user_id_len == ga_credentials[i].user_id_len &&
++		    memcmp(mc_credential.user_id, ga_credentials[i].user_id,
++			   mc_credential.user_id_len) == 0) {
++			ret = fido2_storage_remove(ga_credentials[i].id, ga_credentials[i].id_len);
++			if (ret) {
++				return ret;
+ 			}
++
++			break;
+ 		}
+ 	}
+ 
+@@ -538,14 +544,14 @@ static int build_assertion_response(const struct fido2_credential *cred,
+ 	size_t sig_len;
+ 	int ret;
+ 
++	sign_count = 0;
++
+ 	if (cred->discoverable) {
+ 		ret = fido2_storage_sign_count_increment(cred->id, cred->id_len, &sign_count);
+ 		if (ret) {
+ 			LOG_ERR("Sign count increment failed: %d", ret);
+ 			return ret;
+ 		}
+-	} else {
+-		sign_count = 0;
+ 	}
+ 
+ 	memcpy(auth_data, rp_id_hash, FIDO2_SHA256_SIZE);
+diff --git a/subsys/authentication/fido2/storage/fido2_storage.c b/subsys/authentication/fido2/storage/fido2_storage.c
+index c3ffc3f..aed3978 100644
+--- a/subsys/authentication/fido2/storage/fido2_storage.c
++++ b/subsys/authentication/fido2/storage/fido2_storage.c
+@@ -50,9 +50,11 @@ int fido2_storage_remove(const uint8_t *cred_id, size_t cred_id_len)
+ 		return ret;
+ 	}
+ 
+-	ret = destroy_credential_key(cred.key_id);
++	if (cred.key_id == PSA_KEY_ID_NULL) {
++		return 0;
++	}
+ 
+-	return ret;
++	return destroy_credential_key(cred.key_id);
+ }
+ 
+ int fido2_storage_find_by_rp(const uint8_t rp_id_hash[FIDO2_SHA256_SIZE],
+diff --git a/subsys/authentication/fido2/storage/fido2_storage_settings.c b/subsys/authentication/fido2/storage/fido2_storage_settings.c
+index 544e3d8..b613f9c 100644
+--- a/subsys/authentication/fido2/storage/fido2_storage_settings.c
++++ b/subsys/authentication/fido2/storage/fido2_storage_settings.c
+@@ -4,6 +4,7 @@
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
++#include <errno.h>
+ #include <string.h>
+ #include <zephyr/sys/printk.h>
+ #include <zephyr/logging/log.h>
+@@ -24,6 +25,19 @@ static void build_key(char *buf, size_t size, int idx)
+ 	snprintk(buf, size, FIDO2_SETTINGS_CRED_PREFIX "/%d", idx);
+ }
+ 
++static int load_exact(const char *key, void *value, size_t size)
++{
++	ssize_t len = settings_load_one(key, value, size);
++
++	if (len == size) {
++		return 0;
++	}
++	if (len == 0) {
++		return -ENOENT;
++	}
++	return len < 0 ? (int)len : -EIO;
++}
++
+ static int cred_slot_get(const uint8_t *cred_id, size_t cred_id_len, struct fido2_credential *out)
+ {
+ 	struct fido2_credential cred;
+@@ -32,9 +46,13 @@ static int cred_slot_get(const uint8_t *cred_id, size_t cred_id_len, struct fido
+ 		char key[FIDO2_SETTINGS_KEY_MAX];
+ 
+ 		build_key(key, sizeof(key), i);
+-		if (settings_load_one(key, &cred, sizeof(cred)) != sizeof(cred)) {
++		int ret = load_exact(key, &cred, sizeof(cred));
++		if (ret == -ENOENT) {
+ 			continue;
+ 		}
++		if (ret < 0) {
++			return ret;
++		}
+ 		if (cred.id_len == cred_id_len && memcmp(cred.id, cred_id, cred_id_len) == 0) {
+ 			if (out != NULL) {
+ 				memcpy(out, &cred, sizeof(cred));
+@@ -68,9 +86,13 @@ static int settings_backend_store(const struct fido2_credential *cred)
+ 		char key[FIDO2_SETTINGS_KEY_MAX];
+ 
+ 		build_key(key, sizeof(key), i);
+-		if (settings_load_one(key, &temp, sizeof(temp)) == sizeof(temp)) {
++		int ret = load_exact(key, &temp, sizeof(temp));
++		if (ret == 0) {
+ 			continue; /* slot occupied */
+ 		}
++		if (ret != -ENOENT) {
++			return ret;
++		}
+ 
+ 		return settings_save_one(key, cred, sizeof(*cred));
+ 	}
+@@ -119,9 +141,13 @@ static int settings_backend_find_by_rp(const uint8_t rp_id_hash[FIDO2_SHA256_SIZ
+ 		char key[FIDO2_SETTINGS_KEY_MAX];
+ 
+ 		build_key(key, sizeof(key), i);
+-		if (settings_load_one(key, &cred, sizeof(cred)) != sizeof(cred)) {
++		int ret = load_exact(key, &cred, sizeof(cred));
++		if (ret == -ENOENT) {
+ 			continue;
+ 		}
++		if (ret < 0) {
++			return ret;
++		}
+ 		if (memcmp(cred.rp_id_hash, rp_id_hash, FIDO2_SHA256_SIZE) == 0) {
+ 			if (*count < max_creds) {
+ 				memcpy(creds + *count, &cred, sizeof(cred));
+@@ -142,7 +168,7 @@ static int settings_backend_sign_count_increment(const uint8_t *cred_id, size_t
+ 
+ 	idx = cred_slot_get(cred_id, cred_id_len, &cred);
+ 	if (idx < 0) {
+-		return -ENOENT;
++		return idx;
+ 	}
+ 
+ 	*new_count = ++cred.sign_count;
+@@ -153,20 +179,23 @@ static int settings_backend_sign_count_increment(const uint8_t *cred_id, size_t
+ 
+ static int settings_backend_pin_retries_get(uint8_t *retries)
+ {
+-	ssize_t len = settings_load_one(FIDO2_SETTINGS_PIN_RETRIES, retries, sizeof(*retries));
++	int ret = load_exact(FIDO2_SETTINGS_PIN_RETRIES, retries, sizeof(*retries));
+ 
+-	if (len != sizeof(*retries)) {
++	if (ret == -ENOENT) {
+ 		*retries = CONFIG_FIDO2_PIN_MAX_RETRIES;
++		return 0;
+ 	}
+-
+-	return 0;
++	return ret;
+ }
+ 
+ static int settings_backend_pin_retries_decrement(void)
+ {
+ 	uint8_t retries;
+ 
+-	settings_backend_pin_retries_get(&retries);
++	int ret = settings_backend_pin_retries_get(&retries);
++	if (ret < 0) {
++		return ret;
++	}
+ 
+ 	if (retries > 0) {
+ 		--retries;
+@@ -189,13 +218,7 @@ static int settings_backend_pin_set(const uint8_t *pin_hash)
+ 
+ static int settings_backend_pin_get(uint8_t *pin_hash)
+ {
+-	ssize_t len = settings_load_one(FIDO2_SETTINGS_PIN_HASH, pin_hash, FIDO2_PIN_HASH_SIZE);
+-
+-	if (len != FIDO2_PIN_HASH_SIZE) {
+-		return -ENOENT;
+-	}
+-
+-	return 0;
++	return load_exact(FIDO2_SETTINGS_PIN_HASH, pin_hash, FIDO2_PIN_HASH_SIZE);
+ }
+ 
+ const struct fido2_storage_api fido2_storage_backend = {

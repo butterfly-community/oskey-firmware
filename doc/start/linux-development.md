@@ -29,6 +29,20 @@ socat -d -d \
 
 The simulator uses `/tmp/ttyOSKey`; host tools use `/tmp/ttyOSKeyC`.
 
+## Zephyr Patches
+
+The current patches are tested with Zephyr `af17c0c8aa2a82a0b714a423915ad3610063ee68`.
+Apply them in this order from the OSKey source directory:
+
+```sh
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/clientpin.patch"
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/storage.patch"
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/oskey.patch"
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/usb-busy.patch"
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/keepalive.patch"
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/usb-dwc2-zlp-cache.patch"
+```
+
 ## Build
 
 Display:

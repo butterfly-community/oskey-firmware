@@ -1,0 +1,16 @@
+diff --git a/drivers/usb/udc/udc_dwc2.c b/drivers/usb/udc/udc_dwc2.c
+--- a/drivers/usb/udc/udc_dwc2.c
++++ b/drivers/usb/udc/udc_dwc2.c
+@@ -1552,8 +1552,10 @@ static int udc_dwc2_ep_enqueue(const struct device *dev,
+ 
+ 	if (dwc2_in_buffer_dma_mode(dev)) {
+ 		if (USB_EP_DIR_IS_IN(cfg->addr)) {
+-			/* Write all dirty cache lines to memory */
+-			sys_cache_data_flush_range(buf->data, buf->len);
++			if (buf->len > 0U) {
++				/* Write all dirty cache lines to memory */
++				sys_cache_data_flush_range(buf->data, buf->len);
++			}
+ 		} else {
+ 			/* Get rid of all dirty cache lines */
+ 			sys_cache_data_invd_range(buf->data, net_buf_tailroom(buf));
