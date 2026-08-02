@@ -14,6 +14,7 @@
 &flash0 {
     partitions {
         storage_partition: partition@e0000 {
+            compatible = "zephyr,mapped-partition";
             label = "storage";
             reg = < 0xE0000 DT_SIZE_K(128) >;
         };

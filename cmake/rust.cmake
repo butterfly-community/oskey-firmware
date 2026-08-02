@@ -7,6 +7,11 @@ if(CONFIG_OSKEY_RUST)
     function(_rust_map_target)
       set(RUST_TARGET "x86_64-unknown-linux-gnu" PARENT_SCOPE)
     endfunction()
+  elseif(CONFIG_BOARD_NATIVE_SIM AND CONFIG_64BIT AND
+         CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
+    function(_rust_map_target)
+      set(RUST_TARGET "aarch64-unknown-linux-gnu" PARENT_SCOPE)
+    endfunction()
   endif()
 
   rust_cargo_application()
