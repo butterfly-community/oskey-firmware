@@ -355,6 +355,12 @@ endif
 menuconfig OSKEY_MQTT
 	bool "MQTT"
 	depends on NETWORKING
+	select POSIX_API
+	select NET_CONNECTION_MANAGER
+	select NET_IPV4
+	select NET_SOCKETS
+	select NET_TCP
+	select DNS_RESOLVER
 	select MQTT_LIB
 	select MQTT_CLEAN_SESSION
 
