@@ -137,6 +137,7 @@ async function copyBuildFiles(boardName: string) {
 
 async function run() {
   await removeDirectory(buildDir);
+  await removeDirectory(outputDir);
   await Deno.mkdir(outputDir, { recursive: true });
 
   for (const board of boards) {
