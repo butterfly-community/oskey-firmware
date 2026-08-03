@@ -19,17 +19,24 @@ static void wipe_value(lv_event_t *event)
 	}
 }
 
-static void respond(lv_event_t *event)
+static void submit_choice(enum ConfirmationChoice choice)
 {
-	enum ConfirmationChoice choice = (uintptr_t)lv_event_get_user_data(event)
-						 ? ConfirmationChoice_Approve
-						 : ConfirmationChoice_Reject;
-
 	if (app_core_submit_confirmation(ui.confirmation_id, choice, K_NO_WAIT) == 0) {
 		ui_set_busy(true);
 	} else {
 		ui_error("Unable to submit decision");
 	}
+}
+
+static void allow_private_key(void)
+{
+	submit_choice(ConfirmationChoice_Approve);
+}
+
+static void respond(lv_event_t *event)
+{
+	submit_choice((uintptr_t)lv_event_get_user_data(event) ? ConfirmationChoice_Approve
+							       : ConfirmationChoice_Reject);
 }
 
 static void field(lv_obj_t *parent, const char *name, const uint8_t *value, size_t len,
@@ -172,6 +179,10 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 	const char *approve = "Approve";
 	const char *summary = "Review before approving";
 	const void *icon = &oskey_ethereum;
+	bool uses_private_key = confirmation->kind != AppConfirmationKind_Fido ||
+				confirmation->operation == FidoOperation_Register ||
+				confirmation->operation == FidoOperation_Authenticate;
+	bool private_result_ready = confirmation->prepared;
 
 	if (confirmation->kind == AppConfirmationKind_EthMessage) {
 		title = "Sign message";
@@ -218,8 +229,14 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 		}
 		number(content, "Message size (bytes)", confirmation->message_length);
 		lv_obj_t *message_details = technical_details(content);
+		field(message_details, "Derivation path", confirmation->path,
+		      confirmation->path_len, UI_TONE_DEFAULT);
 		hex(message_details, "Signing hash", confirmation->signing_hash,
 		    confirmation->signing_hash_len);
+		hex(message_details, "Public key", confirmation->public_key,
+		    confirmation->public_key_len);
+		hex(message_details, "Signature", confirmation->signature,
+		    confirmation->signature_len);
 		break;
 	case AppConfirmationKind_EthTransaction:
 		ui_section(content, "OVERVIEW");
@@ -236,6 +253,8 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 			number(content, "Contract data (bytes)", confirmation->input_length);
 		}
 		lv_obj_t *transaction_details = technical_details(content);
+		field(transaction_details, "Derivation path", confirmation->path,
+		      confirmation->path_len, UI_TONE_DEFAULT);
 		number(transaction_details, "Nonce", confirmation->nonce);
 		field(transaction_details, "Gas price", confirmation->gas_price,
 		      confirmation->gas_price_len, UI_TONE_DEFAULT);
@@ -248,6 +267,10 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 		}
 		hex(transaction_details, "Signing hash", confirmation->signing_hash,
 		    confirmation->signing_hash_len);
+		hex(transaction_details, "Public key", confirmation->public_key,
+		    confirmation->public_key_len);
+		hex(transaction_details, "Signature", confirmation->signature,
+		    confirmation->signature_len);
 		break;
 	case AppConfirmationKind_Fido:
 		ui_section(content, "REQUEST");
@@ -263,17 +286,38 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 			hex(content, "Account ID", confirmation->account,
 			    confirmation->account_len);
 		}
+		if (private_result_ready) {
+			lv_obj_t *fido_details = technical_details(content);
+			hex(fido_details, "Credential ID", confirmation->credential_id,
+			    confirmation->credential_id_len);
+			hex(fido_details, "Public key", confirmation->public_key,
+			    confirmation->public_key_len);
+			hex(fido_details, "Signature", confirmation->signature,
+			    confirmation->signature_len);
+		}
 		break;
 	}
 
 	ui_section(content, "ACTION");
+	if (uses_private_key) {
+		approve = private_result_ready ? (confirmation->kind == AppConfirmationKind_Fido
+							  ? "Send result"
+							  : "Send signature")
+					       : "Use private key";
+	}
 	ui_list_row(content, &oskey_success, approve,
-		    confirmation->kind == AppConfirmationKind_Fido
-			    ? "Approve this request"
-			    : "Sign after reviewing all details",
+		    uses_private_key
+			    ? (private_result_ready ? "Return the prepared result"
+						    : "Derive the key and prepare the result")
+			    : "Approve this request",
 		    NULL, UI_TONE_SUCCESS, respond, (void *)(uintptr_t)true);
 	ui_list_row(content, &oskey_failure, "Reject", "Do not approve this request", NULL,
 		    UI_TONE_DANGER, respond, NULL);
+	if (uses_private_key && !private_result_ready) {
+		ui_dialog_show(icon, "Use private key?",
+			       "This request needs access to your private key.", "Continue",
+			       UI_TONE_ACTIVE, allow_private_key);
+	}
 	return true;
 }
 

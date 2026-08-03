@@ -157,6 +157,7 @@ typedef struct AppConfirmation {
   bool truncated;
   bool contract_creation;
   bool account_is_text;
+  bool prepared;
   uint64_t chain_id;
   uint64_t nonce;
   uint64_t gas_limit;
@@ -172,6 +173,10 @@ typedef struct AppConfirmation {
   uintptr_t signing_hash_len;
   uintptr_t rp_id_len;
   uintptr_t account_len;
+  uintptr_t path_len;
+  uintptr_t public_key_len;
+  uintptr_t signature_len;
+  uintptr_t credential_id_len;
   uint8_t from[20];
   uint8_t preview[256];
   uint8_t gas_price[80];
@@ -182,6 +187,10 @@ typedef struct AppConfirmation {
   uint8_t signing_hash[32];
   uint8_t rp_id[128];
   uint8_t account[64];
+  uint8_t path[128];
+  uint8_t public_key[65];
+  uint8_t signature[72];
+  uint8_t credential_id[64];
 } AppConfirmation;
 
 struct AppCore *app_core_create_rs(void);

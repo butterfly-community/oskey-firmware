@@ -10,8 +10,8 @@ use oskey_action::proto::AppError;
 use oskey_action::{
     ConfirmationChoice, ConfirmationDetails, ConfirmationOutcome, CoreEffect, CoreRequest,
     FidoOperation, FidoOutput, FidoRequest, FidoRequestKind, FidoStatus, FrameParser, LocalAction,
-    LocalRequest, LocalRequestKind, LocalResult, Transport, TransportRoute, WalletRuntime,
-    WalletState,
+    LocalRequest, LocalRequestKind, LocalResult, PreparedResult, Transport, TransportRoute,
+    WalletRuntime, WalletState,
 };
 use zeroize::{Zeroize, Zeroizing};
 
@@ -108,6 +108,7 @@ pub struct AppConfirmation {
     pub truncated: bool,
     pub contract_creation: bool,
     pub account_is_text: bool,
+    pub prepared: bool,
     pub chain_id: u64,
     pub nonce: u64,
     pub gas_limit: u64,
@@ -123,6 +124,10 @@ pub struct AppConfirmation {
     pub signing_hash_len: usize,
     pub rp_id_len: usize,
     pub account_len: usize,
+    pub path_len: usize,
+    pub public_key_len: usize,
+    pub signature_len: usize,
+    pub credential_id_len: usize,
     pub from: [u8; 20],
     pub preview: [u8; 256],
     pub gas_price: [u8; 80],
@@ -133,6 +138,10 @@ pub struct AppConfirmation {
     pub signing_hash: [u8; 32],
     pub rp_id: [u8; 128],
     pub account: [u8; 64],
+    pub path: [u8; 128],
+    pub public_key: [u8; 65],
+    pub signature: [u8; 72],
+    pub credential_id: [u8; 64],
 }
 
 impl AppConfirmation {
@@ -144,6 +153,7 @@ impl AppConfirmation {
             truncated: false,
             contract_creation: false,
             account_is_text: false,
+            prepared: false,
             chain_id: 0,
             nonce: 0,
             gas_limit: 0,
@@ -159,6 +169,10 @@ impl AppConfirmation {
             signing_hash_len: 0,
             rp_id_len: 0,
             account_len: 0,
+            path_len: 0,
+            public_key_len: 0,
+            signature_len: 0,
+            credential_id_len: 0,
             from: [0; 20],
             preview: [0; 256],
             gas_price: [0; 80],
@@ -169,6 +183,10 @@ impl AppConfirmation {
             signing_hash: [0; 32],
             rp_id: [0; 128],
             account: [0; 64],
+            path: [0; 128],
+            public_key: [0; 65],
+            signature: [0; 72],
+            credential_id: [0; 64],
         }
     }
 
@@ -178,16 +196,20 @@ impl AppConfirmation {
         Some(source.len())
     }
 
-    fn from_details(id: u32, details: &ConfirmationDetails) -> Option<Self> {
-        match details {
+    fn snapshot(
+        id: u32,
+        details: &ConfirmationDetails,
+        prepared: Option<&PreparedResult>,
+    ) -> Option<Self> {
+        let mut view = match details {
             ConfirmationDetails::EthMessage(details) => {
                 let mut view = Self::new(id, AppConfirmationKind::EthMessage);
                 view.truncated = details.truncated;
                 view.message_length = details.byte_length;
-                view.from_len = Self::copy(&details.from, &mut view.from)?;
                 view.preview_len = Self::copy(details.preview.as_bytes(), &mut view.preview)?;
                 view.signing_hash_len = Self::copy(&details.signing_hash, &mut view.signing_hash)?;
-                Some(view)
+                view.path_len = Self::copy(details.path.as_bytes(), &mut view.path)?;
+                view
             }
             ConfirmationDetails::EthTransaction(details) => {
                 let mut view = Self::new(id, AppConfirmationKind::EthTransaction);
@@ -196,14 +218,14 @@ impl AppConfirmation {
                 view.nonce = details.nonce;
                 view.gas_limit = details.gas_limit;
                 view.input_length = details.input_length;
-                view.from_len = Self::copy(&details.from, &mut view.from)?;
                 view.gas_price_len = Self::copy(details.gas_price.as_bytes(), &mut view.gas_price)?;
                 view.to_len = Self::copy(&details.to, &mut view.to)?;
                 view.value_len = Self::copy(details.value.as_bytes(), &mut view.value)?;
                 view.selector_len = Self::copy(&details.selector, &mut view.selector)?;
                 view.input_hash_len = Self::copy(&details.input_hash, &mut view.input_hash)?;
                 view.signing_hash_len = Self::copy(&details.signing_hash, &mut view.signing_hash)?;
-                Some(view)
+                view.path_len = Self::copy(details.path.as_bytes(), &mut view.path)?;
+                view
             }
             ConfirmationDetails::Fido(details) => {
                 let mut view = Self::new(id, AppConfirmationKind::Fido);
@@ -211,9 +233,19 @@ impl AppConfirmation {
                 view.account_is_text = details.account_is_text;
                 view.rp_id_len = Self::copy(details.rp_id.as_bytes(), &mut view.rp_id)?;
                 view.account_len = Self::copy(&details.account, &mut view.account)?;
-                Some(view)
+                view
             }
+        };
+        if let Some(prepared) = prepared {
+            view.prepared = true;
+            if let Some(from) = prepared.from {
+                view.from_len = Self::copy(&from, &mut view.from)?;
+            }
+            view.credential_id_len = Self::copy(&prepared.credential_id, &mut view.credential_id)?;
+            view.public_key_len = Self::copy(&prepared.public_key, &mut view.public_key)?;
+            view.signature_len = Self::copy(&prepared.signature, &mut view.signature)?;
         }
+        Some(view)
     }
 }
 
@@ -591,10 +623,10 @@ unsafe extern "C" fn app_core_confirmation_get_rs(
         return false;
     };
 
-    let Some(details) = core.runtime.confirmation(id) else {
+    let Some((details, prepared)) = core.runtime.confirmation(id) else {
         return false;
     };
-    let Some(confirmation) = AppConfirmation::from_details(id, details) else {
+    let Some(confirmation) = AppConfirmation::snapshot(id, details, prepared) else {
         return false;
     };
     *result = confirmation;
