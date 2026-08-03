@@ -65,7 +65,7 @@ index 0000000..c7d0144
 +
 +int fido2_credentials_sign(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
 +			   const uint8_t rp_id_hash[FIDO2_SHA256_SIZE],
-+			   const uint8_t hash[FIDO2_SHA256_SIZE], uint8_t *signature,
++			   const uint8_t hash[FIDO2_SHA256_SIZE], bool preflight, uint8_t *signature,
 +			   size_t signature_size, size_t *signature_len);
 +
 +#ifdef __cplusplus
@@ -500,7 +500,8 @@ index e376734..7422e2d 100644
  	}
  
 +#if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
-+	ret = fido2_credentials_sign(cred->id, rp_id_hash, sig_input_hash, sig, sizeof(sig),
++	ret = fido2_credentials_sign(cred->id, rp_id_hash, sig_input_hash,
++				     (flags & AUTH_DATA_FLAG_UP) == 0, sig, sizeof(sig),
 +				     &sig_len);
 +#else
  	ret = fido2_crypto_sign(cred->key_id, sig_input_hash, sig, sizeof(sig), &sig_len);

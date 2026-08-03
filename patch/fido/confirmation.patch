@@ -1,0 +1,33 @@
+diff --git a/subsys/authentication/fido2/fido2_core.c b/subsys/authentication/fido2/fido2_core.c
+--- a/subsys/authentication/fido2/fido2_core.c
++++ b/subsys/authentication/fido2/fido2_core.c
+@@ -463,6 +463,16 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 	}
+ 
+ #if defined(CONFIG_FIDO2_CREDENTIALS_CUSTOM)
++	set_runtime_state(FIDO2_RUNTIME_STATE_WAITING_USER_PRESENCE);
++	notify_wire(transport, cid, FIDO2_WIRE_STATUS_UP_NEEDED);
++	ret = fido2_up_wait();
++	if (ret) {
++		return ret == -ECANCELED ? FIDO2_ERR_KEEPALIVE_CANCEL
++					 : FIDO2_ERR_USER_ACTION_TIMEOUT;
++	}
++	set_runtime_state(FIDO2_RUNTIME_STATE_PROCESSING);
++	notify_wire(transport, cid, FIDO2_WIRE_STATUS_PROCESSING);
++
+ 	uint8_t cred_protect =
+ 		cred_protect_output == 0 ? FIDO2_CRED_PROTECT_UV_OPTIONAL : cred_protect_output;
+ 
+@@ -511,6 +521,12 @@ handle_make_credential(uint8_t *cbor_in, size_t cbor_in_len, uint8_t *cbor_out,
+ 		goto cleanup;
+ 	}
+ 
++#if defined(CONFIG_FIDO2_UP_CUSTOM)
++	fido2_up_set_request(FIDO2_CMD_MAKE_CREDENTIAL, mc_params.rp_id, mc_params.user_id,
++			     mc_params.user_id_len, mc_params.user_name,
++			     mc_params.user_display_name);
++#endif
++
+ 	set_runtime_state(FIDO2_RUNTIME_STATE_WAITING_USER_PRESENCE);
+ 	notify_wire(transport, cid, FIDO2_WIRE_STATUS_UP_NEEDED);
+ 

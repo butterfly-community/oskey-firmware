@@ -260,17 +260,17 @@ int fido2_credentials_validate(const uint8_t credential_id[FIDO2_NON_DISCOVERABL
 
 int fido2_credentials_sign(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
 			   const uint8_t rp_id_hash[FIDO2_SHA256_SIZE],
-			   const uint8_t hash[FIDO2_SHA256_SIZE], uint8_t *signature,
-			   size_t signature_size, size_t *signature_len)
+			   const uint8_t hash[FIDO2_SHA256_SIZE], bool preflight,
+			   uint8_t *signature, size_t signature_size, size_t *signature_len)
 {
 	uint8_t auxiliary[FIDO2_SHA256_SIZE * 2];
 	struct fido2_response response;
 
 	memcpy(auxiliary, rp_id_hash, FIDO2_SHA256_SIZE);
 	memcpy(auxiliary + FIDO2_SHA256_SIZE, hash, FIDO2_SHA256_SIZE);
-	int ret =
-		request(FidoRequestKind_Sign, 0, credential_id, FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE,
-			auxiliary, sizeof(auxiliary), &response);
+	int ret = request(FidoRequestKind_Sign, preflight, credential_id,
+			  FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE, auxiliary, sizeof(auxiliary),
+			  &response);
 	memset(auxiliary, 0, sizeof(auxiliary));
 
 	if (ret == 0 && response.data_len > signature_size) {
