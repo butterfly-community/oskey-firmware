@@ -11,7 +11,6 @@
 #include "bus.h"
 #include "core.h"
 #include "gpio.h"
-#include "transport.h"
 #include "usb/webusb.h"
 
 LOG_MODULE_REGISTER(main);
@@ -40,10 +39,6 @@ int main(void)
 	int core_status = app_core_init();
 	if (core_status < 0) {
 		LOG_ERR("Core startup failed: %d", core_status);
-	}
-
-	if (core_status == 0) {
-		app_transport_init();
 	}
 
 	ret = app_init_display();

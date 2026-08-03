@@ -15,7 +15,7 @@
 
 #endif
 
-void app_uart_send(const uint8_t *data, size_t len);
+int app_uart_send(const uint8_t *data, size_t len);
 
 int app_uart_irq_register(void);
 

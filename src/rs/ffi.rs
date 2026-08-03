@@ -271,6 +271,9 @@ extern "C" {
 
 pub struct AppCore {
     runtime: WalletRuntime<Platform>,
+    uart_parser: FrameParser,
+    bluetooth_parser: FrameParser,
+    bluetooth_session: u32,
     effects: VecDeque<CoreEffect>,
     current_effect: Option<CoreEffect>,
     transport_frame: Vec<u8>,
@@ -280,6 +283,9 @@ impl AppCore {
     fn new() -> Self {
         Self {
             runtime: WalletRuntime::new(Platform),
+            uart_parser: FrameParser::new(),
+            bluetooth_parser: FrameParser::new(),
+            bluetooth_session: 0,
             effects: VecDeque::new(),
             current_effect: None,
             transport_frame: Vec::new(),
@@ -290,6 +296,38 @@ impl AppCore {
         self.transport_frame.zeroize();
         if let Some(mut effect) = self.current_effect.take() {
             wipe_effect(&mut effect);
+        }
+    }
+
+    fn protocol_parser(&mut self, route: TransportRoute) -> &mut FrameParser {
+        match route.transport {
+            Transport::Uart => &mut self.uart_parser,
+            Transport::Bluetooth => {
+                if self.bluetooth_session != route.session_id {
+                    self.bluetooth_parser.clear();
+                    self.bluetooth_session = route.session_id;
+                }
+                &mut self.bluetooth_parser
+            }
+        }
+    }
+
+    fn feed_protocol(&mut self, route: TransportRoute, data: &[u8]) {
+        self.protocol_parser(route).push(data);
+
+        loop {
+            let Some(request) = self.protocol_parser(route).unpack() else {
+                break;
+            };
+            let request = match request {
+                Ok(request) => CoreRequest::Protocol { route, request },
+                Err(_) => CoreRequest::ProtocolError { route },
+            };
+            self.effects.extend(self.runtime.handle(request));
+        }
+
+        if self.runtime.state() == WalletState::Busy {
+            self.protocol_parser(route).clear();
         }
     }
 }
@@ -437,6 +475,7 @@ fn fido_request<'a>(
             credential_id: data,
             rp_id_hash: &auxiliary[..32],
             hash: &auxiliary[32..],
+            preflight: command.value != 0,
         }),
         FidoRequestKind::Confirm => {
             let operation = match command.value {
@@ -498,11 +537,7 @@ unsafe extern "C" fn app_core_execute_rs(
                 let Some(data) = (unsafe { slice(fragment.data, fragment.len) }) else {
                     return false;
                 };
-                let effects = core.runtime.handle(CoreRequest::Protocol {
-                    route: command.route,
-                    data,
-                });
-                core.effects.extend(effects);
+                core.feed_protocol(command.route, data);
             }
         }
         AppCoreCommandKind::Confirm => {

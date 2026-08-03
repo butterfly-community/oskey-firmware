@@ -54,12 +54,6 @@ config OSKEY_CORE_STACK_SIZE
 	help
 	  Stack size for the thread that owns and executes the Rust core.
 
-config OSKEY_TRANSPORT_STACK_SIZE
-	int "OSKey transport stack size"
-	default 2048
-	help
-	  Stack size for external protocol response delivery.
-
 endmenu
 
 menu "OSKey features"

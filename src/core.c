@@ -7,6 +7,7 @@
 #include <zephyr/sys/util.h>
 
 #include "bus.h"
+#include "transport.h"
 
 LOG_MODULE_REGISTER(app_core);
 
@@ -90,8 +91,7 @@ static int route_effect(const struct AppCoreEffectView *effect)
 
 	switch (effect->kind) {
 	case AppCoreEffectKind_Transport:
-		return app_transport_result_submit(effect->route, effect->data.data,
-						   effect->data.len, APP_CORE_ROUTE_TIMEOUT);
+		return app_transport_send(effect->route, effect->data.data, effect->data.len);
 	case AppCoreEffectKind_Local:
 		return app_local_result_submit(effect->local_action, effect->error, effect->value,
 					       effect->data.data, effect->data.len,

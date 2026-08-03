@@ -22,8 +22,6 @@ NET_BUF_POOL_FIXED_DEFINE(app_result_payload_pool, CONFIG_OSKEY_BUS_PAYLOAD_COUN
 
 K_MSGQ_DEFINE(app_core_command_queue, sizeof(struct app_core_command), APP_BUS_QUEUE_DEPTH,
 	      __alignof__(struct app_core_command));
-K_MSGQ_DEFINE(app_transport_result_queue, sizeof(struct app_transport_result), APP_BUS_QUEUE_DEPTH,
-	      __alignof__(struct app_transport_result));
 K_MSGQ_DEFINE(app_local_result_queue, sizeof(struct app_local_result), APP_BUS_QUEUE_DEPTH,
 	      __alignof__(struct app_local_result));
 K_MSGQ_DEFINE(app_fido_result_queue, sizeof(struct app_fido_result), APP_BUS_QUEUE_DEPTH,
@@ -178,11 +176,6 @@ void app_bus_core_ready(void)
 	atomic_set(&core_ready, 1);
 }
 
-bool app_core_protocol_ready(void)
-{
-	return core_accepts_commands() && k_msgq_num_free_get(&app_core_command_queue) > 0;
-}
-
 int app_core_submit_protocol(struct TransportRoute route, const void *data, size_t len,
 			     k_timeout_t timeout)
 {
@@ -267,22 +260,6 @@ int app_core_command_get(struct app_core_command *command, k_timeout_t timeout)
 		return -ENOTSUP;
 	}
 	return queue_get(&app_core_command_queue, command, timeout);
-}
-
-int app_transport_result_submit(struct TransportRoute route, const void *data, size_t len,
-				k_timeout_t timeout)
-{
-	struct app_transport_result result = {.route = route};
-	int ret = payload_create(&app_result_payload_pool, data, len, NULL, 0, timeout,
-				 &result.payload);
-
-	return ret < 0 ? ret
-		       : queue_put(&app_transport_result_queue, &result, result.payload, timeout);
-}
-
-int app_transport_result_get(struct app_transport_result *result, k_timeout_t timeout)
-{
-	return queue_get(&app_transport_result_queue, result, timeout);
 }
 
 int app_local_result_submit(enum LocalAction action, AppError error, uint32_t value,

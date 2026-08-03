@@ -17,8 +17,6 @@
 LOG_MODULE_REGISTER(oskey_bt);
 
 K_MUTEX_DEFINE(oskey_bt_conn_lock);
-K_MUTEX_DEFINE(oskey_bt_tx_lock);
-K_SEM_DEFINE(oskey_bt_tx_done, 0, 1);
 static struct bt_conn *active_conn;
 static struct bt_nus_inst *nus_instance;
 static uint32_t active_session_id;
@@ -275,28 +273,6 @@ static struct bt_nus_cb nus_callbacks = {
 	.received = nus_received,
 };
 
-static void notification_complete(struct bt_conn *conn, void *user_data)
-{
-	ARG_UNUSED(conn);
-	k_sem_give(user_data);
-}
-
-static int send_notification(struct bt_conn *conn, const uint8_t *data, uint16_t len)
-{
-	struct bt_gatt_notify_params params = {
-		.attr = &nus_instance->svc->attrs[1],
-		.data = data,
-		.len = len,
-		.func = notification_complete,
-		.user_data = &oskey_bt_tx_done,
-	};
-
-	k_sem_reset(&oskey_bt_tx_done);
-	int ret = bt_gatt_notify_cb(conn, &params);
-
-	return ret == 0 ? k_sem_take(&oskey_bt_tx_done, K_FOREVER) : ret;
-}
-
 int oskey_bt_init(void)
 {
 	STRUCT_SECTION_FOREACH(bt_nus_inst, instance) {
@@ -365,18 +341,16 @@ int oskey_bt_send(uint32_t session_id, const uint8_t *data, size_t len)
 		err = -EACCES;
 		goto out;
 	}
-	k_mutex_lock(&oskey_bt_tx_lock, K_FOREVER);
-
 	max_payload = bt_gatt_get_mtu(conn);
 	if (max_payload <= 3U) {
 		err = -EMSGSIZE;
-		goto unlock;
+		goto out;
 	}
 	max_payload -= 3U;
 	while (len > 0) {
 		uint16_t chunk_len = (uint16_t)MIN(len, max_payload);
 
-		err = send_notification(conn, data, chunk_len);
+		err = bt_gatt_notify(conn, &nus_instance->svc->attrs[1], data, chunk_len);
 		if (err) {
 			break;
 		}
@@ -385,8 +359,6 @@ int oskey_bt_send(uint32_t session_id, const uint8_t *data, size_t len)
 		len -= chunk_len;
 	}
 
-unlock:
-	k_mutex_unlock(&oskey_bt_tx_lock);
 out:
 	bt_conn_unref(conn);
 	return err;

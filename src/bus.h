@@ -170,11 +170,6 @@ struct app_core_command {
 	app_payload *payload;
 };
 
-struct app_transport_result {
-	app_payload *payload;
-	struct TransportRoute route;
-};
-
 struct app_local_result {
 	app_payload *payload;
 	enum LocalAction action;
@@ -200,7 +195,6 @@ void app_payload_release(app_payload *payload);
 
 int app_core_submit_protocol(struct TransportRoute route, const void *data, size_t len,
 			     k_timeout_t timeout);
-bool app_core_protocol_ready(void);
 int app_core_submit_local(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
 			  const void *auxiliary, size_t auxiliary_len, k_timeout_t timeout);
 int app_core_submit_fido(enum FidoRequestKind kind, uint32_t request_id, uint32_t value,
@@ -209,10 +203,6 @@ int app_core_submit_fido(enum FidoRequestKind kind, uint32_t request_id, uint32_
 int app_core_submit_confirmation(uint32_t id, enum ConfirmationChoice choice, k_timeout_t timeout);
 int app_core_command_get(struct app_core_command *command, k_timeout_t timeout);
 void app_bus_core_ready(void);
-
-int app_transport_result_submit(struct TransportRoute route, const void *data, size_t len,
-				k_timeout_t timeout);
-int app_transport_result_get(struct app_transport_result *result, k_timeout_t timeout);
 
 int app_local_result_submit(enum LocalAction action, AppError error, uint32_t value,
 			    const void *data, size_t len, k_timeout_t timeout);

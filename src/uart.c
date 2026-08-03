@@ -2,6 +2,7 @@
 
 #include "uart.h"
 
+#include <errno.h>
 #include <string.h>
 #include <strings.h>
 #include <zephyr/logging/log.h>
@@ -30,10 +31,6 @@ static void app_uart_rx_resume(struct k_work *work)
 		explicit_bzero(pending, pending_len);
 		pending_len = 0;
 	}
-	if (!app_core_protocol_ready()) {
-		k_work_reschedule(resume_work, APP_UART_RETRY_DELAY);
-		return;
-	}
 	uart_irq_rx_enable(DEV_CONSOLE);
 }
 
@@ -49,7 +46,7 @@ static void app_uart_rx_handler(const struct device *dev, void *user_data)
 		return;
 	}
 
-	while (app_core_protocol_ready() && (len = uart_fifo_read(dev, buf, sizeof(buf))) > 0) {
+	while ((len = uart_fifo_read(dev, buf, sizeof(buf))) > 0) {
 		struct TransportRoute route = {.transport = Transport_Uart};
 		int ret = app_core_submit_protocol(route, buf, len, K_NO_WAIT);
 
@@ -67,18 +64,17 @@ static void app_uart_rx_handler(const struct device *dev, void *user_data)
 			return;
 		}
 	}
-
-	if (!app_core_protocol_ready()) {
-		uart_irq_rx_disable(dev);
-		k_work_reschedule(&app_uart_rx_resume_work, APP_UART_RETRY_DELAY);
-	}
 }
 
-void app_uart_send(const uint8_t *data, size_t len)
+int app_uart_send(const uint8_t *data, size_t len)
 {
+	if (data == NULL && len > 0) {
+		return -EINVAL;
+	}
 	for (size_t i = 0; i < len; i++) {
 		uart_poll_out(DEV_CONSOLE, data[i]);
 	}
+	return 0;
 }
 
 int app_uart_irq_register(void)
