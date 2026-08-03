@@ -95,12 +95,6 @@ void ui_status_init(const struct app_display_status *status)
 	ui.wifi_icon = ui_icon(status_icons, &oskey_wifi);
 	ui.bluetooth_icon = ui_icon(status_icons, &oskey_bluetooth);
 	ui.usb_icon = ui_icon(status_icons, &oskey_usb);
-	lv_obj_set_size(ui.wifi_icon, 18, 18);
-	lv_obj_set_size(ui.bluetooth_icon, 18, 18);
-	lv_obj_set_size(ui.usb_icon, 18, 18);
-	lv_image_set_inner_align(ui.wifi_icon, LV_IMAGE_ALIGN_CONTAIN);
-	lv_image_set_inner_align(ui.bluetooth_icon, LV_IMAGE_ALIGN_CONTAIN);
-	lv_image_set_inner_align(ui.usb_icon, LV_IMAGE_ALIGN_CONTAIN);
 
 	ui_status_navigation(UI_NAVIGATION_NONE);
 	ui_status_update(status);

@@ -49,51 +49,27 @@ if(CONFIG_OSKEY_DISPLAY)
       trash
       usb
       wallet
+      wallet_logo
       warning
       wifi
   )
+    set(asset_file "${CMAKE_CURRENT_SOURCE_DIR}/src/display/assets/generated/${asset}.a8")
+    if(NOT EXISTS "${asset_file}")
+      message(FATAL_ERROR "Missing generated display asset: ${asset_file}")
+    endif()
     generate_inc_file_for_target(app
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/display/assets/${asset}.svg
-      ${ZEPHYR_BINARY_DIR}/include/generated/oskey_${asset}.svg.inc
+      ${asset_file}
+      ${ZEPHYR_BINARY_DIR}/include/generated/oskey_${asset}.a8.inc
     )
   endforeach()
 endif()
 
-if(CONFIG_LV_USE_THORVG_INTERNAL)
-  set(THORVG_DIR ${LVGL_DIR}/src/libs/thorvg)
-
-  add_library(oskey_lvgl_thorvg STATIC)
-  target_include_directories(oskey_lvgl_thorvg PRIVATE ${THORVG_DIR})
-  target_compile_options(oskey_lvgl_thorvg PRIVATE
-    "SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/cmake/thorvg_config.h"
-  )
-  target_sources(oskey_lvgl_thorvg PRIVATE
-    ${THORVG_DIR}/tvgCanvas.cpp
-    ${THORVG_DIR}/tvgCapi.cpp
-    ${THORVG_DIR}/tvgFill.cpp
-    ${THORVG_DIR}/tvgInitializer.cpp
-    ${THORVG_DIR}/tvgLoader.cpp
-    ${THORVG_DIR}/tvgMath.cpp
-    ${THORVG_DIR}/tvgPaint.cpp
-    ${THORVG_DIR}/tvgPicture.cpp
-    ${THORVG_DIR}/tvgRawLoader.cpp
-    ${THORVG_DIR}/tvgRender.cpp
-    ${THORVG_DIR}/tvgScene.cpp
-    ${THORVG_DIR}/tvgShape.cpp
-    ${THORVG_DIR}/tvgSwCanvas.cpp
-    ${THORVG_DIR}/tvgSwFill.cpp
-    ${THORVG_DIR}/tvgSwImage.cpp
-    ${THORVG_DIR}/tvgSwMath.cpp
-    ${THORVG_DIR}/tvgSwMemPool.cpp
-    ${THORVG_DIR}/tvgSwPostEffect.cpp
-    ${THORVG_DIR}/tvgSwRaster.cpp
-    ${THORVG_DIR}/tvgSwRenderer.cpp
-    ${THORVG_DIR}/tvgSwRle.cpp
-    ${THORVG_DIR}/tvgSwShape.cpp
-    ${THORVG_DIR}/tvgSwStroke.cpp
-    ${THORVG_DIR}/tvgTaskScheduler.cpp
-    ${THORVG_DIR}/tvgText.cpp
-  )
-  target_link_libraries(oskey_lvgl_thorvg PRIVATE zephyr_interface LVGL)
-  target_link_libraries(app PRIVATE oskey_lvgl_thorvg)
-endif()
+add_custom_target(display-assets
+  COMMAND ${CMAKE_COMMAND}
+    "-DASSET_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/src/display/assets"
+    "-DASSET_OUTPUT_DIR=${CMAKE_CURRENT_SOURCE_DIR}/src/display/assets/generated"
+    "-DASSET_TEMP_DIR=${CMAKE_CURRENT_BINARY_DIR}/display-assets"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/display_assets.cmake"
+  USES_TERMINAL
+  VERBATIM
+)

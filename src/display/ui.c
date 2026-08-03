@@ -260,6 +260,7 @@ lv_obj_t *ui_icon(lv_obj_t *parent, const void *source)
 {
 	lv_obj_t *image = lv_image_create(parent);
 	lv_image_set_src(image, source);
+	ui_icon_color(image, ui_tone_color(UI_TONE_DEFAULT));
 	return image;
 }
 

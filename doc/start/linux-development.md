@@ -54,6 +54,16 @@ west build -p always \
   -DCONFIG_OSKEY_DISPLAY=y
 ```
 
+Display assets are committed and require no host image tools for normal builds. To regenerate
+them after editing an SVG, install `gdk-pixbuf-thumbnailer` and ImageMagick, then run:
+
+```sh
+west build -t display-assets
+```
+
+The target exits successfully without changing the committed assets when either tool is not
+available.
+
 LVGL benchmark:
 
 Apply the Native Simulator timing fix once from the OSKey source directory:

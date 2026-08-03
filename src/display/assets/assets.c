@@ -1,82 +1,93 @@
 #include "assets.h"
 
-#define SVG_DESCRIPTOR(name, width, height)                                                        \
+#define A8_DATA(name)                                                                              \
+	static const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST uint8_t name##_data[]
+
+#define A8_DESCRIPTOR(name, width, height)                                                         \
 	const lv_image_dsc_t oskey_##name = {                                                      \
-		.header = {.magic = LV_IMAGE_HEADER_MAGIC, .w = width, .h = height},               \
+		.header = {.magic = LV_IMAGE_HEADER_MAGIC,                                         \
+			   .cf = LV_COLOR_FORMAT_A8,                                               \
+			   .w = width,                                                             \
+			   .h = height,                                                            \
+			   .stride = width},                                                       \
 		.data_size = sizeof(name##_data),                                                  \
 		.data = name##_data,                                                               \
 	}
 
-static const uint8_t back_data[] = {
-#include <oskey_back.svg.inc>
+A8_DATA(back) = {
+#include <oskey_back.a8.inc>
 };
-static const uint8_t bluetooth_data[] = {
-#include <oskey_bluetooth.svg.inc>
+A8_DATA(bluetooth) = {
+#include <oskey_bluetooth.a8.inc>
 };
-static const uint8_t chevron_right_data[] = {
-#include <oskey_chevron_right.svg.inc>
+A8_DATA(chevron_right) = {
+#include <oskey_chevron_right.a8.inc>
 };
-static const uint8_t document_data[] = {
-#include <oskey_document.svg.inc>
+A8_DATA(document) = {
+#include <oskey_document.a8.inc>
 };
-static const uint8_t ethereum_data[] = {
-#include <oskey_ethereum.svg.inc>
+A8_DATA(ethereum) = {
+#include <oskey_ethereum.a8.inc>
 };
-static const uint8_t eye_data[] = {
-#include <oskey_eye.svg.inc>
+A8_DATA(eye) = {
+#include <oskey_eye.a8.inc>
 };
-static const uint8_t eye_off_data[] = {
-#include <oskey_eye_off.svg.inc>
+A8_DATA(eye_off) = {
+#include <oskey_eye_off.a8.inc>
 };
-static const uint8_t failure_data[] = {
-#include <oskey_failure.svg.inc>
+A8_DATA(failure) = {
+#include <oskey_failure.a8.inc>
 };
-static const uint8_t passkey_data[] = {
-#include <oskey_passkey.svg.inc>
+A8_DATA(passkey) = {
+#include <oskey_passkey.a8.inc>
 };
-static const uint8_t refresh_data[] = {
-#include <oskey_refresh.svg.inc>
+A8_DATA(refresh) = {
+#include <oskey_refresh.a8.inc>
 };
-static const uint8_t settings_data[] = {
-#include <oskey_settings.svg.inc>
+A8_DATA(settings) = {
+#include <oskey_settings.a8.inc>
 };
-static const uint8_t shuffle_data[] = {
-#include <oskey_shuffle.svg.inc>
+A8_DATA(shuffle) = {
+#include <oskey_shuffle.a8.inc>
 };
-static const uint8_t success_data[] = {
-#include <oskey_success.svg.inc>
+A8_DATA(success) = {
+#include <oskey_success.a8.inc>
 };
-static const uint8_t trash_data[] = {
-#include <oskey_trash.svg.inc>
+A8_DATA(trash) = {
+#include <oskey_trash.a8.inc>
 };
-static const uint8_t usb_data[] = {
-#include <oskey_usb.svg.inc>
+A8_DATA(usb) = {
+#include <oskey_usb.a8.inc>
 };
-static const uint8_t wallet_data[] = {
-#include <oskey_wallet.svg.inc>
+A8_DATA(wallet) = {
+#include <oskey_wallet.a8.inc>
 };
-static const uint8_t warning_data[] = {
-#include <oskey_warning.svg.inc>
+A8_DATA(wallet_logo) = {
+#include <oskey_wallet_logo.a8.inc>
 };
-static const uint8_t wifi_data[] = {
-#include <oskey_wifi.svg.inc>
+A8_DATA(warning) = {
+#include <oskey_warning.a8.inc>
+};
+A8_DATA(wifi) = {
+#include <oskey_wifi.a8.inc>
 };
 
-SVG_DESCRIPTOR(back, 24, 24);
-SVG_DESCRIPTOR(bluetooth, 24, 24);
-SVG_DESCRIPTOR(chevron_right, 24, 24);
-SVG_DESCRIPTOR(document, 24, 24);
-SVG_DESCRIPTOR(ethereum, 24, 24);
-SVG_DESCRIPTOR(eye, 24, 24);
-SVG_DESCRIPTOR(eye_off, 24, 24);
-SVG_DESCRIPTOR(failure, 24, 24);
-SVG_DESCRIPTOR(passkey, 24, 24);
-SVG_DESCRIPTOR(refresh, 24, 24);
-SVG_DESCRIPTOR(settings, 24, 24);
-SVG_DESCRIPTOR(shuffle, 24, 24);
-SVG_DESCRIPTOR(success, 24, 24);
-SVG_DESCRIPTOR(trash, 24, 24);
-SVG_DESCRIPTOR(usb, 24, 24);
-SVG_DESCRIPTOR(wallet, 24, 24);
-SVG_DESCRIPTOR(warning, 24, 24);
-SVG_DESCRIPTOR(wifi, 24, 24);
+A8_DESCRIPTOR(back, 24, 24);
+A8_DESCRIPTOR(bluetooth, 18, 18);
+A8_DESCRIPTOR(chevron_right, 24, 24);
+A8_DESCRIPTOR(document, 24, 24);
+A8_DESCRIPTOR(ethereum, 24, 24);
+A8_DESCRIPTOR(eye, 24, 24);
+A8_DESCRIPTOR(eye_off, 24, 24);
+A8_DESCRIPTOR(failure, 24, 24);
+A8_DESCRIPTOR(passkey, 24, 24);
+A8_DESCRIPTOR(refresh, 24, 24);
+A8_DESCRIPTOR(settings, 24, 24);
+A8_DESCRIPTOR(shuffle, 24, 24);
+A8_DESCRIPTOR(success, 24, 24);
+A8_DESCRIPTOR(trash, 24, 24);
+A8_DESCRIPTOR(usb, 18, 18);
+A8_DESCRIPTOR(wallet, 24, 24);
+A8_DESCRIPTOR(wallet_logo, 60, 60);
+A8_DESCRIPTOR(warning, 24, 24);
+A8_DESCRIPTOR(wifi, 18, 18);

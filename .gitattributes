@@ -1,1 +1,2 @@
 *.patch whitespace=-blank-at-eol,-space-before-tab
+*.a8 binary

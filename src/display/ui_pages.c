@@ -316,9 +316,7 @@ static void show_splash(void)
 	lv_obj_t *content = ui_page_begin("", UI_NAVIGATION_NONE);
 	lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
 			      LV_FLEX_ALIGN_CENTER);
-	lv_obj_t *logo = ui_icon(content, &oskey_wallet);
-	lv_obj_set_size(logo, 60, 60);
-	lv_image_set_inner_align(logo, LV_IMAGE_ALIGN_CONTAIN);
+	ui_icon(content, &oskey_wallet_logo);
 	lv_obj_t *name = lv_label_create(content);
 	lv_obj_set_width(name, LV_PCT(100));
 	lv_obj_set_style_text_color(name, lv_color_hex(0xf2f5f7), 0);
