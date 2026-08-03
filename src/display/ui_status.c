@@ -59,6 +59,10 @@ static enum ui_tone usb_tone(enum app_usb_state state)
 
 static void status_clicked(lv_event_t *event)
 {
+	if (ui.status.wallet != WalletState_Ready) {
+		return;
+	}
+
 	enum status_item item = (enum status_item)(uintptr_t)lv_event_get_user_data(event);
 	enum ui_page page;
 
@@ -76,7 +80,13 @@ static void status_clicked(lv_event_t *event)
 	default:
 		return;
 	}
-	if (ui.page != page) {
+	if (ui.page == page) {
+		return;
+	}
+	if (ui.page == UI_PAGE_WIFI || ui.page == UI_PAGE_BLUETOOTH || ui.page == UI_PAGE_USB) {
+		ui.page = page;
+		ui_render();
+	} else {
 		ui_push(page);
 	}
 }
@@ -95,6 +105,7 @@ static lv_obj_t *status_icon(lv_obj_t *parent, const void *source, enum status_i
 	lv_obj_add_event_cb(button, status_clicked, LV_EVENT_CLICKED, (void *)(uintptr_t)item);
 
 	lv_obj_t *icon = ui_icon(button, source);
+	lv_image_set_scale(icon, LV_SCALE_NONE * 5 / 6);
 	lv_obj_center(icon);
 	return icon;
 }

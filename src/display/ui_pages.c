@@ -230,7 +230,8 @@ void ui_input_page(const char *title, const char *hint, bool password)
 	lv_obj_add_flag(ui.input_error, LV_OBJ_FLAG_HIDDEN);
 
 	ui.keyboard = lv_keyboard_create(ui.screen);
-	lv_obj_set_size(ui.keyboard, LV_PCT(100), LV_MIN(ui.height * 45 / 100, 180));
+	lv_keyboard_set_popovers(ui.keyboard, true);
+	lv_obj_set_size(ui.keyboard, LV_PCT(100), LV_MIN(ui.height * 55 / 100, 200));
 	lv_obj_align(ui.keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
 	lv_obj_set_style_bg_opa(ui.keyboard, LV_OPA_TRANSP, LV_PART_MAIN);
 	lv_obj_set_style_border_width(ui.keyboard, 0, LV_PART_MAIN);
@@ -246,14 +247,20 @@ void ui_input_page(const char *title, const char *hint, bool password)
 				  LV_PART_ITEMS | LV_STATE_CHECKED);
 	lv_obj_set_style_text_color(ui.keyboard, lv_palette_darken(LV_PALETTE_GREY, 4),
 				    LV_PART_ITEMS | LV_STATE_CHECKED);
-	lv_obj_set_style_bg_color(ui.keyboard, lv_palette_lighten(LV_PALETTE_GREY, 1),
-				  LV_PART_ITEMS | LV_STATE_PRESSED);
+	lv_obj_set_style_bg_color(ui.keyboard, lv_color_white(), LV_PART_ITEMS | LV_STATE_PRESSED);
 	lv_obj_set_style_bg_opa(ui.keyboard, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_border_color(ui.keyboard, lv_color_hex(0x4da3ff),
+	lv_obj_set_style_border_color(ui.keyboard, lv_color_hex(0x20242a),
 				      LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_text_color(ui.keyboard, lv_palette_darken(LV_PALETTE_GREY, 4),
+	lv_obj_set_style_border_width(ui.keyboard, 2, LV_PART_ITEMS | LV_STATE_PRESSED);
+	lv_obj_set_style_radius(ui.keyboard, 6, LV_PART_ITEMS | LV_STATE_PRESSED);
+	lv_obj_set_style_shadow_color(ui.keyboard, lv_color_black(),
+				      LV_PART_ITEMS | LV_STATE_PRESSED);
+	lv_obj_set_style_shadow_width(ui.keyboard, 6, LV_PART_ITEMS | LV_STATE_PRESSED);
+	lv_obj_set_style_shadow_opa(ui.keyboard, LV_OPA_30, LV_PART_ITEMS | LV_STATE_PRESSED);
+	lv_obj_set_style_text_color(ui.keyboard, lv_color_black(),
 				    LV_PART_ITEMS | LV_STATE_PRESSED);
 	lv_obj_set_style_text_font(ui.keyboard, UI_FONT_BODY, LV_PART_ITEMS);
+	lv_obj_set_style_text_font(ui.keyboard, UI_FONT_LARGE, LV_PART_ITEMS | LV_STATE_PRESSED);
 	lv_obj_add_event_cb(ui.keyboard, keyboard_done, LV_EVENT_ALL, NULL);
 	lv_obj_add_event_cb(ui.input, input_clicked, LV_EVENT_CLICKED, NULL);
 	lv_obj_add_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN);
