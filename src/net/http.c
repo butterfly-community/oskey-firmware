@@ -15,7 +15,7 @@
 
 LOG_MODULE_REGISTER(http);
 
-#define PUBLIC_IP_HOST "ifconfig.me"
+#define PUBLIC_IP_HOST "checkip.amazonaws.com"
 
 struct public_ip_response {
 	char address[APP_PUBLIC_IP_MAX_LEN + 1];
@@ -102,7 +102,7 @@ static void fetch_public_ip(void)
 
 	struct http_request request = {
 		.method = HTTP_GET,
-		.url = "/ip",
+		.url = "/",
 		.host = PUBLIC_IP_HOST,
 		.protocol = "HTTP/1.1",
 		.response = public_ip_response_cb,

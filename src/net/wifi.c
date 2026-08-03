@@ -116,10 +116,13 @@ int app_wifi_save_network_publish(const char *ssid, size_t ssid_len, const char 
 static struct net_if *sta_iface;
 static struct net_if *ap_iface;
 static struct net_mgmt_event_callback wifi_event_cb;
+static struct net_mgmt_event_callback ipv4_event_cb;
 static atomic_t ap_state = ATOMIC_INIT(APP_WIFI_AP_OFF);
 static atomic_t sta_state = ATOMIC_INIT(APP_WIFI_STA_OFF);
+static atomic_t ap_client_count;
 static atomic_t scan_active;
 static struct app_wifi_config wifi_config;
+static struct app_dhcp_info dhcp_info;
 static char connected_ssid[APP_WIFI_SSID_MAX_LEN + 1];
 static struct app_wifi_scan scan = {
 	.state = APP_WIFI_SCAN_IDLE,
@@ -190,6 +193,8 @@ static void publish_state(void)
 	struct app_wifi_state state = {
 		.ap = atomic_get(&ap_state),
 		.sta = atomic_get(&sta_state),
+		.ap_client_connected = atomic_get(&ap_client_count) > 0,
+		.dhcp = dhcp_info,
 	};
 	memcpy(state.connected_ssid, connected_ssid, sizeof(state.connected_ssid));
 
@@ -206,14 +211,56 @@ static void publish_state(void)
 
 static void set_ap_state(enum app_wifi_ap_state state)
 {
+	if (state != APP_WIFI_AP_ACTIVE) {
+		atomic_clear(&ap_client_count);
+	}
 	atomic_set(&ap_state, state);
 	publish_state();
 }
 
 static void set_sta_state(enum app_wifi_sta_state state)
 {
+	if (state != APP_WIFI_STA_CONNECTED) {
+		memset(&dhcp_info, 0, sizeof(dhcp_info));
+	}
 	atomic_set(&sta_state, state);
 	publish_state();
+}
+
+static void dhcp_address_read(struct net_if *iface, struct net_if_addr *if_addr, void *user_data)
+{
+	ARG_UNUSED(user_data);
+	if (if_addr->addr_type != NET_ADDR_DHCP || dhcp_info.address[0] != '\0') {
+		return;
+	}
+
+	struct net_in_addr netmask =
+		net_if_ipv4_get_netmask_by_addr(iface, &if_addr->address.in_addr);
+	struct net_in_addr gateway = net_if_ipv4_get_gw(iface);
+
+	(void)net_addr_ntop(AF_INET, &if_addr->address.in_addr, dhcp_info.address,
+			    sizeof(dhcp_info.address));
+	(void)net_addr_ntop(AF_INET, &netmask, dhcp_info.netmask, sizeof(dhcp_info.netmask));
+	(void)net_addr_ntop(AF_INET, &gateway, dhcp_info.gateway, sizeof(dhcp_info.gateway));
+	dhcp_info.lease_seconds = iface->config.dhcpv4.lease_time;
+}
+
+static void ipv4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
+			       struct net_if *iface)
+{
+	ARG_UNUSED(cb);
+	if (mgmt_event != NET_EVENT_IPV4_ADDR_ADD || iface != sta_iface) {
+		return;
+	}
+
+	memset(&dhcp_info, 0, sizeof(dhcp_info));
+	net_if_ipv4_addr_foreach(iface, dhcp_address_read, NULL);
+	if (dhcp_info.address[0] != '\0') {
+		LOG_INF("DHCP address %s, subnet %s, gateway %s, lease %u seconds",
+			dhcp_info.address, dhcp_info.netmask, dhcp_info.gateway,
+			dhcp_info.lease_seconds);
+		publish_state();
+	}
 }
 
 static void scan_publish(void)
@@ -694,6 +741,12 @@ static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt
 		LOG_INF("Station " MACSTR " %s", sta_info->mac[0], sta_info->mac[1],
 			sta_info->mac[2], sta_info->mac[3], sta_info->mac[4], sta_info->mac[5],
 			action);
+		if (mgmt_event == NET_EVENT_WIFI_AP_STA_CONNECTED) {
+			atomic_inc(&ap_client_count);
+		} else if (atomic_get(&ap_client_count) > 0) {
+			atomic_dec(&ap_client_count);
+		}
+		publish_state();
 		break;
 	}
 	default:
@@ -705,6 +758,8 @@ int wifi_start(void)
 {
 	net_mgmt_init_event_callback(&wifi_event_cb, wifi_event_handler, NET_EVENT_WIFI_MASK);
 	net_mgmt_add_event_callback(&wifi_event_cb);
+	net_mgmt_init_event_callback(&ipv4_event_cb, ipv4_event_handler, NET_EVENT_IPV4_ADDR_ADD);
+	net_mgmt_add_event_callback(&ipv4_event_cb);
 
 	sta_iface = net_if_get_wifi_sta();
 	ap_iface = net_if_get_wifi_sap();

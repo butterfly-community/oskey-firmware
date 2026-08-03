@@ -116,6 +116,7 @@ void ui_open(enum ui_page page);
 void ui_push(enum ui_page page);
 void ui_back(void);
 void ui_render(void);
+void ui_refresh(void);
 void ui_wipe(void *buffer, size_t len);
 void ui_clear_sensitive(void);
 

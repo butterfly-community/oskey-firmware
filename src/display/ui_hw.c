@@ -140,7 +140,20 @@ static const char *wifi_sta_detail(char *buffer, size_t size)
 		snprintf(buffer, size, "Connecting to %s", ui.status.wifi.connected_ssid);
 		return buffer;
 	case APP_WIFI_STA_CONNECTED:
-		snprintf(buffer, size, "Connected to %s", ui.status.wifi.connected_ssid);
+		if (ui.status.wifi.dhcp.address[0] != '\0') {
+			snprintf(
+				buffer, size,
+				"Connected to %s\nLocal IP: %s\nSubnet: %s\nGateway: %s\nLease: %u "
+				"seconds%s%s",
+				ui.status.wifi.connected_ssid, ui.status.wifi.dhcp.address,
+				ui.status.wifi.dhcp.netmask, ui.status.wifi.dhcp.gateway,
+				ui.status.wifi.dhcp.lease_seconds,
+				ui.status.public_ip.address[0] != '\0' ? "\nPublic IP: " : "",
+				ui.status.public_ip.address);
+		} else {
+			snprintf(buffer, size, "Connected to %s\nWaiting for DHCP",
+				 ui.status.wifi.connected_ssid);
+		}
 		return buffer;
 	case APP_WIFI_STA_DISCONNECTED:
 		return "Enabled but not connected";
@@ -168,13 +181,22 @@ static enum ui_tone wifi_sta_tone(void)
 	}
 }
 
-static const char *wifi_ap_detail(void)
+static const char *wifi_ap_detail(char *buffer, size_t size)
 {
 	switch (ui.status.wifi.ap) {
 	case APP_WIFI_AP_STARTING:
 		return "Starting setup network";
 	case APP_WIFI_AP_ACTIVE:
+#ifdef CONFIG_OSKEY_WIFI
+		snprintf(buffer, size, "SSID: %s\nIP: %s\nSubnet: %s%s", CONFIG_OSKEY_WIFI_AP_SSID,
+			 CONFIG_OSKEY_WIFI_AP_IP_ADDRESS, CONFIG_OSKEY_WIFI_AP_NETMASK,
+			 ui.status.wifi.ap_client_connected
+				 ? "\n\nA client has joined " CONFIG_OSKEY_WIFI_AP_SSID
+				 : "");
+		return buffer;
+#else
 		return "Setup network is available";
+#endif
 	case APP_WIFI_AP_DISABLED:
 		return "Wi-Fi support is not included in this firmware";
 	case APP_WIFI_AP_OFF:
@@ -200,18 +222,15 @@ static enum ui_tone wifi_ap_tone(void)
 void ui_wifi_render(void)
 {
 	lv_obj_t *content = ui_page_begin("Wi-Fi", UI_NAVIGATION_BACK);
-	char detail[96];
+	char sta_detail[256];
+	char ap_detail[128];
 
 	ui_section(content, "STATUS");
-	ui_list_row(content, &oskey_wifi, "Station", wifi_sta_detail(detail, sizeof(detail)), NULL,
-		    wifi_sta_tone(), NULL, NULL);
-	if (ui.status.wifi.sta == APP_WIFI_STA_CONNECTED &&
-	    ui.status.public_ip.address[0] != '\0') {
-		ui_list_row(content, NULL, "Public IP", ui.status.public_ip.address, NULL,
-			    UI_TONE_SUCCESS, NULL, NULL);
-	}
-	ui_list_row(content, &oskey_wifi_ap, "Access point", wifi_ap_detail(), NULL, wifi_ap_tone(),
-		    NULL, NULL);
+	ui_list_row(content, &oskey_wifi, "Station",
+		    wifi_sta_detail(sta_detail, sizeof(sta_detail)), NULL, wifi_sta_tone(), NULL,
+		    NULL);
+	ui_list_row(content, &oskey_wifi_ap, "Access point",
+		    wifi_ap_detail(ap_detail, sizeof(ap_detail)), NULL, wifi_ap_tone(), NULL, NULL);
 
 	if (!wifi_available()) {
 		return;

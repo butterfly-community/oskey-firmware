@@ -411,6 +411,14 @@ void ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, siz
 	ui_set_busy(true);
 }
 
+void ui_refresh(void)
+{
+	int32_t scroll_y = lv_obj_get_scroll_y(ui.content);
+
+	ui_render();
+	lv_obj_scroll_to(ui.content, 0, scroll_y, LV_ANIM_OFF);
+}
+
 void ui_open(enum ui_page page)
 {
 	if (page == UI_PAGE_LOCKED || page == UI_PAGE_STORAGE_ERROR) {

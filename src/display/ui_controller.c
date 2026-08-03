@@ -93,7 +93,7 @@ static void apply_status(const struct ui_status *next)
 	ui.status = *next;
 	ui_status_update(next);
 	if (active_status_page()) {
-		ui_render();
+		ui_refresh();
 	}
 	if (previous.storage != APP_STORAGE_ERROR && next->storage == APP_STORAGE_ERROR) {
 		ui_open(UI_PAGE_STORAGE_ERROR);
@@ -106,7 +106,7 @@ static void apply_wifi_scan(const struct app_wifi_scan *scan)
 {
 	ui.wifi_scan = *scan;
 	if (ui.page == UI_PAGE_WIFI) {
-		ui_render();
+		ui_refresh();
 	}
 }
 
@@ -114,7 +114,7 @@ static void apply_wifi_config(const struct app_wifi_config *config)
 {
 	ui.wifi_config = *config;
 	if (ui.page == UI_PAGE_WIFI) {
-		ui_render();
+		ui_refresh();
 	}
 }
 

@@ -14,6 +14,7 @@ typedef struct net_buf app_payload;
 
 #define APP_WIFI_SSID_MAX_LEN      32
 #define APP_WIFI_PASSWORD_MAX_LEN  63
+#define APP_IPV4_ADDR_MAX_LEN      15
 #define APP_PUBLIC_IP_MAX_LEN      45
 #define APP_WIFI_SCAN_MAX_NETWORKS 12
 
@@ -32,10 +33,19 @@ enum app_wifi_sta_state {
 	APP_WIFI_STA_CONNECTED,
 };
 
+struct app_dhcp_info {
+	char address[APP_IPV4_ADDR_MAX_LEN + 1];
+	char netmask[APP_IPV4_ADDR_MAX_LEN + 1];
+	char gateway[APP_IPV4_ADDR_MAX_LEN + 1];
+	uint32_t lease_seconds;
+};
+
 struct app_wifi_state {
 	enum app_wifi_ap_state ap;
 	enum app_wifi_sta_state sta;
+	bool ap_client_connected;
 	char connected_ssid[APP_WIFI_SSID_MAX_LEN + 1];
+	struct app_dhcp_info dhcp;
 };
 
 struct app_wifi_config {
