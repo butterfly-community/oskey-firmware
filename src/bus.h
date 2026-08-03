@@ -12,26 +12,106 @@
 
 typedef struct net_buf app_payload;
 
+#define APP_WIFI_SSID_MAX_LEN      32
+#define APP_WIFI_PASSWORD_MAX_LEN  63
+#define APP_PUBLIC_IP_MAX_LEN      45
+#define APP_WIFI_SCAN_MAX_NETWORKS 12
+
 enum app_wifi_ap_state {
 	APP_WIFI_AP_DISABLED,
 	APP_WIFI_AP_OFF,
 	APP_WIFI_AP_STARTING,
 	APP_WIFI_AP_ACTIVE,
-	APP_WIFI_AP_STOPPING,
 };
 
 enum app_wifi_sta_state {
 	APP_WIFI_STA_DISABLED,
+	APP_WIFI_STA_OFF,
 	APP_WIFI_STA_DISCONNECTED,
-	APP_WIFI_STA_CONNECTING_STORED,
-	APP_WIFI_STA_CONNECTING_NEW,
+	APP_WIFI_STA_CONNECTING,
 	APP_WIFI_STA_CONNECTED,
-	APP_WIFI_STA_DISCONNECTING,
 };
 
 struct app_wifi_state {
 	enum app_wifi_ap_state ap;
 	enum app_wifi_sta_state sta;
+	char connected_ssid[APP_WIFI_SSID_MAX_LEN + 1];
+};
+
+struct app_wifi_config {
+	bool sta_enabled;
+	bool ap_enabled;
+	bool restart_required;
+	char saved_ssid[APP_WIFI_SSID_MAX_LEN + 1];
+};
+
+struct app_public_ip {
+	char address[APP_PUBLIC_IP_MAX_LEN + 1];
+};
+
+enum app_wifi_security {
+	APP_WIFI_SECURITY_OPEN,
+	APP_WIFI_SECURITY_PERSONAL,
+	APP_WIFI_SECURITY_SAE,
+	APP_WIFI_SECURITY_UNSUPPORTED,
+};
+
+enum app_wifi_command_kind {
+	APP_WIFI_COMMAND_NONE,
+	APP_WIFI_COMMAND_SET_STA,
+	APP_WIFI_COMMAND_SET_AP,
+	APP_WIFI_COMMAND_SCAN,
+	APP_WIFI_COMMAND_SAVE_NETWORK,
+	APP_WIFI_COMMAND_FORGET_NETWORK,
+};
+
+struct app_wifi_command {
+	enum app_wifi_command_kind kind;
+	enum app_wifi_security security;
+	bool enabled;
+	uint8_t ssid_len;
+	uint8_t password_len;
+	char ssid[APP_WIFI_SSID_MAX_LEN + 1];
+	char password[APP_WIFI_PASSWORD_MAX_LEN + 1];
+};
+
+enum app_wifi_scan_state {
+	APP_WIFI_SCAN_DISABLED,
+	APP_WIFI_SCAN_IDLE,
+	APP_WIFI_SCAN_SCANNING,
+	APP_WIFI_SCAN_READY,
+	APP_WIFI_SCAN_ERROR,
+};
+
+struct app_wifi_network {
+	char ssid[APP_WIFI_SSID_MAX_LEN + 1];
+	enum app_wifi_security security;
+	int8_t rssi;
+};
+
+struct app_wifi_scan {
+	enum app_wifi_scan_state state;
+	uint32_t generation;
+	uint8_t count;
+	struct app_wifi_network networks[APP_WIFI_SCAN_MAX_NETWORKS];
+};
+
+enum app_network_event_kind {
+	APP_NETWORK_EVENT_NONE,
+	APP_NETWORK_EVENT_WIFI_STATE,
+	APP_NETWORK_EVENT_WIFI_CONFIG,
+	APP_NETWORK_EVENT_WIFI_SCAN,
+	APP_NETWORK_EVENT_PUBLIC_IP,
+};
+
+struct app_network_event {
+	enum app_network_event_kind kind;
+	union {
+		struct app_wifi_state wifi;
+		struct app_wifi_config config;
+		struct app_wifi_scan scan;
+		struct app_public_ip public_ip;
+	} data;
 };
 
 enum app_bluetooth_state {
@@ -99,8 +179,9 @@ struct app_fido_result {
 	enum FidoStatus status;
 };
 
-ZBUS_CHAN_DECLARE(app_wifi_state_chan, app_bluetooth_state_chan, app_usb_state_chan,
-		  app_storage_state_chan, app_wallet_state_chan, app_confirmation_state_chan);
+ZBUS_CHAN_DECLARE(app_local_result_event_chan, app_wifi_command_chan, app_network_event_chan,
+		  app_bluetooth_state_chan, app_usb_state_chan, app_storage_state_chan,
+		  app_wallet_state_chan, app_confirmation_state_chan);
 
 size_t app_payload_length(const app_payload *payload);
 size_t app_payload_read(const app_payload *payload, size_t offset, void *data, size_t len);
@@ -131,14 +212,5 @@ int app_fido_result_submit(uint32_t request_id, enum FidoStatus status, const vo
 			   size_t credential_id_len, const void *data, size_t len,
 			   k_timeout_t timeout);
 int app_fido_result_get(struct app_fido_result *result, k_timeout_t timeout);
-
-int app_confirmation_required_publish(uint32_t id);
-int app_confirmation_completed_publish(uint32_t id, enum ConfirmationOutcome outcome);
-
-void app_wifi_state_publish(const struct app_wifi_state *state);
-void app_bluetooth_state_publish(enum app_bluetooth_state state);
-void app_usb_state_publish(enum app_usb_state state);
-void app_storage_state_publish(enum app_storage_state state);
-void app_wallet_state_publish(enum WalletState state);
 
 #endif

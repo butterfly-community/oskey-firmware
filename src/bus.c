@@ -1,6 +1,10 @@
+#define _DEFAULT_SOURCE
+
 #include "bus.h"
 
 #include <errno.h>
+#include <string.h>
+#include <strings.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/util.h>
@@ -25,11 +29,13 @@ K_MSGQ_DEFINE(app_local_result_queue, sizeof(struct app_local_result), APP_BUS_Q
 K_MSGQ_DEFINE(app_fido_result_queue, sizeof(struct app_fido_result), APP_BUS_QUEUE_DEPTH,
 	      __alignof__(struct app_fido_result));
 
-ZBUS_CHAN_DEFINE(app_wifi_state_chan, struct app_wifi_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 ZBUS_MSG_INIT(.ap = IS_ENABLED(CONFIG_OSKEY_WIFI) ? APP_WIFI_AP_OFF
-								   : APP_WIFI_AP_DISABLED,
-			       .sta = IS_ENABLED(CONFIG_OSKEY_WIFI) ? APP_WIFI_STA_DISCONNECTED
-								    : APP_WIFI_STA_DISABLED));
+ZBUS_CHAN_DEFINE(app_local_result_event_chan, bool, NULL, NULL, ZBUS_OBSERVERS_EMPTY, false);
+
+ZBUS_CHAN_DEFINE(app_wifi_command_chan, struct app_wifi_command, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.kind = APP_WIFI_COMMAND_NONE));
+
+ZBUS_CHAN_DEFINE(app_network_event_chan, struct app_network_event, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.kind = APP_NETWORK_EVENT_NONE));
 
 ZBUS_CHAN_DEFINE(app_bluetooth_state_chan, enum app_bluetooth_state, NULL, NULL,
 		 ZBUS_OBSERVERS_EMPTY,
@@ -138,11 +144,7 @@ void app_payload_release(app_payload *payload)
 	}
 
 	for (struct net_buf *fragment = payload; fragment != NULL; fragment = fragment->frags) {
-		volatile uint8_t *data = fragment->data;
-
-		for (size_t i = 0; i < fragment->len; i++) {
-			data[i] = 0;
-		}
+		explicit_bzero(fragment->data, fragment->len);
 	}
 	net_buf_unref(payload);
 }
@@ -298,7 +300,20 @@ int app_local_result_submit(enum LocalAction action, AppError error, uint32_t va
 	int ret = payload_create(&app_result_payload_pool, data, len, NULL, 0, timeout,
 				 &result.payload);
 
-	return ret < 0 ? ret : queue_put(&app_local_result_queue, &result, result.payload, timeout);
+	if (ret < 0) {
+		return ret;
+	}
+	ret = queue_put(&app_local_result_queue, &result, result.payload, timeout);
+	if (ret < 0) {
+		return ret;
+	}
+
+	bool event = true;
+	ret = zbus_chan_pub(&app_local_result_event_chan, &event, K_FOREVER);
+	if (ret < 0) {
+		LOG_ERR("Failed to publish local result event: %d", ret);
+	}
+	return ret;
 }
 
 int app_local_result_get(struct app_local_result *result, k_timeout_t timeout)
@@ -334,74 +349,4 @@ int app_fido_result_get(struct app_fido_result *result, k_timeout_t timeout)
 		return -ENOTSUP;
 	}
 	return queue_get(&app_fido_result_queue, result, timeout);
-}
-
-static int confirmation_publish(uint32_t id, enum app_confirmation_phase phase,
-				enum ConfirmationOutcome outcome)
-{
-	struct app_confirmation_state state = {
-		.id = id,
-		.phase = phase,
-		.outcome = outcome,
-	};
-	int ret = zbus_chan_pub(&app_confirmation_state_chan, &state, K_FOREVER);
-
-	if (ret < 0) {
-		LOG_ERR("Failed to publish confirmation state: %d", ret);
-	}
-	return ret;
-}
-
-int app_confirmation_required_publish(uint32_t id)
-{
-	if (id == 0) {
-		return -EINVAL;
-	}
-	return confirmation_publish(id, APP_CONFIRMATION_REQUIRED, ConfirmationOutcome_Cancelled);
-}
-
-int app_confirmation_completed_publish(uint32_t id, enum ConfirmationOutcome outcome)
-{
-	if (id == 0) {
-		return -EINVAL;
-	}
-	return confirmation_publish(id, APP_CONFIRMATION_COMPLETED, outcome);
-}
-
-static void publish_state(const struct zbus_channel *channel, const void *state)
-{
-	if (state == NULL) {
-		return;
-	}
-
-	int ret = zbus_chan_pub(channel, state, K_FOREVER);
-
-	if (ret < 0) {
-		LOG_ERR("Failed to publish application state: %d", ret);
-	}
-}
-
-void app_wifi_state_publish(const struct app_wifi_state *state)
-{
-	publish_state(&app_wifi_state_chan, state);
-}
-
-void app_bluetooth_state_publish(enum app_bluetooth_state state)
-{
-	publish_state(&app_bluetooth_state_chan, &state);
-}
-
-void app_usb_state_publish(enum app_usb_state state)
-{
-	publish_state(&app_usb_state_chan, &state);
-}
-
-void app_storage_state_publish(enum app_storage_state state)
-{
-	publish_state(&app_storage_state_chan, &state);
-}
-
-void app_wallet_state_publish(enum WalletState state)
-{
-	publish_state(&app_wallet_state_chan, &state);
 }

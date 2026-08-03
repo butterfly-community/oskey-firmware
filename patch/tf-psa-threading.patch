@@ -1,0 +1,92 @@
+diff --git a/modules/mbedtls/CMakeLists.txt b/modules/mbedtls/CMakeLists.txt
+--- a/modules/mbedtls/CMakeLists.txt
++++ b/modules/mbedtls/CMakeLists.txt
+@@ -103,5 +103,8 @@ if(CONFIG_MBEDTLS)
+       ${CMAKE_CURRENT_LIST_DIR}/zephyr_init.c
+     )
++    if(CONFIG_TF_PSA_CRYPTO_BUILTIN AND CONFIG_MULTITHREADING)
++      list(APPEND zephyr_mbedtls_src ${CMAKE_CURRENT_LIST_DIR}/zephyr_threading.c)
++    endif()
+     list_append_ifdef(CONFIG_MBEDTLS_DEBUG zephyr_mbedtls_src
+       ${CMAKE_CURRENT_LIST_DIR}/debug.c
+     )
+diff --git a/modules/mbedtls/configs/config-tf-psa-crypto.h b/modules/mbedtls/configs/config-tf-psa-crypto.h
+--- a/modules/mbedtls/configs/config-tf-psa-crypto.h
++++ b/modules/mbedtls/configs/config-tf-psa-crypto.h
+@@ -25,6 +25,11 @@
+ #define MBEDTLS_PLATFORM_MEMORY
+ #define MBEDTLS_MEMORY_ALIGN_MULTIPLE (sizeof(void *))
+ #define MBEDTLS_PLATFORM_EXIT_ALT
++
++#if defined(CONFIG_MULTITHREADING)
++#define MBEDTLS_THREADING_C
++#define MBEDTLS_THREADING_ALT
++#endif
+ 
+ #if defined(CONFIG_MBEDTLS_ZEROIZE_ALT)
+ #define MBEDTLS_PLATFORM_ZEROIZE_ALT
+diff --git a/modules/mbedtls/include/threading_alt.h b/modules/mbedtls/include/threading_alt.h
+new file mode 100644
+--- /dev/null
++++ b/modules/mbedtls/include/threading_alt.h
+@@ -0,0 +1,15 @@
++/*
++ * Copyright (c) 2026 The Zephyr Project
++ *
++ * SPDX-License-Identifier: Apache-2.0
++ */
++
++#ifndef ZEPHYR_MODULES_MBEDTLS_THREADING_ALT_H_
++#define ZEPHYR_MODULES_MBEDTLS_THREADING_ALT_H_
++
++#include <zephyr/kernel.h>
++
++typedef struct k_mutex mbedtls_platform_mutex_t;
++typedef struct k_condvar mbedtls_platform_condition_variable_t;
++
++#endif /* ZEPHYR_MODULES_MBEDTLS_THREADING_ALT_H_ */
+diff --git a/modules/mbedtls/zephyr_threading.c b/modules/mbedtls/zephyr_threading.c
+new file mode 100644
+--- /dev/null
++++ b/modules/mbedtls/zephyr_threading.c
+@@ -0,0 +1,40 @@
++/*
++ * Copyright (c) 2026 The Zephyr Project
++ *
++ * SPDX-License-Identifier: Apache-2.0
++ */
++
++#include <mbedtls/threading.h>
++#include <zephyr/init.h>
++#include <zephyr/kernel.h>
++
++static void mutex_destroy(mbedtls_platform_mutex_t *mutex)
++{
++	(void)mutex;
++}
++
++static int mutex_lock(mbedtls_platform_mutex_t *mutex)
++{
++	return k_mutex_lock(mutex, K_FOREVER);
++}
++
++static void cond_destroy(mbedtls_platform_condition_variable_t *cond)
++{
++	(void)cond;
++}
++
++static int cond_wait(mbedtls_platform_condition_variable_t *cond,
++		     mbedtls_platform_mutex_t *mutex)
++{
++	return k_condvar_wait(cond, mutex, K_FOREVER);
++}
++
++static int threading_init(void)
++{
++	mbedtls_threading_set_alt(k_mutex_init, mutex_destroy, mutex_lock, k_mutex_unlock,
++				  k_condvar_init, cond_destroy, k_condvar_signal,
++				  k_condvar_broadcast, cond_wait);
++	return 0;
++}
++
++SYS_INIT(threading_init, POST_KERNEL, 0);

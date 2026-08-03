@@ -22,4 +22,5 @@ extern const lv_image_dsc_t oskey_wallet;
 extern const lv_image_dsc_t oskey_wallet_logo;
 extern const lv_image_dsc_t oskey_warning;
 extern const lv_image_dsc_t oskey_wifi;
+extern const lv_image_dsc_t oskey_wifi_ap;
 #endif

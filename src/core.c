@@ -19,6 +19,36 @@ static struct AppCore *core;
 K_MUTEX_DEFINE(confirmation_lock);
 static struct AppConfirmation confirmation;
 
+static int publish_wallet_state(enum WalletState state)
+{
+	int ret = zbus_chan_pub(&app_wallet_state_chan, &state, K_FOREVER);
+
+	if (ret < 0) {
+		LOG_ERR("Failed to publish wallet state: %d", ret);
+	}
+	return ret;
+}
+
+static int publish_confirmation_state(uint32_t id, enum app_confirmation_phase phase,
+				      enum ConfirmationOutcome outcome)
+{
+	if (id == 0) {
+		return -EINVAL;
+	}
+
+	struct app_confirmation_state state = {
+		.id = id,
+		.phase = phase,
+		.outcome = outcome,
+	};
+	int ret = zbus_chan_pub(&app_confirmation_state_chan, &state, K_FOREVER);
+
+	if (ret < 0) {
+		LOG_ERR("Failed to publish confirmation state: %d", ret);
+	}
+	return ret;
+}
+
 static bool confirmation_store(uint32_t id)
 {
 	k_mutex_lock(&confirmation_lock, K_FOREVER);
@@ -75,16 +105,17 @@ static int route_effect(const struct AppCoreEffectView *effect)
 		if (!confirmation_store(effect->id)) {
 			return -EMSGSIZE;
 		}
-		return app_confirmation_required_publish(effect->id);
+		return publish_confirmation_state(effect->id, APP_CONFIRMATION_REQUIRED,
+						  ConfirmationOutcome_Cancelled);
 	case AppCoreEffectKind_ConfirmationCompleted:
-		ret = app_confirmation_completed_publish(effect->id, effect->outcome);
+		ret = publish_confirmation_state(effect->id, APP_CONFIRMATION_COMPLETED,
+						 effect->outcome);
 		if (ret == 0) {
 			confirmation_clear(effect->id);
 		}
 		return ret;
 	case AppCoreEffectKind_WalletState:
-		app_wallet_state_publish(effect->wallet_state);
-		return 0;
+		return publish_wallet_state(effect->wallet_state);
 	default:
 		return -EINVAL;
 	}
@@ -196,7 +227,7 @@ int app_core_init(void)
 	}
 
 	core = app_core_create_rs();
-	app_wallet_state_publish(app_core_state_rs(core));
+	(void)publish_wallet_state(app_core_state_rs(core));
 	k_thread_create(&app_core_thread_data, app_core_stack,
 			K_THREAD_STACK_SIZEOF(app_core_stack), app_core_thread, NULL, NULL, NULL,
 			K_PRIO_PREEMPT(10), 0, K_NO_WAIT);

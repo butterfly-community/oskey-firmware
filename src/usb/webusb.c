@@ -19,6 +19,15 @@
 
 LOG_MODULE_REGISTER(webusb);
 
+static void publish_usb_state(enum app_usb_state state)
+{
+	int ret = zbus_chan_pub(&app_usb_state_chan, &state, K_FOREVER);
+
+	if (ret < 0) {
+		LOG_ERR("Failed to publish USB state: %d", ret);
+	}
+}
+
 #include "msosv2.h"
 
 /*
@@ -126,7 +135,7 @@ static void msg_cb(struct usbd_context *const usbd_ctx, const struct usbd_msg *c
 				break;
 			}
 		}
-		app_usb_state_publish(APP_USB_ATTACHED);
+		publish_usb_state(APP_USB_ATTACHED);
 		break;
 	case USBD_MSG_VBUS_REMOVED:
 		if (usbd_can_detect_vbus(usbd_ctx)) {
@@ -134,23 +143,23 @@ static void msg_cb(struct usbd_context *const usbd_ctx, const struct usbd_msg *c
 				LOG_ERR("Failed to disable device support");
 			}
 		}
-		app_usb_state_publish(APP_USB_DISCONNECTED);
+		publish_usb_state(APP_USB_DISCONNECTED);
 		break;
 	case USBD_MSG_CONFIGURATION:
-		app_usb_state_publish(msg->status == 0 ? APP_USB_ATTACHED : APP_USB_CONFIGURED);
+		publish_usb_state(msg->status == 0 ? APP_USB_ATTACHED : APP_USB_CONFIGURED);
 		break;
 	case USBD_MSG_SUSPEND:
-		app_usb_state_publish(APP_USB_SUSPENDED);
+		publish_usb_state(APP_USB_SUSPENDED);
 		break;
 	case USBD_MSG_RESUME:
-		app_usb_state_publish(APP_USB_CONFIGURED);
+		publish_usb_state(APP_USB_CONFIGURED);
 		break;
 	case USBD_MSG_RESET:
-		app_usb_state_publish(APP_USB_ATTACHED);
+		publish_usb_state(APP_USB_ATTACHED);
 		break;
 	case USBD_MSG_UDC_ERROR:
 	case USBD_MSG_STACK_ERROR:
-		app_usb_state_publish(APP_USB_DISCONNECTED);
+		publish_usb_state(APP_USB_DISCONNECTED);
 		break;
 	default:
 		break;
@@ -200,7 +209,7 @@ int init_usb_stack(void)
 			LOG_ERR("Failed to enable device support");
 			return ret;
 		}
-		app_usb_state_publish(APP_USB_ATTACHED);
+		publish_usb_state(APP_USB_ATTACHED);
 	}
 
 	if (IS_ENABLED(CONFIG_OSKEY_FIDO2)) {

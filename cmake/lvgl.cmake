@@ -52,6 +52,7 @@ if(CONFIG_OSKEY_DISPLAY)
       wallet_logo
       warning
       wifi
+      wifi_ap
   )
     set(asset_file "${CMAKE_CURRENT_SOURCE_DIR}/src/display/assets/generated/${asset}.a8")
     if(NOT EXISTS "${asset_file}")

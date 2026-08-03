@@ -94,6 +94,10 @@
   pinctrl-names = "default";
 };
 
+&spi3 {
+  status = "disabled";
+};
+
 &dma {
   status = "okay";
 };

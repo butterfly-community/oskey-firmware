@@ -1,23 +1,19 @@
+#define _DEFAULT_SOURCE
+
 #include "uart.h"
 
 #include <string.h>
+#include <strings.h>
 #include <zephyr/logging/log.h>
 
 #include "bus.h"
 
 LOG_MODULE_REGISTER(app_uart);
 
+#define APP_UART_RETRY_DELAY K_MSEC(2)
+
 static uint8_t pending[32];
 static size_t pending_len;
-
-static void clear_bytes(uint8_t *data, size_t len)
-{
-	volatile uint8_t *bytes = data;
-
-	for (size_t i = 0; i < len; i++) {
-		bytes[i] = 0;
-	}
-}
 
 static void app_uart_rx_resume(struct k_work *work)
 {
@@ -28,14 +24,14 @@ static void app_uart_rx_resume(struct k_work *work)
 		int ret = app_core_submit_protocol(route, pending, pending_len, K_NO_WAIT);
 
 		if (ret != 0) {
-			k_work_reschedule(resume_work, K_MSEC(1));
+			k_work_reschedule(resume_work, APP_UART_RETRY_DELAY);
 			return;
 		}
-		clear_bytes(pending, pending_len);
+		explicit_bzero(pending, pending_len);
 		pending_len = 0;
 	}
 	if (!app_core_protocol_ready()) {
-		k_work_reschedule(resume_work, K_MSEC(1));
+		k_work_reschedule(resume_work, APP_UART_RETRY_DELAY);
 		return;
 	}
 	uart_irq_rx_enable(DEV_CONSOLE);
@@ -63,10 +59,10 @@ static void app_uart_rx_handler(const struct device *dev, void *user_data)
 			memcpy(pending, buf, len);
 			pending_len = len;
 			uart_irq_rx_disable(dev);
-			k_work_reschedule(&app_uart_rx_resume_work, K_MSEC(1));
+			k_work_reschedule(&app_uart_rx_resume_work, APP_UART_RETRY_DELAY);
 		}
 
-		clear_bytes(buf, len);
+		explicit_bzero(buf, len);
 		if (ret != 0) {
 			return;
 		}
@@ -74,7 +70,7 @@ static void app_uart_rx_handler(const struct device *dev, void *user_data)
 
 	if (!app_core_protocol_ready()) {
 		uart_irq_rx_disable(dev);
-		k_work_reschedule(&app_uart_rx_resume_work, K_MSEC(1));
+		k_work_reschedule(&app_uart_rx_resume_work, APP_UART_RETRY_DELAY);
 	}
 }
 
@@ -95,6 +91,6 @@ int app_uart_irq_register(void)
 		return ret;
 	}
 
-	uart_irq_rx_enable(DEV_CONSOLE);
+	k_work_reschedule(&app_uart_rx_resume_work, K_NO_WAIT);
 	return 0;
 }

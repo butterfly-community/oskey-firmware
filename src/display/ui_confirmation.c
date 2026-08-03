@@ -61,13 +61,13 @@ static void field(lv_obj_t *parent, const char *name, const uint8_t *value, size
 					LV_OBJ_FLAG_SCROLLABLE);
 
 	lv_obj_t *name_label = lv_label_create(row);
-	lv_obj_set_style_text_font(name_label, &lv_font_montserrat_10, 0);
+	lv_obj_set_style_text_font(name_label, UI_FONT_CAPTION, 0);
 	lv_obj_set_style_text_color(name_label, lv_color_hex(0x929eaa), 0);
 	lv_label_set_text(name_label, name);
 
 	lv_obj_t *value_label = lv_label_create(row);
 	lv_obj_set_width(value_label, LV_PCT(100));
-	lv_obj_set_style_text_font(value_label, &lv_font_montserrat_12, 0);
+	lv_obj_set_style_text_font(value_label, UI_FONT_BODY, 0);
 	lv_obj_set_style_text_color(value_label,
 				    tone == UI_TONE_WARNING ? ui_tone_color(UI_TONE_WARNING)
 							    : ui_tone_color(UI_TONE_DEFAULT),
@@ -215,7 +215,7 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 	}
 
 	lv_obj_t *content = ui_page_begin(title, UI_NAVIGATION_NONE);
-	ui_list_row(content, icon, summary, NULL, NULL, UI_TONE_DEFAULT, NULL, NULL);
+	ui_list_row(content, icon, summary, NULL, NULL, UI_TONE_ACTIVE, NULL, NULL);
 
 	switch (confirmation->kind) {
 	case AppConfirmationKind_EthMessage:

@@ -1,20 +1,30 @@
 #include "ui.h"
 
+#include <stdint.h>
+
 #include "assets/assets.h"
 
-static enum ui_tone wifi_tone(const struct app_wifi_state *state)
+enum status_item {
+	STATUS_ITEM_WIFI_STA,
+	STATUS_ITEM_WIFI_AP,
+	STATUS_ITEM_BLUETOOTH,
+	STATUS_ITEM_USB,
+};
+
+static enum ui_tone wifi_sta_tone(enum app_wifi_sta_state state)
 {
-	if (state->sta == APP_WIFI_STA_CONNECTED) {
+	if (state == APP_WIFI_STA_CONNECTED) {
 		return UI_TONE_SUCCESS;
 	}
-	if (state->sta == APP_WIFI_STA_CONNECTING_STORED ||
-	    state->sta == APP_WIFI_STA_CONNECTING_NEW) {
+	if (state == APP_WIFI_STA_CONNECTING) {
 		return UI_TONE_WARNING;
 	}
-	if (state->ap != APP_WIFI_AP_DISABLED && state->ap != APP_WIFI_AP_OFF) {
-		return UI_TONE_ACTIVE;
-	}
 	return UI_TONE_MUTED;
+}
+
+static bool wifi_ap_visible(enum app_wifi_ap_state state)
+{
+	return state != APP_WIFI_AP_DISABLED && state != APP_WIFI_AP_OFF;
 }
 
 static enum ui_tone bluetooth_tone(enum app_bluetooth_state state)
@@ -47,21 +57,61 @@ static enum ui_tone usb_tone(enum app_usb_state state)
 	}
 }
 
+static void status_clicked(lv_event_t *event)
+{
+	enum status_item item = (enum status_item)(uintptr_t)lv_event_get_user_data(event);
+	enum ui_page page;
+
+	switch (item) {
+	case STATUS_ITEM_WIFI_STA:
+	case STATUS_ITEM_WIFI_AP:
+		page = UI_PAGE_WIFI;
+		break;
+	case STATUS_ITEM_BLUETOOTH:
+		page = UI_PAGE_BLUETOOTH;
+		break;
+	case STATUS_ITEM_USB:
+		page = UI_PAGE_USB;
+		break;
+	default:
+		return;
+	}
+	if (ui.page != page) {
+		ui_push(page);
+	}
+}
+
+static lv_obj_t *status_icon(lv_obj_t *parent, const void *source, enum status_item item)
+{
+	lv_obj_t *button = lv_button_create(parent);
+	lv_obj_set_size(button, 28, UI_STATUS_HEIGHT - 1);
+	lv_obj_set_style_bg_opa(button, LV_OPA_TRANSP, 0);
+	ui_press_feedback(button);
+	lv_obj_set_style_border_width(button, 0, 0);
+	lv_obj_set_style_radius(button, 4, 0);
+	lv_obj_set_style_shadow_width(button, 0, 0);
+	lv_obj_set_style_pad_all(button, 0, 0);
+	lv_obj_remove_flag(button, LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_add_event_cb(button, status_clicked, LV_EVENT_CLICKED, (void *)(uintptr_t)item);
+
+	lv_obj_t *icon = ui_icon(button, source);
+	lv_obj_center(icon);
+	return icon;
+}
+
 static void navigation_clicked(lv_event_t *event)
 {
 	ARG_UNUSED(event);
 	ui_back();
 }
 
-void ui_status_init(const struct app_display_status *status)
+void ui_status_init(const struct ui_status *status)
 {
 	ui.status_bar = lv_obj_create(ui.screen);
 	lv_obj_set_size(ui.status_bar, LV_PCT(100), UI_STATUS_HEIGHT);
 	lv_obj_align(ui.status_bar, LV_ALIGN_TOP_MID, 0, 0);
 	lv_obj_set_style_bg_opa(ui.status_bar, LV_OPA_TRANSP, 0);
-	lv_obj_set_style_border_side(ui.status_bar, LV_BORDER_SIDE_BOTTOM, 0);
-	lv_obj_set_style_border_color(ui.status_bar, lv_color_hex(0x1c2229), 0);
-	lv_obj_set_style_border_width(ui.status_bar, 1, 0);
+	lv_obj_set_style_border_width(ui.status_bar, 0, 0);
 	lv_obj_set_style_pad_all(ui.status_bar, 0, 0);
 	lv_obj_remove_flag(ui.status_bar, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE |
 						  LV_OBJ_FLAG_SCROLLABLE);
@@ -70,14 +120,16 @@ void ui_status_init(const struct app_display_status *status)
 	lv_obj_set_size(ui.navigation, 40, UI_STATUS_HEIGHT - 1);
 	lv_obj_align(ui.navigation, LV_ALIGN_LEFT_MID, 0, 0);
 	lv_obj_set_style_bg_opa(ui.navigation, LV_OPA_TRANSP, 0);
-	lv_obj_set_style_bg_color(ui.navigation, lv_color_hex(0xffffff), LV_STATE_PRESSED);
-	lv_obj_set_style_bg_opa(ui.navigation, LV_OPA_10, LV_STATE_PRESSED);
+	ui_press_feedback(ui.navigation);
 	lv_obj_set_style_border_width(ui.navigation, 0, 0);
+	lv_obj_set_style_radius(ui.navigation, 4, 0);
 	lv_obj_set_style_shadow_width(ui.navigation, 0, 0);
 	lv_obj_set_ext_click_area(ui.navigation, 4);
 	lv_obj_add_event_cb(ui.navigation, navigation_clicked, LV_EVENT_CLICKED, NULL);
 
-	lv_obj_center(ui_icon(ui.navigation, &oskey_back));
+	lv_obj_t *back = ui_icon(ui.navigation, &oskey_back);
+	ui_icon_color(back, ui_tone_color(UI_TONE_DEFAULT));
+	lv_obj_center(back);
 
 	lv_obj_t *status_icons = lv_obj_create(ui.status_bar);
 	lv_obj_set_size(status_icons, LV_SIZE_CONTENT, UI_STATUS_HEIGHT - 1);
@@ -85,16 +137,17 @@ void ui_status_init(const struct app_display_status *status)
 	lv_obj_set_style_bg_opa(status_icons, LV_OPA_TRANSP, 0);
 	lv_obj_set_style_border_width(status_icons, 0, 0);
 	lv_obj_set_style_pad_hor(status_icons, 10, 0);
-	lv_obj_set_style_pad_column(status_icons, 7, 0);
+	lv_obj_set_style_pad_column(status_icons, 2, 0);
 	lv_obj_set_flex_flow(status_icons, LV_FLEX_FLOW_ROW);
 	lv_obj_set_flex_align(status_icons, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
 			      LV_FLEX_ALIGN_CENTER);
 	lv_obj_remove_flag(status_icons, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE |
 						 LV_OBJ_FLAG_SCROLLABLE);
 
-	ui.wifi_icon = ui_icon(status_icons, &oskey_wifi);
-	ui.bluetooth_icon = ui_icon(status_icons, &oskey_bluetooth);
-	ui.usb_icon = ui_icon(status_icons, &oskey_usb);
+	ui.wifi_sta_icon = status_icon(status_icons, &oskey_wifi, STATUS_ITEM_WIFI_STA);
+	ui.wifi_ap_icon = status_icon(status_icons, &oskey_wifi_ap, STATUS_ITEM_WIFI_AP);
+	ui.bluetooth_icon = status_icon(status_icons, &oskey_bluetooth, STATUS_ITEM_BLUETOOTH);
+	ui.usb_icon = status_icon(status_icons, &oskey_usb, STATUS_ITEM_USB);
 
 	ui_status_navigation(UI_NAVIGATION_NONE);
 	ui_status_update(status);
@@ -109,9 +162,15 @@ void ui_status_navigation(enum ui_navigation navigation)
 	lv_obj_clear_flag(ui.navigation, LV_OBJ_FLAG_HIDDEN);
 }
 
-void ui_status_update(const struct app_display_status *status)
+void ui_status_update(const struct ui_status *status)
 {
-	ui_icon_color(ui.wifi_icon, ui_tone_color(wifi_tone(&status->wifi)));
+	ui_icon_color(ui.wifi_sta_icon, ui_tone_color(wifi_sta_tone(status->wifi.sta)));
+	if (wifi_ap_visible(status->wifi.ap)) {
+		ui_icon_color(ui.wifi_ap_icon, ui_tone_color(UI_TONE_ACTIVE));
+		lv_obj_clear_flag(lv_obj_get_parent(ui.wifi_ap_icon), LV_OBJ_FLAG_HIDDEN);
+	} else {
+		lv_obj_add_flag(lv_obj_get_parent(ui.wifi_ap_icon), LV_OBJ_FLAG_HIDDEN);
+	}
 	ui_icon_color(ui.bluetooth_icon, ui_tone_color(bluetooth_tone(status->bluetooth)));
 	ui_icon_color(ui.usb_icon, ui_tone_color(usb_tone(status->usb)));
 }

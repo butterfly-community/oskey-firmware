@@ -35,6 +35,7 @@ The current patches are tested with Zephyr `af17c0c8aa2a82a0b714a423915ad3610063
 Apply them in this order from the OSKey source directory:
 
 ```sh
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/tf-psa-threading.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/clientpin.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/storage.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/oskey.patch"

@@ -14,14 +14,24 @@
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/services/nus.h>
 
-#define OSKEY_BT_PASSKEY 123456
-
 LOG_MODULE_REGISTER(oskey_bt);
 
 K_MUTEX_DEFINE(oskey_bt_conn_lock);
+K_MUTEX_DEFINE(oskey_bt_tx_lock);
+K_SEM_DEFINE(oskey_bt_tx_done, 0, 1);
 static struct bt_conn *active_conn;
+static struct bt_nus_inst *nus_instance;
 static uint32_t active_session_id;
 static uint32_t session_sequence;
+
+static void publish_bluetooth_state(enum app_bluetooth_state state)
+{
+	int ret = zbus_chan_pub(&app_bluetooth_state_chan, &state, K_FOREVER);
+
+	if (ret < 0) {
+		LOG_ERR("Failed to publish Bluetooth state: %d", ret);
+	}
+}
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -104,7 +114,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	LOG_INF("Connected %s", addr);
 
 	set_active_conn(conn);
-	app_bluetooth_state_publish(APP_BLUETOOTH_CONNECTED);
+	publish_bluetooth_state(APP_BLUETOOTH_CONNECTED);
 
 	int ret = bt_conn_set_security(conn, BT_SECURITY_L4);
 	if (ret) {
@@ -122,7 +132,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	LOG_INF("Disconnected from %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
 
 	clear_active_conn(conn);
-	app_bluetooth_state_publish(APP_BLUETOOTH_IDLE);
+	publish_bluetooth_state(APP_BLUETOOTH_IDLE);
 	/* Protocol and signing state is not cleared; partial requests or responses may be lost. */
 }
 
@@ -133,10 +143,10 @@ static void start_advertising(void)
 
 	if (err) {
 		LOG_ERR("Failed to start advertising: %d", err);
-		app_bluetooth_state_publish(APP_BLUETOOTH_IDLE);
+		publish_bluetooth_state(APP_BLUETOOTH_IDLE);
 	} else {
 		LOG_INF("Advertising started");
-		app_bluetooth_state_publish(APP_BLUETOOTH_ADVERTISING);
+		publish_bluetooth_state(APP_BLUETOOTH_ADVERTISING);
 	}
 }
 
@@ -198,7 +208,7 @@ static uint32_t auth_app_passkey(struct bt_conn *conn)
 {
 	ARG_UNUSED(conn);
 
-	return OSKEY_BT_PASSKEY;
+	return CONFIG_OSKEY_BT_PASSKEY;
 }
 #endif
 
@@ -265,9 +275,40 @@ static struct bt_nus_cb nus_callbacks = {
 	.received = nus_received,
 };
 
+static void notification_complete(struct bt_conn *conn, void *user_data)
+{
+	ARG_UNUSED(conn);
+	k_sem_give(user_data);
+}
+
+static int send_notification(struct bt_conn *conn, const uint8_t *data, uint16_t len)
+{
+	struct bt_gatt_notify_params params = {
+		.attr = &nus_instance->svc->attrs[1],
+		.data = data,
+		.len = len,
+		.func = notification_complete,
+		.user_data = &oskey_bt_tx_done,
+	};
+
+	k_sem_reset(&oskey_bt_tx_done);
+	int ret = bt_gatt_notify_cb(conn, &params);
+
+	return ret == 0 ? k_sem_take(&oskey_bt_tx_done, K_FOREVER) : ret;
+}
+
 int oskey_bt_init(void)
 {
-	int err = bt_nus_cb_register(&nus_callbacks, NULL);
+	STRUCT_SECTION_FOREACH(bt_nus_inst, instance) {
+		nus_instance = instance;
+		break;
+	}
+	if (nus_instance == NULL) {
+		LOG_ERR("No Bluetooth NUS instance found");
+		return -ENODEV;
+	}
+
+	int err = bt_nus_inst_cb_register(nus_instance, &nus_callbacks, NULL);
 
 	if (err) {
 		LOG_ERR("Failed to register NUS callback: %d", err);
@@ -280,7 +321,7 @@ int oskey_bt_init(void)
 		return err;
 	}
 	LOG_INF("Bluetooth initialized");
-	app_bluetooth_state_publish(APP_BLUETOOTH_IDLE);
+	publish_bluetooth_state(APP_BLUETOOTH_IDLE);
 
 	return 0;
 }
@@ -324,17 +365,18 @@ int oskey_bt_send(uint32_t session_id, const uint8_t *data, size_t len)
 		err = -EACCES;
 		goto out;
 	}
+	k_mutex_lock(&oskey_bt_tx_lock, K_FOREVER);
 
 	max_payload = bt_gatt_get_mtu(conn);
 	if (max_payload <= 3U) {
 		err = -EMSGSIZE;
-		goto out;
+		goto unlock;
 	}
 	max_payload -= 3U;
 	while (len > 0) {
 		uint16_t chunk_len = (uint16_t)MIN(len, max_payload);
 
-		err = bt_nus_send(conn, data, chunk_len);
+		err = send_notification(conn, data, chunk_len);
 		if (err) {
 			break;
 		}
@@ -343,6 +385,8 @@ int oskey_bt_send(uint32_t session_id, const uint8_t *data, size_t len)
 		len -= chunk_len;
 	}
 
+unlock:
+	k_mutex_unlock(&oskey_bt_tx_lock);
 out:
 	bt_conn_unref(conn);
 	return err;

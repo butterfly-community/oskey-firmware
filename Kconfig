@@ -2,9 +2,6 @@
 
 menu "OSKey core"
 
-config TF_PSA_CRYPTO_USER_CONFIG_FILE
-	default "oskey_tf_psa_config.h" if TF_PSA_CRYPTO_BUILTIN && OSKEY_RUST
-
 config OSKEY_MESSAGE_BUS
 	bool
 	default y
@@ -92,10 +89,10 @@ menuconfig OSKEY_DISPLAY
 	select LV_Z_MEMORY_POOL_CUSTOM_SECTION if OSKEY_ESP_SPIRAM
 	select LV_Z_VDB_CUSTOM_SECTION if OSKEY_ESP_SPIRAM
 	select LV_USE_FONT_COMPRESSED
+	select LV_FONT_MONTSERRAT_18
 	select LV_FONT_MONTSERRAT_16
 	select LV_FONT_MONTSERRAT_14
 	select LV_FONT_MONTSERRAT_12
-	select LV_FONT_MONTSERRAT_10
 
 if OSKEY_DISPLAY
 
@@ -105,6 +102,12 @@ config MAIN_STACK_SIZE
 config LV_Z_LVGL_WORKQUEUE_STACK_SIZE
 	default 32768 if OSKEY_LVGL_BENCHMARK
 	default 8192
+
+config OSKEY_DISPLAY_EVENT_STACK_SIZE
+	int "Display event thread stack size"
+	default 4096
+	help
+	  Stack used by the event-driven display state consumer.
 
 config LV_Z_MEM_POOL_SIZE
 	default 204800 if BOARD_NATIVE_SIM
@@ -166,6 +169,14 @@ config SYSTEM_WORKQUEUE_STACK_SIZE
 
 config BT_MAX_PAIRED
 	default 3
+
+config OSKEY_BT_PASSKEY
+	int "Bluetooth pairing passkey"
+	default 123456
+	range 0 999999
+	help
+	  Six-digit passkey used for authenticated Bluetooth pairing. Override this
+	  in product configuration instead of changing the Bluetooth module.
 
 endif
 
@@ -381,6 +392,9 @@ menuconfig OSKEY_MQTT
 	select DNS_RESOLVER
 	select MQTT_LIB
 	select MQTT_CLEAN_SESSION
+	help
+	  Product capability. Do not remove or disable it merely because current
+	  application-level publish/subscribe consumers appear unused.
 
 if OSKEY_MQTT
 

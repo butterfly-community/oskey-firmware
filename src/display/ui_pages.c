@@ -118,6 +118,9 @@ static void keyboard_done(lv_event_t *event)
 		ui_submit(LocalRequestKind_InitCustom, 0, ui.mnemonic, strlen(ui.mnemonic), ui.pin,
 			  strlen(ui.pin));
 		break;
+	case UI_PAGE_WIFI_PASSWORD:
+		ui_wifi_password_submit(text);
+		break;
 	default:
 		break;
 	}
@@ -139,14 +142,14 @@ static void password_toggled(lv_event_t *event)
 	lv_image_set_src(lv_event_get_user_data(event), hidden ? &oskey_eye_off : &oskey_eye);
 }
 
-static void show_input(const char *title, const char *hint, bool password)
+void ui_input_page(const char *title, const char *hint, bool password)
 {
 	lv_obj_t *content = ui_page_begin(title, ui.page == UI_PAGE_LOCKED ? UI_NAVIGATION_NONE
 									   : UI_NAVIGATION_BACK);
 	lv_obj_t *description = lv_label_create(content);
 	lv_obj_set_width(description, LV_PCT(100));
 	lv_obj_set_style_text_color(description, lv_color_hex(0x929eaa), 0);
-	lv_obj_set_style_text_font(description, &lv_font_montserrat_12, 0);
+	lv_obj_set_style_text_font(description, UI_FONT_BODY, 0);
 	lv_label_set_long_mode(description, LV_LABEL_LONG_WRAP);
 	lv_label_set_text(description, hint);
 
@@ -185,8 +188,11 @@ static void show_input(const char *title, const char *hint, bool password)
 	lv_textarea_set_one_line(ui.input, password);
 	lv_textarea_set_password_mode(ui.input, password);
 	lv_textarea_set_max_length(ui.input, password ? UI_PIN_SIZE - 1 : UI_MNEMONIC_SIZE - 1);
-	lv_textarea_set_placeholder_text(ui.input, password ? "Enter PIN" : "word1 word2 ...");
-	lv_obj_set_style_text_font(ui.input, &lv_font_montserrat_12, 0);
+	const char *placeholder = ui.page == UI_PAGE_WIFI_PASSWORD
+					  ? "Enter network password"
+					  : (password ? "Enter PIN" : "word1 word2 ...");
+	lv_textarea_set_placeholder_text(ui.input, placeholder);
+	lv_obj_set_style_text_font(ui.input, UI_FONT_BODY, 0);
 	lv_obj_set_style_text_color(ui.input, lv_color_hex(0xf2f5f7), 0);
 	lv_obj_set_style_bg_color(ui.input, lv_color_hex(0x4da3ff),
 				  LV_PART_CURSOR | LV_STATE_FOCUSED);
@@ -194,7 +200,7 @@ static void show_input(const char *title, const char *hint, bool password)
 	lv_obj_set_style_text_color(ui.input, lv_color_hex(0xf2f5f7),
 				    LV_PART_CURSOR | LV_STATE_FOCUSED);
 	lv_obj_set_style_text_color(ui.input, lv_color_hex(0x727e89), LV_PART_TEXTAREA_PLACEHOLDER);
-	lv_obj_set_style_text_font(ui.input, &lv_font_montserrat_12, LV_PART_TEXTAREA_PLACEHOLDER);
+	lv_obj_set_style_text_font(ui.input, UI_FONT_BODY, LV_PART_TEXTAREA_PLACEHOLDER);
 	lv_obj_set_style_bg_opa(ui.input, LV_OPA_TRANSP, 0);
 	lv_obj_set_style_border_width(ui.input, 0, 0);
 	lv_obj_set_style_radius(ui.input, 0, 0);
@@ -204,11 +210,12 @@ static void show_input(const char *title, const char *hint, bool password)
 		lv_obj_t *button = lv_button_create(field);
 		lv_obj_set_size(button, 44, 38);
 		lv_obj_set_style_bg_opa(button, LV_OPA_TRANSP, 0);
-		lv_obj_set_style_bg_color(button, lv_color_hex(0xffffff), LV_STATE_PRESSED);
-		lv_obj_set_style_bg_opa(button, LV_OPA_10, LV_STATE_PRESSED);
+		ui_press_feedback(button);
 		lv_obj_set_style_border_width(button, 0, 0);
 		lv_obj_set_style_shadow_width(button, 0, 0);
 		lv_obj_set_ext_click_area(button, 3);
+		lv_obj_remove_flag(button,
+				   LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 		lv_obj_t *eye = ui_icon(button, &oskey_eye);
 		ui_icon_color(eye, ui_tone_color(UI_TONE_MUTED));
 		lv_obj_center(eye);
@@ -218,7 +225,7 @@ static void show_input(const char *title, const char *hint, bool password)
 	ui.input_error = lv_label_create(form);
 	lv_obj_set_width(ui.input_error, LV_PCT(100));
 	lv_obj_set_style_text_color(ui.input_error, lv_color_hex(0xe36a78), 0);
-	lv_obj_set_style_text_font(ui.input_error, &lv_font_montserrat_12, 0);
+	lv_obj_set_style_text_font(ui.input_error, UI_FONT_BODY, 0);
 	lv_label_set_long_mode(ui.input_error, LV_LABEL_LONG_WRAP);
 	lv_obj_add_flag(ui.input_error, LV_OBJ_FLAG_HIDDEN);
 
@@ -246,7 +253,7 @@ static void show_input(const char *title, const char *hint, bool password)
 				      LV_PART_ITEMS | LV_STATE_PRESSED);
 	lv_obj_set_style_text_color(ui.keyboard, lv_palette_darken(LV_PALETTE_GREY, 4),
 				    LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_text_font(ui.keyboard, &lv_font_montserrat_14, LV_PART_ITEMS);
+	lv_obj_set_style_text_font(ui.keyboard, UI_FONT_BODY, LV_PART_ITEMS);
 	lv_obj_add_event_cb(ui.keyboard, keyboard_done, LV_EVENT_ALL, NULL);
 	lv_obj_add_event_cb(ui.input, input_clicked, LV_EVENT_CLICKED, NULL);
 	lv_obj_add_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN);
@@ -300,7 +307,7 @@ static void confirm_restart(lv_event_t *event)
 	ARG_UNUSED(event);
 	ui_dialog_show(&oskey_refresh, "Restart OSKey?",
 		       "The device will disconnect briefly. Stored data will not change.",
-		       "Restart", UI_TONE_DEFAULT, restart_device);
+		       "Restart", UI_TONE_ACTIVE, restart_device);
 }
 
 static void confirm_reset(lv_event_t *event)
@@ -316,11 +323,11 @@ static void show_splash(void)
 	lv_obj_t *content = ui_page_begin("", UI_NAVIGATION_NONE);
 	lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
 			      LV_FLEX_ALIGN_CENTER);
-	ui_icon(content, &oskey_wallet_logo);
+	ui_icon_color(ui_icon(content, &oskey_wallet_logo), ui_tone_color(UI_TONE_ACTIVE));
 	lv_obj_t *name = lv_label_create(content);
 	lv_obj_set_width(name, LV_PCT(100));
 	lv_obj_set_style_text_color(name, lv_color_hex(0xf2f5f7), 0);
-	lv_obj_set_style_text_font(name, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_font(name, UI_FONT_LARGE, 0);
 	lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
 	lv_label_set_text(name, "OSKey");
 	lv_obj_add_flag(ui.status_bar, LV_OBJ_FLAG_HIDDEN);
@@ -357,7 +364,7 @@ static void show_capabilities(void)
 
 static void show_locked(void)
 {
-	show_input("Unlock OSKey", "Enter the PIN for this wallet", true);
+	ui_input_page("Unlock OSKey", "Enter the PIN for this wallet", true);
 	ui_list_row(ui.content, &oskey_warning, "Failed PIN attempts can erase the wallet",
 		    "Wallet data is erased after 10 failed attempts", NULL, UI_TONE_WARNING, NULL,
 		    NULL);
@@ -375,7 +382,7 @@ static void show_home(void)
 		    UI_TONE_ACTIVE, NULL, NULL);
 	ui_list_row(content, &oskey_passkey, "Passkeys", "FIDO2 over USB", NULL, UI_TONE_ACTIVE,
 		    NULL, NULL);
-	ui_list_row(content, &oskey_settings, "Device settings", NULL, NULL, UI_TONE_DEFAULT,
+	ui_list_row(content, &oskey_settings, "Device settings", NULL, NULL, UI_TONE_ACTIVE,
 		    navigate, (void *)(uintptr_t)UI_PAGE_SETTINGS);
 }
 
@@ -383,6 +390,21 @@ static void show_settings(void)
 {
 	lv_obj_t *content = ui_page_begin("Device settings", UI_NAVIGATION_BACK);
 	ui_clear_sensitive();
+#if defined(CONFIG_OSKEY_WIFI) || defined(CONFIG_OSKEY_BLUETOOTH) || defined(CONFIG_OSKEY_USB)
+	ui_section(content, "CONNECTIVITY");
+#endif
+#if defined(CONFIG_OSKEY_WIFI)
+	ui_list_row(content, &oskey_wifi, "Wi-Fi", "Station, access point and saved network", NULL,
+		    UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_WIFI);
+#endif
+#if defined(CONFIG_OSKEY_BLUETOOTH)
+	ui_list_row(content, &oskey_bluetooth, "Bluetooth", "Wireless connection status", NULL,
+		    UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_BLUETOOTH);
+#endif
+#if defined(CONFIG_OSKEY_USB)
+	ui_list_row(content, &oskey_usb, "USB", "Host connection and available interfaces", NULL,
+		    UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_USB);
+#endif
 #if defined(CONFIG_OSKEY_FIDO2)
 	struct oskey_fido_pin_info pin;
 	int ret = oskey_fido_pin_info_get(&pin);
@@ -394,7 +416,7 @@ static void show_settings(void)
 			    UI_TONE_WARNING, NULL, NULL);
 	} else if (!pin.set) {
 		ui_list_row(content, &oskey_passkey, "Set FIDO PIN",
-			    "Protect passkeys with a separate PIN", NULL, UI_TONE_DEFAULT, navigate,
+			    "Protect passkeys with a separate PIN", NULL, UI_TONE_ACTIVE, navigate,
 			    (void *)(uintptr_t)UI_PAGE_FIDO_PIN_NEW);
 	} else {
 		if (pin.retries == 0) {
@@ -409,7 +431,7 @@ static void show_settings(void)
 #endif
 	ui_section(content, "MAINTENANCE");
 	ui_list_row(content, &oskey_refresh, "Restart", "Restart without changing data", NULL,
-		    UI_TONE_DEFAULT, confirm_restart, NULL);
+		    UI_TONE_ACTIVE, confirm_restart, NULL);
 	ui_list_row(content, &oskey_trash, "Erase wallet", "Remove wallet data permanently", NULL,
 		    UI_TONE_DANGER, confirm_reset, NULL);
 }
@@ -418,13 +440,13 @@ static void show_source(void)
 {
 	lv_obj_t *content = ui_page_begin("Create wallet", UI_NAVIGATION_BACK);
 	ui_list_row(content, &oskey_document, "Choose a recovery source",
-		    "Generate a new phrase or restore one", NULL, UI_TONE_DEFAULT, NULL, NULL);
+		    "Generate a new phrase or restore one", NULL, UI_TONE_ACTIVE, NULL, NULL);
 	ui_section(content, "RECOVERY SOURCE");
 	ui_list_row(content, &oskey_wallet, "Generate recovery phrase",
-		    "Create a new wallet with hardware randomness", NULL, UI_TONE_DEFAULT,
+		    "Create a new wallet with hardware randomness", NULL, UI_TONE_ACTIVE,
 		    generate_mnemonic, NULL);
 	ui_list_row(content, &oskey_document, "Import recovery phrase",
-		    "Restore an existing wallet", NULL, UI_TONE_DEFAULT, navigate,
+		    "Restore an existing wallet", NULL, UI_TONE_ACTIVE, navigate,
 		    (void *)(uintptr_t)UI_PAGE_IMPORT);
 }
 
@@ -436,7 +458,7 @@ static void show_length(void)
 		    ui.custom_entropy ? "Choose entropy size" : "Choose recovery length",
 		    ui.custom_entropy ? "Every bit can be entered on screen"
 				      : "Longer phrases provide more entropy",
-		    NULL, UI_TONE_DEFAULT, NULL, NULL);
+		    NULL, UI_TONE_ACTIVE, NULL, NULL);
 	if (ui.custom_entropy) {
 		ui_section(content, "ENTROPY SIZE");
 		ui_list_row(content, NULL, "12 words", "128-bit entropy", NULL, UI_TONE_DEFAULT,
@@ -454,7 +476,7 @@ static void show_length(void)
 	ui_list_row(content, NULL, "24 words", "256-bit entropy", NULL, UI_TONE_DEFAULT,
 		    select_mnemonic_length, (void *)(uintptr_t)24);
 	ui_section(content, "ADVANCED");
-	ui_list_row(content, &oskey_shuffle, "Enter custom entropy", NULL, NULL, UI_TONE_DEFAULT,
+	ui_list_row(content, &oskey_shuffle, "Enter custom entropy", NULL, NULL, UI_TONE_ACTIVE,
 		    enable_custom_entropy, NULL);
 }
 
@@ -508,7 +530,7 @@ static void show_mnemonic(void)
 		lv_obj_set_width(label, LV_PCT(48));
 		lv_obj_set_height(label, 30);
 		lv_obj_set_style_text_color(label, lv_color_hex(0xf2f5f7), 0);
-		lv_obj_set_style_text_font(label, &lv_font_montserrat_12, 0);
+		lv_obj_set_style_text_font(label, UI_FONT_BODY, 0);
 		lv_obj_set_style_border_side(label, LV_BORDER_SIDE_BOTTOM, 0);
 		lv_obj_set_style_border_color(label, lv_color_hex(0x242b33), 0);
 		lv_obj_set_style_border_width(label, 1, 0);
@@ -560,7 +582,7 @@ static void show_entropy(void)
 	uint8_t columns = entropy_columns();
 	lv_obj_t *content = ui_page_begin("Custom entropy", UI_NAVIGATION_BACK);
 	ui_list_row(content, &oskey_shuffle, "Set each entropy bit", "Tap a bit to toggle 0 or 1",
-		    NULL, UI_TONE_DEFAULT, NULL, NULL);
+		    NULL, UI_TONE_ACTIVE, NULL, NULL);
 	char section[16];
 	snprintf(section, sizeof(section), "%u BITS", ui.entropy_bits);
 	ui_section(content, section);
@@ -573,7 +595,7 @@ static void show_entropy(void)
 	lv_obj_set_style_bg_opa(table, LV_OPA_TRANSP, LV_PART_ITEMS);
 	lv_obj_set_style_border_color(table, lv_color_hex(0x303944), LV_PART_ITEMS);
 	lv_obj_set_style_text_color(table, lv_color_hex(0xb8c1ca), LV_PART_ITEMS);
-	lv_obj_set_style_text_font(table, &lv_font_montserrat_12, LV_PART_ITEMS);
+	lv_obj_set_style_text_font(table, UI_FONT_BODY, LV_PART_ITEMS);
 	lv_obj_set_style_text_align(table, LV_TEXT_ALIGN_CENTER, LV_PART_ITEMS);
 	lv_obj_set_style_pad_ver(table, 15, LV_PART_ITEMS);
 	lv_obj_set_style_pad_hor(table, 0, LV_PART_ITEMS);
@@ -609,7 +631,7 @@ static void show_storage_error(void)
 		    NULL, NULL);
 	ui_section(content, "RECOVERY ACTIONS");
 	ui_list_row(content, &oskey_refresh, "Restart", "Try opening storage again", NULL,
-		    UI_TONE_DEFAULT, confirm_restart, NULL);
+		    UI_TONE_ACTIVE, confirm_restart, NULL);
 	ui_list_row(content, &oskey_trash, "Erase storage", "Remove all device data", NULL,
 		    UI_TONE_DANGER, confirm_reset, NULL);
 }
@@ -632,20 +654,32 @@ void ui_render(void)
 	case UI_PAGE_SETTINGS:
 		show_settings();
 		break;
+	case UI_PAGE_WIFI:
+		ui_wifi_render();
+		break;
+	case UI_PAGE_WIFI_PASSWORD:
+		ui_wifi_password_render();
+		break;
+	case UI_PAGE_BLUETOOTH:
+		ui_bluetooth_render();
+		break;
+	case UI_PAGE_USB:
+		ui_usb_render();
+		break;
 	case UI_PAGE_PIN_NEW:
-		show_input("Create PIN", "Use upper, lower, number and symbol", true);
+		ui_input_page("Create PIN", "Use upper, lower, number and symbol", true);
 		break;
 	case UI_PAGE_PIN_CONFIRM:
-		show_input("Confirm PIN", "Enter the same PIN again", true);
+		ui_input_page("Confirm PIN", "Enter the same PIN again", true);
 		break;
 	case UI_PAGE_FIDO_PIN_NEW:
 #if defined(CONFIG_OSKEY_FIDO2)
-		show_input("Set FIDO PIN", "This PIN is separate from the wallet PIN", true);
+		ui_input_page("Set FIDO PIN", "This PIN is separate from the wallet PIN", true);
 #endif
 		break;
 	case UI_PAGE_FIDO_PIN_CONFIRM:
 #if defined(CONFIG_OSKEY_FIDO2)
-		show_input("Confirm FIDO PIN", "Enter the same PIN again", true);
+		ui_input_page("Confirm FIDO PIN", "Enter the same PIN again", true);
 #endif
 		break;
 	case UI_PAGE_SOURCE:
@@ -655,13 +689,13 @@ void ui_render(void)
 		show_length();
 		break;
 	case UI_PAGE_IMPORT:
-		show_input("Import wallet", "Enter the recovery phrase in order", false);
+		ui_input_page("Import wallet", "Enter the recovery phrase in order", false);
 		break;
 	case UI_PAGE_MNEMONIC:
 		show_mnemonic();
 		break;
 	case UI_PAGE_VERIFY:
-		show_input("Verify phrase", "Enter the recovery phrase again", false);
+		ui_input_page("Verify phrase", "Enter the recovery phrase again", false);
 		break;
 	case UI_PAGE_ENTROPY:
 		show_entropy();

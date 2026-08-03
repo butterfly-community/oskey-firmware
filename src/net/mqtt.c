@@ -19,6 +19,11 @@
 
 LOG_MODULE_REGISTER(mqtt);
 
+/*
+ * MQTT is a product capability. Keep this module even when a given build has
+ * no visible application-level topic consumer yet; do not optimize it away.
+ */
+
 #define MQTT_BUFFER_SIZE         128
 #define MQTT_CLIENT_ID_SIZE      19
 #define MQTT_CONNECT_TIMEOUT_MS  2000

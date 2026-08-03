@@ -71,9 +71,12 @@ A8_DATA(warning) = {
 A8_DATA(wifi) = {
 #include <oskey_wifi.a8.inc>
 };
+A8_DATA(wifi_ap) = {
+#include <oskey_wifi_ap.a8.inc>
+};
 
 A8_DESCRIPTOR(back, 24, 24);
-A8_DESCRIPTOR(bluetooth, 18, 18);
+A8_DESCRIPTOR(bluetooth, 24, 24);
 A8_DESCRIPTOR(chevron_right, 24, 24);
 A8_DESCRIPTOR(document, 24, 24);
 A8_DESCRIPTOR(ethereum, 24, 24);
@@ -86,8 +89,9 @@ A8_DESCRIPTOR(settings, 24, 24);
 A8_DESCRIPTOR(shuffle, 24, 24);
 A8_DESCRIPTOR(success, 24, 24);
 A8_DESCRIPTOR(trash, 24, 24);
-A8_DESCRIPTOR(usb, 18, 18);
+A8_DESCRIPTOR(usb, 24, 24);
 A8_DESCRIPTOR(wallet, 24, 24);
 A8_DESCRIPTOR(wallet_logo, 60, 60);
 A8_DESCRIPTOR(warning, 24, 24);
-A8_DESCRIPTOR(wifi, 18, 18);
+A8_DESCRIPTOR(wifi, 24, 24);
+A8_DESCRIPTOR(wifi_ap, 24, 24);

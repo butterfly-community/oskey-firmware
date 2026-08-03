@@ -30,11 +30,20 @@ BUILD_ASSERT(IS_ENABLED(CONFIG_SETTINGS_ZMS), "OSKey storage requires the ZMS se
 
 static struct zms_fs *fs;
 
+static void publish_storage_state(enum app_storage_state state)
+{
+	int ret = zbus_chan_pub(&app_storage_state_chan, &state, K_FOREVER);
+
+	if (ret < 0) {
+		LOG_ERR("Failed to publish storage state: %d", ret);
+	}
+}
+
 static int storage_result(int result)
 {
 	storage_initialized = result >= 0;
 	enum app_storage_state state = result < 0 ? APP_STORAGE_ERROR : APP_STORAGE_READY;
-	app_storage_state_publish(state);
+	publish_storage_state(state);
 	return result;
 }
 
@@ -42,7 +51,7 @@ static int storage_runtime_result(int result)
 {
 	if (result < 0 && result != -ENOENT) {
 		storage_initialized = false;
-		app_storage_state_publish(APP_STORAGE_ERROR);
+		publish_storage_state(APP_STORAGE_ERROR);
 	}
 	return result;
 }
@@ -122,7 +131,7 @@ int storage_erase_flash(void)
 	int ret = zms_clear(fs);
 	storage_initialized = false;
 	if (ret < 0) {
-		app_storage_state_publish(APP_STORAGE_ERROR);
+		publish_storage_state(APP_STORAGE_ERROR);
 	}
 	return ret;
 }

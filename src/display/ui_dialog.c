@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "assets/assets.h"
+
 static lv_obj_t *dialog;
 static ui_dialog_action_t dialog_action;
 
@@ -25,12 +27,12 @@ static void style_button(lv_obj_t *button, lv_color_t color)
 	lv_obj_set_style_radius(button, 0, 0);
 	lv_obj_set_style_shadow_width(button, 0, 0);
 	lv_obj_set_style_text_color(button, color, 0);
-	lv_obj_set_style_text_font(button, &lv_font_montserrat_12, 0);
-	lv_obj_set_style_bg_color(button, lv_color_hex(0xffffff), LV_STATE_PRESSED);
-	lv_obj_set_style_bg_opa(button, LV_OPA_10, LV_STATE_PRESSED);
+	lv_obj_set_style_text_font(button, UI_FONT_BODY, 0);
+	ui_press_feedback(button);
 }
 
-static bool dialog_begin(const void *icon, const char *title, const char *message)
+static bool dialog_begin(const void *icon, const char *title, const char *message,
+			 enum ui_tone tone)
 {
 	ui_dialog_close();
 	dialog = lv_msgbox_create(NULL);
@@ -56,7 +58,7 @@ static bool dialog_begin(const void *icon, const char *title, const char *messag
 
 	lv_obj_t *title_label = lv_msgbox_add_title(dialog, title);
 	lv_obj_set_style_text_color(title_label, lv_color_hex(0xf2f5f7), 0);
-	lv_obj_set_style_text_font(title_label, &lv_font_montserrat_14, 0);
+	lv_obj_set_style_text_font(title_label, UI_FONT_TITLE, 0);
 
 	lv_obj_t *header = lv_msgbox_get_header(dialog);
 	lv_obj_set_height(header, 36);
@@ -76,13 +78,15 @@ static bool dialog_begin(const void *icon, const char *title, const char *messag
 			      LV_FLEX_ALIGN_CENTER);
 
 	if (icon != NULL) {
-		ui_icon(content, icon);
+		ui_icon_color(ui_icon(content, icon), ui_tone_color(tone));
 	}
-	lv_obj_t *message_label = lv_msgbox_add_text(dialog, message);
-	lv_obj_set_style_text_color(message_label, lv_color_hex(0xb8c1ca), 0);
-	lv_obj_set_style_text_font(message_label, &lv_font_montserrat_12, 0);
-	lv_obj_set_style_text_align(message_label, LV_TEXT_ALIGN_CENTER, 0);
-	lv_label_set_long_mode(message_label, LV_LABEL_LONG_WRAP);
+	if (message != NULL && message[0] != '\0') {
+		lv_obj_t *message_label = lv_msgbox_add_text(dialog, message);
+		lv_obj_set_style_text_color(message_label, lv_color_hex(0xb8c1ca), 0);
+		lv_obj_set_style_text_font(message_label, UI_FONT_BODY, 0);
+		lv_obj_set_style_text_align(message_label, LV_TEXT_ALIGN_CENTER, 0);
+		lv_label_set_long_mode(message_label, LV_LABEL_LONG_WRAP);
+	}
 	return true;
 }
 
@@ -104,7 +108,7 @@ static void dialog_finish(void)
 void ui_dialog_show(const void *icon, const char *title, const char *message, const char *confirm,
 		    enum ui_tone tone, ui_dialog_action_t action)
 {
-	if (!dialog_begin(icon, title, message)) {
+	if (!dialog_begin(icon, title, message, tone)) {
 		return;
 	}
 	dialog_action = action;
