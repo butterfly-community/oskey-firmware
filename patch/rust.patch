@@ -56,6 +56,70 @@ index 0b2d057..f84862c 100644
  				(RISCV && !RISCV_ISA_RV32E && !RISCV_ISA_RV128I) || \
 +				XTENSA || \
  				(ARCH_POSIX && 64BIT)) && \
+@@ -31,6 +32,13 @@ config RUST_ALLOC
+ 	  an allocator.  This allocator will use the currently configured
+ 	  Zephyr allocator (malloc/free).  This this enabled, Rust
+ 	  applications can use the `alloc` crate.
+ 
++config RUST_ALLOC_ESP_SPIRAM
++	bool "Allocate large Rust objects from ESP PSRAM"
++	depends on RUST_ALLOC && ESP_SPIRAM
++	help
++	  Allocate Rust objects larger than 128 bytes from external ESP PSRAM.
++	  Smaller allocations continue to use the Zephyr allocator.
++
+ endif # RUST
+ 
+diff --git a/zephyr/src/alloc_impl.rs b/zephyr/src/alloc_impl.rs
+index a8d86bf..e0c8f62 100644
+--- a/zephyr/src/alloc_impl.rs
++++ b/zephyr/src/alloc_impl.rs
+@@ -57,9 +57,18 @@ use alloc::alloc::handle_alloc_error;
+ #[allow(non_camel_case_types)]
+ type c_size_t = usize;
+ 
++#[cfg(CONFIG_RUST_ALLOC_ESP_SPIRAM)]
++const ESP_SPIRAM_THRESHOLD: usize = 128;
++#[cfg(CONFIG_RUST_ALLOC_ESP_SPIRAM)]
++const SMH_REG_ATTR_EXTERNAL: i32 = 2;
++
+ extern "C" {
+     fn malloc(size: c_size_t) -> *mut u8;
+     fn free(ptr: *mut u8);
++    #[cfg(CONFIG_RUST_ALLOC_ESP_SPIRAM)]
++    fn shared_multi_heap_aligned_alloc(attr: i32, align: c_size_t, size: c_size_t) -> *mut u8;
++    #[cfg(CONFIG_RUST_ALLOC_ESP_SPIRAM)]
++    fn shared_multi_heap_free(ptr: *mut u8);
+ }
+ 
+ /// An allocator that uses Zephyr's allocation primitives.
+@@ -73,6 +82,11 @@ unsafe impl GlobalAlloc for ZephyrAllocator {
+         let size = layout.size();
+         let align = layout.align();
+ 
++        #[cfg(CONFIG_RUST_ALLOC_ESP_SPIRAM)]
++        if size > ESP_SPIRAM_THRESHOLD {
++            return shared_multi_heap_aligned_alloc(SMH_REG_ATTR_EXTERNAL, align, size);
++        }
++
+         // The C allocation library assumes an alignment of 8.  For now, just panic if this cannot
+         // be satistifed.
+         if align > 8 {
+@@ -82,7 +96,13 @@ unsafe impl GlobalAlloc for ZephyrAllocator {
+         malloc(size)
+     }
+ 
+-    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
++    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
++        #[cfg(CONFIG_RUST_ALLOC_ESP_SPIRAM)]
++        if _layout.size() > ESP_SPIRAM_THRESHOLD {
++            shared_multi_heap_free(ptr);
++            return;
++        }
++
+         free(ptr)
+     }
+ }
 diff --git a/zephyr-build/src/lib.rs b/zephyr-build/src/lib.rs
 index 6fd4f77..7edbc60 100644
 --- a/zephyr-build/src/lib.rs
