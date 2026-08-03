@@ -22,7 +22,7 @@
 
     st7789v: st7789v@0 {
       compatible = "sitronix,st7789v";
-      mipi-max-frequency = <DT_FREQ_M(30)>;
+      mipi-max-frequency = <DT_FREQ_M(80)>;
       reg = <0>;
       width = <320>;
       height = <240>;

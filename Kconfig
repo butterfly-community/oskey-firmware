@@ -114,6 +114,15 @@ config LV_Z_MEM_POOL_SIZE
 	default 81920 if OSKEY_LVGL_BENCHMARK
 	default 65536
 
+config LV_Z_VDB_SIZE
+	default 25 if OSKEY_ESP_SPIRAM
+
+config LV_Z_DOUBLE_VDB
+	default y if OSKEY_ESP_SPIRAM
+
+config LV_Z_FLUSH_THREAD
+	default y if OSKEY_ESP_SPIRAM
+
 choice LV_COLOR_DEPTH
 	default LV_COLOR_DEPTH_16
 endchoice
@@ -162,9 +171,6 @@ config BT_CTLR_DATA_LENGTH_MAX
 	default 251
 
 config BT_RX_STACK_SIZE
-	default 2048
-
-config SYSTEM_WORKQUEUE_STACK_SIZE
 	default 2048
 
 config BT_MAX_PAIRED
@@ -281,6 +287,10 @@ config OSKEY_WIFI_AP_NETMASK
 	default "255.255.255.0"
 
 endif
+
+config SYSTEM_WORKQUEUE_STACK_SIZE
+	default 8192 if OSKEY_WIFI
+	default 2048 if OSKEY_BLUETOOTH
 
 menuconfig OSKEY_USB
 	bool "USB"
