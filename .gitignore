@@ -9,3 +9,4 @@ target
 kconfig.json
 *.log
 AGENTS.md
+/test*/
