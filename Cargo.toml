@@ -21,6 +21,9 @@ zeroize = { version = "1.9", default-features = false, features = ["alloc"] }
 [build-dependencies]
 cbindgen = "0.29"
 
+[profile.dev]
+panic = 'abort'
+
 [profile.release]
 strip = true
 opt-level = 'z'
