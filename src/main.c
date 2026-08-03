@@ -17,6 +17,10 @@ LOG_MODULE_REGISTER(main);
 
 int main(void)
 {
+	if (IS_ENABLED(CONFIG_OSKEY_TEST_FIRMWARE)) {
+		LOG_WRN("Test firmware enabled; confirmations are automatic");
+	}
+
 	int ret = storage_init();
 	if (ret < 0) {
 		LOG_ERR("Storage startup failed: %d", ret);

@@ -24,6 +24,10 @@ target_sources_ifdef(CONFIG_OSKEY_RUST app PRIVATE
   src/core.c
 )
 
+target_sources_ifdef(CONFIG_OSKEY_TEST_FIRMWARE app PRIVATE
+  src/test.c
+)
+
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
   src/display/ui.c
   src/display/ui_controller.c

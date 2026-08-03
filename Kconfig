@@ -8,6 +8,14 @@ config OSKEY_MESSAGE_BUS
 	select NET_BUF
 	select ZBUS
 
+config OSKEY_TEST_FIRMWARE
+	bool "Test firmware"
+	depends on OSKEY_RUST
+	help
+	  Build firmware that automatically approves confirmation requests.
+	  This bypasses physical user presence and must never be enabled in
+	  production firmware.
+
 config OSKEY_BUS_PAYLOAD_COUNT
 	int
 	default 8 if OSKEY_RUST
