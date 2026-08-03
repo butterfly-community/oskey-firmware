@@ -6,8 +6,9 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
+#include "bluetooth/bluetooth.h"
 #include "bus.h"
-#include "transport.h"
+#include "uart.h"
 
 LOG_MODULE_REGISTER(app_core);
 
@@ -91,7 +92,15 @@ static int route_effect(const struct AppCoreEffectView *effect)
 
 	switch (effect->kind) {
 	case AppCoreEffectKind_Transport:
-		return app_transport_send(effect->route, effect->data.data, effect->data.len);
+		switch (effect->route.transport) {
+		case Transport_Uart:
+			return app_uart_send(effect->data.data, effect->data.len);
+		case Transport_Bluetooth:
+			return oskey_bt_send(effect->route.session_id, effect->data.data,
+					     effect->data.len);
+		default:
+			return -EINVAL;
+		}
 	case AppCoreEffectKind_Local:
 		return app_local_result_submit(effect->local_action, effect->error, effect->value,
 					       effect->data.data, effect->data.len,

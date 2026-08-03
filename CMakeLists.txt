@@ -22,7 +22,6 @@ target_sources(app PRIVATE
 
 target_sources_ifdef(CONFIG_OSKEY_RUST app PRIVATE
   src/core.c
-  src/transport.c
 )
 
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
