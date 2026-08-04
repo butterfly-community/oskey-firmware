@@ -12,15 +12,27 @@
 
 #define UI_PIN_SIZE         64
 #define UI_MNEMONIC_SIZE    256
+#define UI_PASSPHRASE_SIZE  249
 #define UI_NAVIGATION_DEPTH 8
 #define UI_STATUS_HEIGHT    36
 
-#define UI_FONT_CAPTION (&lv_font_montserrat_12)
-#define UI_FONT_BODY    (&lv_font_montserrat_14)
-#define UI_FONT_TITLE   (&lv_font_montserrat_16)
-#define UI_FONT_LARGE   (&lv_font_montserrat_18)
+#define UI_FONT_CAPTION (&lv_font_montserrat_14)
+#define UI_FONT_BODY    (&lv_font_montserrat_16)
+#define UI_FONT_TITLE   (&lv_font_montserrat_18)
+#define UI_FONT_LARGE   (&lv_font_montserrat_20)
 
 typedef void (*ui_dialog_action_t)(void);
+typedef void (*ui_input_submit_t)(const char *text);
+
+struct ui_input_config {
+	const char *title;
+	const char *hint;
+	const char *placeholder;
+	const char *action;
+	const char *action_detail;
+	size_t max_length;
+	bool password;
+};
 
 enum ui_page {
 	UI_PAGE_NONE,
@@ -35,6 +47,7 @@ enum ui_page {
 	UI_PAGE_USB,
 	UI_PAGE_PIN_NEW,
 	UI_PAGE_PIN_CONFIRM,
+	UI_PAGE_FIDO_PIN_CURRENT,
 	UI_PAGE_FIDO_PIN_NEW,
 	UI_PAGE_FIDO_PIN_CONFIRM,
 	UI_PAGE_SOURCE,
@@ -42,6 +55,8 @@ enum ui_page {
 	UI_PAGE_IMPORT,
 	UI_PAGE_MNEMONIC,
 	UI_PAGE_VERIFY,
+	UI_PAGE_PASSPHRASE,
+	UI_PAGE_PASSPHRASE_CONFIRM,
 	UI_PAGE_ENTROPY,
 	UI_PAGE_STORAGE_ERROR,
 	UI_PAGE_CONFIRMATION,
@@ -81,8 +96,10 @@ struct ui_context {
 	uint8_t history_len;
 	bool custom_entropy;
 	char pin[UI_PIN_SIZE];
+	char fido_pin_current[UI_PIN_SIZE];
 	char fido_pin[UI_PIN_SIZE];
 	char mnemonic[UI_MNEMONIC_SIZE];
+	char passphrase[UI_PASSPHRASE_SIZE];
 	char wifi_ssid[APP_WIFI_SSID_MAX_LEN + 1];
 	enum app_wifi_security wifi_security;
 	uint8_t entropy[32];
@@ -101,6 +118,8 @@ struct ui_context {
 	lv_obj_t *keyboard;
 	lv_obj_t *input;
 	lv_obj_t *input_error;
+	lv_obj_t *input_submit;
+	ui_input_submit_t input_handler;
 	lv_timer_t *notice_timer;
 	int32_t width;
 	int32_t height;
@@ -131,9 +150,7 @@ void ui_list_row(lv_obj_t *parent, const void *icon, const char *title, const ch
 void ui_error(const char *text);
 void ui_set_busy(bool active);
 void ui_input_error(const char *text);
-void ui_keyboard_show(void);
-bool ui_keyboard_hide(void);
-void ui_input_page(const char *title, const char *hint, bool password);
+void ui_input_page(const struct ui_input_config *config, ui_input_submit_t submit);
 void ui_dialog_show(const void *icon, const char *title, const char *message, const char *confirm,
 		    enum ui_tone tone, ui_dialog_action_t action);
 void ui_dialog_close(void);

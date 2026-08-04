@@ -182,7 +182,7 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 	bool uses_private_key = confirmation->kind != AppConfirmationKind_Fido ||
 				confirmation->operation == FidoOperation_Register ||
 				confirmation->operation == FidoOperation_Authenticate;
-	bool private_result_ready = confirmation->prepared;
+	bool result_ready = confirmation->prepared;
 
 	if (confirmation->kind == AppConfirmationKind_EthMessage) {
 		title = "Sign message";
@@ -286,7 +286,7 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 			hex(content, "Account ID", confirmation->account,
 			    confirmation->account_len);
 		}
-		if (private_result_ready) {
+		if (result_ready) {
 			lv_obj_t *fido_details = technical_details(content);
 			hex(fido_details, "Credential ID", confirmation->credential_id,
 			    confirmation->credential_id_len);
@@ -300,20 +300,19 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 
 	ui_section(content, "ACTION");
 	if (uses_private_key) {
-		approve = private_result_ready ? (confirmation->kind == AppConfirmationKind_Fido
-							  ? "Send result"
-							  : "Send signature")
-					       : "Use private key";
+		approve = result_ready ? (confirmation->kind == AppConfirmationKind_Fido
+						  ? "Send result"
+						  : "Send signature")
+				       : "Use private key";
 	}
 	ui_list_row(content, &oskey_success, approve,
-		    uses_private_key
-			    ? (private_result_ready ? "Return the prepared result"
-						    : "Derive the key and prepare the result")
-			    : "Approve this request",
+		    uses_private_key ? (result_ready ? "The result is ready to send"
+						     : "Derive the key and prepare the result")
+				     : "Approve this request",
 		    NULL, UI_TONE_SUCCESS, respond, (void *)(uintptr_t)true);
 	ui_list_row(content, &oskey_failure, "Reject", "Do not approve this request", NULL,
 		    UI_TONE_DANGER, respond, NULL);
-	if (uses_private_key && !private_result_ready) {
+	if (uses_private_key && !result_ready) {
 		ui_dialog_show(icon, "Use private key?",
 			       "This request needs access to your private key.", "Continue",
 			       UI_TONE_ACTIVE, allow_private_key);
@@ -323,10 +322,11 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 
 void ui_show_confirmation(uint32_t id)
 {
-	if (id == 0 || (ui.page == UI_PAGE_CONFIRMATION && ui.confirmation_id == id)) {
+	if (id == 0) {
 		return;
 	}
 
+	ui_dialog_close();
 	ui.confirmation_id = id;
 	if (ui.page == UI_PAGE_CONFIRMATION) {
 		ui_render();
@@ -354,6 +354,7 @@ void ui_dismiss_confirmation(void)
 		return;
 	}
 
+	ui_dialog_close();
 	ui.confirmation_id = 0;
 	ui_set_busy(false);
 	if (ui.page == UI_PAGE_CONFIRMATION) {

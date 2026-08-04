@@ -22,6 +22,10 @@ static struct {
 	lv_style_t list;
 } styles;
 
+static void keyboard_show_deferred(void *input);
+static void keyboard_hide_deferred(void *keyboard);
+static void input_submit_deferred(void *input);
+
 lv_color_t ui_tone_color(enum ui_tone tone)
 {
 	switch (tone) {
@@ -88,7 +92,7 @@ static void theme_init(void)
 
 	lv_style_init(&styles.muted);
 	lv_style_set_text_color(&styles.muted, lv_color_hex(0x929eaa));
-	lv_style_set_text_font(&styles.muted, UI_FONT_CAPTION);
+	lv_style_set_text_font(&styles.muted, &lv_font_montserrat_12);
 
 	lv_style_init(&styles.section);
 	lv_style_set_text_color(&styles.section, lv_color_hex(0x929eaa));
@@ -196,10 +200,11 @@ void ui_init(const uint8_t features[APP_FEATURE_COUNT], const struct ui_status *
 	lv_obj_center(spinner);
 }
 
-lv_obj_t *ui_page_begin(const char *title, enum ui_navigation navigation)
+static void input_reset(void)
 {
-	ui_dialog_close();
 	if (ui.input != NULL) {
+		(void)lv_async_call_cancel(keyboard_show_deferred, ui.input);
+		(void)lv_async_call_cancel(input_submit_deferred, ui.input);
 		/* LVGL releases textarea storage without clearing sensitive input. */
 		const char *text = lv_textarea_get_text(ui.input);
 		if (text != NULL) {
@@ -208,12 +213,21 @@ lv_obj_t *ui_page_begin(const char *title, enum ui_navigation navigation)
 		lv_textarea_set_text(ui.input, "");
 	}
 	if (ui.keyboard != NULL) {
+		(void)lv_async_call_cancel(keyboard_hide_deferred, ui.keyboard);
 		lv_keyboard_set_textarea(ui.keyboard, NULL);
 		lv_obj_delete(ui.keyboard);
 	}
 	ui.keyboard = NULL;
 	ui.input = NULL;
 	ui.input_error = NULL;
+	ui.input_submit = NULL;
+	ui.input_handler = NULL;
+}
+
+lv_obj_t *ui_page_begin(const char *title, enum ui_navigation navigation)
+{
+	ui_dialog_close();
+	input_reset();
 
 	lv_obj_clear_flag(ui.status_bar, LV_OBJ_FLAG_HIDDEN);
 	ui_status_navigation(navigation);
@@ -366,15 +380,19 @@ void ui_input_error(const char *text)
 	lv_obj_scroll_to_view_recursive(ui.input_error, LV_ANIM_OFF);
 }
 
-void ui_keyboard_show(void)
+static void keyboard_show_deferred(void *input)
 {
-	if (ui.keyboard == NULL || ui.input == NULL) {
+	if (ui.keyboard == NULL || ui.input != input ||
+	    !lv_obj_has_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN)) {
 		return;
 	}
 
 	lv_keyboard_set_textarea(ui.keyboard, ui.input);
 	lv_obj_add_state(ui.input, LV_STATE_FOCUSED);
 	lv_obj_add_state(lv_obj_get_parent(ui.input), LV_STATE_FOCUSED);
+	if (ui.input_submit != NULL) {
+		lv_obj_add_flag(ui.input_submit, LV_OBJ_FLAG_HIDDEN);
+	}
 	lv_obj_clear_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN);
 	lv_obj_set_height(ui.content,
 			  ui.height - UI_STATUS_HEIGHT - lv_obj_get_height(ui.keyboard));
@@ -383,19 +401,222 @@ void ui_keyboard_show(void)
 	lv_obj_scroll_to_view_recursive(ui.input, LV_ANIM_OFF);
 }
 
-bool ui_keyboard_hide(void)
+static void keyboard_hide_deferred(void *keyboard)
 {
-	if (ui.keyboard == NULL || lv_obj_has_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN)) {
-		return false;
+	if (ui.keyboard != keyboard || lv_obj_has_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN)) {
+		return;
 	}
 
 	lv_obj_add_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN);
 	lv_keyboard_set_textarea(ui.keyboard, NULL);
 	lv_obj_remove_state(ui.input, LV_STATE_FOCUSED);
 	lv_obj_remove_state(lv_obj_get_parent(ui.input), LV_STATE_FOCUSED);
+	if (ui.input_submit != NULL) {
+		lv_obj_clear_flag(ui.input_submit, LV_OBJ_FLAG_HIDDEN);
+	}
 	content_bounds();
 	lv_obj_scroll_to(ui.content, 0, 0, LV_ANIM_OFF);
+}
+
+static void keyboard_show(void)
+{
+	if (ui.keyboard == NULL || ui.input == NULL) {
+		return;
+	}
+
+	(void)lv_async_call_cancel(keyboard_hide_deferred, ui.keyboard);
+	(void)lv_async_call_cancel(keyboard_show_deferred, ui.input);
+	(void)lv_async_call(keyboard_show_deferred, ui.input);
+}
+
+static bool keyboard_hide(void)
+{
+	if (ui.keyboard == NULL || ui.input == NULL) {
+		return false;
+	}
+
+	bool show_pending = lv_async_call_cancel(keyboard_show_deferred, ui.input) == LV_RESULT_OK;
+	if (lv_obj_has_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN)) {
+		return show_pending;
+	}
+
+	(void)lv_async_call_cancel(keyboard_hide_deferred, ui.keyboard);
+	(void)lv_async_call(keyboard_hide_deferred, ui.keyboard);
 	return true;
+}
+
+static void input_submit_deferred(void *input)
+{
+	if (ui.input != input || ui.input_handler == NULL) {
+		return;
+	}
+
+	keyboard_hide();
+	ui.input_handler(lv_textarea_get_text(ui.input));
+}
+
+static void input_submit(void)
+{
+	if (ui.input == NULL || ui.input_handler == NULL) {
+		return;
+	}
+
+	(void)lv_async_call_cancel(input_submit_deferred, ui.input);
+	(void)lv_async_call(input_submit_deferred, ui.input);
+}
+
+static void input_changed(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	if (ui.input_error != NULL) {
+		lv_obj_add_flag(ui.input_error, LV_OBJ_FLAG_HIDDEN);
+	}
+}
+
+static void input_action_clicked(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	input_submit();
+}
+
+static void keyboard_event(lv_event_t *event)
+{
+	switch (lv_event_get_code(event)) {
+	case LV_EVENT_READY:
+		input_submit();
+		break;
+	case LV_EVENT_CANCEL:
+		keyboard_hide();
+		break;
+	default:
+		break;
+	}
+}
+
+static void input_clicked(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	keyboard_show();
+}
+
+static void password_toggled(lv_event_t *event)
+{
+	bool hidden = lv_textarea_get_password_mode(ui.input);
+	lv_textarea_set_password_mode(ui.input, !hidden);
+	lv_image_set_src(lv_event_get_user_data(event), hidden ? &oskey_eye_off : &oskey_eye);
+}
+
+void ui_input_page(const struct ui_input_config *config, ui_input_submit_t submit)
+{
+	lv_obj_t *content = ui_page_begin(
+		config->title, ui.page == UI_PAGE_LOCKED ? UI_NAVIGATION_NONE : UI_NAVIGATION_BACK);
+	lv_obj_t *description = lv_label_create(content);
+	lv_obj_set_width(description, LV_PCT(100));
+	lv_obj_set_style_text_color(description, lv_color_hex(0x929eaa), 0);
+	lv_obj_set_style_text_font(description, UI_FONT_BODY, 0);
+	lv_label_set_long_mode(description, LV_LABEL_LONG_WRAP);
+	lv_label_set_text(description, config->hint);
+
+	lv_obj_t *form = lv_obj_create(content);
+	lv_obj_set_size(form, LV_PCT(100), LV_SIZE_CONTENT);
+	lv_obj_set_style_bg_opa(form, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_width(form, 0, 0);
+	lv_obj_set_style_radius(form, 0, 0);
+	lv_obj_set_style_pad_all(form, 0, 0);
+	lv_obj_set_style_pad_row(form, 4, 0);
+	lv_obj_set_flex_flow(form, LV_FLEX_FLOW_COLUMN);
+	lv_obj_remove_flag(form, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE |
+					 LV_OBJ_FLAG_SCROLLABLE);
+
+	lv_obj_t *field = lv_obj_create(form);
+	lv_obj_set_size(field, LV_PCT(100), config->password ? 40 : LV_MIN(88, ui.height / 4));
+	lv_obj_set_style_bg_opa(field, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_color(field, lv_color_hex(0x484848), 0);
+	lv_obj_set_style_border_width(field, 1, 0);
+	lv_obj_set_style_border_color(field, lv_color_hex(0x4da3ff), LV_STATE_FOCUSED);
+	lv_obj_set_style_radius(field, 3, 0);
+	lv_obj_set_style_pad_all(field, 0, 0);
+	lv_obj_set_style_pad_column(field, 0, 0);
+	lv_obj_set_flex_flow(field, LV_FLEX_FLOW_ROW);
+	lv_obj_set_flex_align(field, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_clear_flag(field, LV_OBJ_FLAG_SCROLLABLE);
+
+	ui.input = lv_textarea_create(field);
+	lv_obj_set_height(ui.input, LV_PCT(100));
+	lv_obj_set_width(ui.input, config->password ? 0 : LV_PCT(100));
+	if (config->password) {
+		lv_obj_set_flex_grow(ui.input, 1);
+	}
+	lv_textarea_set_one_line(ui.input, config->password);
+	lv_textarea_set_password_mode(ui.input, config->password);
+	lv_textarea_set_max_length(ui.input, config->max_length);
+	lv_textarea_set_placeholder_text(ui.input, config->placeholder);
+	lv_obj_set_style_text_font(ui.input, UI_FONT_BODY, 0);
+	lv_obj_set_style_text_color(ui.input, lv_color_hex(0xf2f5f7), 0);
+	lv_obj_set_style_bg_color(ui.input, lv_color_hex(0x4da3ff),
+				  LV_PART_CURSOR | LV_STATE_FOCUSED);
+	lv_obj_set_style_bg_opa(ui.input, LV_OPA_COVER, LV_PART_CURSOR | LV_STATE_FOCUSED);
+	lv_obj_set_style_text_color(ui.input, lv_color_hex(0xf2f5f7),
+				    LV_PART_CURSOR | LV_STATE_FOCUSED);
+	lv_obj_set_style_text_color(ui.input, lv_color_hex(0x727e89), LV_PART_TEXTAREA_PLACEHOLDER);
+	lv_obj_set_style_text_font(ui.input, UI_FONT_BODY, LV_PART_TEXTAREA_PLACEHOLDER);
+	lv_obj_set_style_bg_opa(ui.input, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_width(ui.input, 0, 0);
+	lv_obj_set_style_radius(ui.input, 0, 0);
+	lv_obj_set_style_pad_all(ui.input, 6, 0);
+	lv_obj_add_event_cb(ui.input, input_changed, LV_EVENT_VALUE_CHANGED, NULL);
+	lv_obj_add_event_cb(ui.input, input_clicked, LV_EVENT_CLICKED, NULL);
+
+	if (config->password) {
+		lv_obj_t *button = lv_button_create(field);
+		lv_obj_set_size(button, 44, 38);
+		lv_obj_set_style_bg_opa(button, LV_OPA_TRANSP, 0);
+		ui_press_feedback(button);
+		lv_obj_set_style_border_width(button, 0, 0);
+		lv_obj_set_style_shadow_width(button, 0, 0);
+		lv_obj_set_ext_click_area(button, 3);
+		lv_obj_remove_flag(button,
+				   LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+		lv_obj_t *eye = ui_icon(button, &oskey_eye);
+		ui_icon_color(eye, ui_tone_color(UI_TONE_MUTED));
+		lv_obj_center(eye);
+		lv_obj_add_event_cb(button, password_toggled, LV_EVENT_CLICKED, eye);
+	}
+
+	ui.input_error = lv_label_create(form);
+	lv_obj_set_width(ui.input_error, LV_PCT(100));
+	lv_obj_set_style_text_color(ui.input_error, lv_color_hex(0xe36a78), 0);
+	lv_obj_set_style_text_font(ui.input_error, UI_FONT_CAPTION, 0);
+	lv_label_set_long_mode(ui.input_error, LV_LABEL_LONG_WRAP);
+	lv_obj_add_flag(ui.input_error, LV_OBJ_FLAG_HIDDEN);
+
+	ui_list_row(content, &oskey_success, config->action, config->action_detail, NULL,
+		    UI_TONE_SUCCESS, input_action_clicked, NULL);
+	ui.input_submit = lv_obj_get_child(content, -1);
+	lv_obj_set_style_margin_top(ui.input_submit, 18, 0);
+
+	ui.keyboard = lv_keyboard_create(ui.screen);
+	lv_obj_set_size(ui.keyboard, LV_PCT(100), LV_MIN(ui.height * 55 / 100, 200));
+	lv_obj_align(ui.keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
+	lv_obj_set_style_bg_opa(ui.keyboard, LV_OPA_TRANSP, LV_PART_MAIN);
+	lv_obj_set_style_border_width(ui.keyboard, 0, LV_PART_MAIN);
+	lv_obj_set_style_bg_color(ui.keyboard, lv_palette_lighten(LV_PALETTE_GREY, 2),
+				  LV_PART_ITEMS);
+	lv_obj_set_style_bg_opa(ui.keyboard, LV_OPA_COVER, LV_PART_ITEMS);
+	lv_obj_set_style_text_color(ui.keyboard, lv_palette_darken(LV_PALETTE_GREY, 4),
+				    LV_PART_ITEMS);
+	lv_obj_set_style_border_color(ui.keyboard, lv_color_hex(0x303944), LV_PART_ITEMS);
+	lv_obj_set_style_border_width(ui.keyboard, 1, LV_PART_ITEMS);
+	lv_obj_set_style_shadow_width(ui.keyboard, 0, LV_PART_ITEMS);
+	lv_obj_set_style_bg_color(ui.keyboard, lv_palette_lighten(LV_PALETTE_GREY, 2),
+				  LV_PART_ITEMS | LV_STATE_CHECKED);
+	lv_obj_set_style_text_color(ui.keyboard, lv_palette_darken(LV_PALETTE_GREY, 4),
+				    LV_PART_ITEMS | LV_STATE_CHECKED);
+	lv_obj_set_style_text_font(ui.keyboard, UI_FONT_BODY, LV_PART_ITEMS);
+	lv_obj_add_event_cb(ui.keyboard, keyboard_event, LV_EVENT_ALL, NULL);
+	lv_obj_add_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN);
+	ui.input_handler = submit;
 }
 
 void ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
@@ -440,7 +661,7 @@ void ui_push(enum ui_page page)
 
 void ui_back(void)
 {
-	if (ui_keyboard_hide()) {
+	if (keyboard_hide()) {
 		return;
 	}
 	if (ui.history_len == 0) {
@@ -448,6 +669,8 @@ void ui_back(void)
 	}
 	if (ui.page == UI_PAGE_MNEMONIC) {
 		ui_wipe(ui.mnemonic, sizeof(ui.mnemonic));
+	} else if (ui.page == UI_PAGE_PASSPHRASE || ui.page == UI_PAGE_PASSPHRASE_CONFIRM) {
+		ui_wipe(ui.passphrase, sizeof(ui.passphrase));
 	}
 	ui.page = ui.history[--ui.history_len];
 	ui_render();
@@ -456,8 +679,10 @@ void ui_back(void)
 void ui_clear_sensitive(void)
 {
 	ui_wipe(ui.pin, sizeof(ui.pin));
+	ui_wipe(ui.fido_pin_current, sizeof(ui.fido_pin_current));
 	ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
 	ui_wipe(ui.mnemonic, sizeof(ui.mnemonic));
+	ui_wipe(ui.passphrase, sizeof(ui.passphrase));
 	ui_wipe(ui.entropy, sizeof(ui.entropy));
 	ui.entropy_bits = 0;
 	ui.custom_entropy = false;

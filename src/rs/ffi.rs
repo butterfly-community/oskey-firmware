@@ -440,9 +440,12 @@ fn local_request<'a>(
     match command.local_kind {
         LocalRequestKind::Unlock => core::str::from_utf8(data).map(LocalRequest::Unlock).ok(),
         LocalRequestKind::InitCustom => core::str::from_utf8(data).ok().and_then(|words| {
-            core::str::from_utf8(auxiliary)
-                .map(|pin| LocalRequest::InitCustom { words, pin })
-                .ok()
+            let (passphrase, pin) = auxiliary.split_at_checked(command.value as usize)?;
+            Some(LocalRequest::InitCustom {
+                words,
+                passphrase: core::str::from_utf8(passphrase).ok()?,
+                pin: core::str::from_utf8(pin).ok()?,
+            })
         }),
         LocalRequestKind::GenerateMnemonic => Some(LocalRequest::GenerateMnemonic {
             words: command.value,

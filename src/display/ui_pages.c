@@ -38,26 +38,122 @@ static bool valid_fido_pin(const char *pin)
 }
 #endif
 
-static void input_changed(lv_event_t *event)
+static const struct ui_input_config input_pages[] = {
+	[UI_PAGE_LOCKED] =
+		{
+			.title = "Unlock OSKey",
+			.hint = "Enter the PIN for this wallet",
+			.placeholder = "Enter PIN",
+			.action = "Unlock",
+			.action_detail = "Open the hardware wallet",
+			.max_length = UI_PIN_SIZE - 1,
+			.password = true,
+		},
+	[UI_PAGE_PIN_NEW] =
+		{
+			.title = "Create PIN",
+			.hint = "Use upper, lower, number and symbol",
+			.placeholder = "Enter PIN",
+			.action = "Continue",
+			.action_detail = "Confirm this PIN",
+			.max_length = UI_PIN_SIZE - 1,
+			.password = true,
+		},
+	[UI_PAGE_PIN_CONFIRM] =
+		{
+			.title = "Confirm PIN",
+			.hint = "Enter the same PIN again",
+			.placeholder = "Enter PIN",
+			.action = "Continue",
+			.action_detail = "Choose a recovery source",
+			.max_length = UI_PIN_SIZE - 1,
+			.password = true,
+		},
+	[UI_PAGE_FIDO_PIN_CURRENT] =
+		{
+			.title = "Change FIDO PIN",
+			.hint = "Verify the current FIDO PIN",
+			.placeholder = "Current PIN",
+			.action = "Continue",
+			.action_detail = "Choose a new FIDO PIN",
+			.max_length = UI_PIN_SIZE - 1,
+			.password = true,
+		},
+	[UI_PAGE_FIDO_PIN_NEW] =
+		{
+			.title = "New FIDO PIN",
+			.hint = "This PIN is separate from the wallet PIN",
+			.placeholder = "Enter PIN",
+			.action = "Continue",
+			.action_detail = "Confirm this FIDO PIN",
+			.max_length = UI_PIN_SIZE - 1,
+			.password = true,
+		},
+	[UI_PAGE_FIDO_PIN_CONFIRM] =
+		{
+			.title = "Confirm FIDO PIN",
+			.hint = "Enter the same PIN again",
+			.placeholder = "Enter PIN",
+			.action = "Save PIN",
+			.action_detail = "Protect FIDO operations with this PIN",
+			.max_length = UI_PIN_SIZE - 1,
+			.password = true,
+		},
+	[UI_PAGE_IMPORT] =
+		{
+			.title = "Import wallet",
+			.hint = "Enter the recovery phrase in order",
+			.placeholder = "word1 word2 ...",
+			.action = "Continue",
+			.action_detail = "Configure the mnemonic passphrase",
+			.max_length = UI_MNEMONIC_SIZE - 1,
+		},
+	[UI_PAGE_VERIFY] =
+		{
+			.title = "Verify phrase",
+			.hint = "Enter the recovery phrase again",
+			.placeholder = "word1 word2 ...",
+			.action = "Continue",
+			.action_detail = "Configure the mnemonic passphrase",
+			.max_length = UI_MNEMONIC_SIZE - 1,
+		},
+	[UI_PAGE_PASSPHRASE] =
+		{
+			.title = "Mnemonic passphrase",
+			.hint = "Optional; leave empty to continue without one",
+			.placeholder = "Can be empty",
+			.action = "Continue",
+			.action_detail = "Use this passphrase or leave it empty",
+			.max_length = UI_PASSPHRASE_SIZE - 1,
+			.password = true,
+		},
+	[UI_PAGE_PASSPHRASE_CONFIRM] =
+		{
+			.title = "Confirm passphrase",
+			.hint = "Enter the same mnemonic passphrase",
+			.placeholder = "Repeat passphrase",
+			.action = "Continue",
+			.action_detail = "Create the wallet",
+			.max_length = UI_PASSPHRASE_SIZE - 1,
+			.password = true,
+		},
+};
+
+static void submit_wallet(void)
 {
-	ARG_UNUSED(event);
-	if (ui.input_error != NULL) {
-		lv_obj_add_flag(ui.input_error, LV_OBJ_FLAG_HIDDEN);
-	}
+	char auxiliary[UI_PASSPHRASE_SIZE + UI_PIN_SIZE];
+	size_t passphrase_len = strlen(ui.passphrase);
+	size_t pin_len = strlen(ui.pin);
+
+	memcpy(auxiliary, ui.passphrase, passphrase_len);
+	memcpy(auxiliary + passphrase_len, ui.pin, pin_len);
+	ui_submit(LocalRequestKind_InitCustom, (uint32_t)passphrase_len, ui.mnemonic,
+		  strlen(ui.mnemonic), auxiliary, passphrase_len + pin_len);
+	ui_wipe(auxiliary, sizeof(auxiliary));
 }
 
-static void keyboard_done(lv_event_t *event)
+static void submit_current_input(const char *text)
 {
-	if (lv_event_get_code(event) == LV_EVENT_CANCEL) {
-		ui_keyboard_hide();
-		return;
-	}
-	if (lv_event_get_code(event) != LV_EVENT_READY || ui.input == NULL) {
-		return;
-	}
-
-	ui_keyboard_hide();
-	const char *text = lv_textarea_get_text(ui.input);
 	switch (ui.page) {
 	case UI_PAGE_LOCKED:
 		ui_submit(LocalRequestKind_Unlock, 0, text, strlen(text), NULL, 0);
@@ -78,6 +174,14 @@ static void keyboard_done(lv_event_t *event)
 		ui_push(UI_PAGE_SOURCE);
 		break;
 #if defined(CONFIG_OSKEY_FIDO2)
+	case UI_PAGE_FIDO_PIN_CURRENT:
+		if (!valid_fido_pin(text)) {
+			ui_input_error("FIDO PIN is too short");
+			return;
+		}
+		snprintf(ui.fido_pin_current, sizeof(ui.fido_pin_current), "%s", text);
+		ui_push(UI_PAGE_FIDO_PIN_NEW);
+		break;
 	case UI_PAGE_FIDO_PIN_NEW:
 		if (!valid_fido_pin(text)) {
 			ui_input_error("FIDO PIN is too short");
@@ -92,13 +196,37 @@ static void keyboard_done(lv_event_t *event)
 			return;
 		}
 
-		int ret = oskey_fido_pin_set(text, strlen(text));
+		bool changing = ui.fido_pin_current[0] != '\0';
+		int ret = changing ? oskey_fido_pin_change(
+					     ui.fido_pin_current, strlen(ui.fido_pin_current), text,
+					     strlen(text))
+				   : oskey_fido_pin_set(text, strlen(text));
+		ui_wipe(ui.fido_pin_current, sizeof(ui.fido_pin_current));
 		ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
 		if (ret == 0 || ret == -EALREADY) {
 			ui_back();
 			ui_back();
+			if (changing) {
+				ui_back();
+			}
+		} else if (changing && (ret == -EACCES || ret == -EPERM)) {
+			struct oskey_fido_pin_info info;
+			char error[48];
+
+			ui_back();
+			ui_back();
+			if (oskey_fido_pin_info_get(&info) == 0 && info.retries > 0) {
+				snprintf(error, sizeof(error), "Incorrect PIN, %u attempts remaining",
+					 info.retries);
+				ui_input_error(error);
+			} else {
+				ui_input_error("FIDO PIN is blocked");
+			}
 		} else {
 			ui_back();
+			if (changing) {
+				ui_back();
+			}
 			ui_input_error(ret == -EBUSY ? "FIDO is busy; try again"
 						     : "Could not save FIDO PIN");
 		}
@@ -106,8 +234,8 @@ static void keyboard_done(lv_event_t *event)
 	}
 #endif
 	case UI_PAGE_IMPORT:
-		ui_submit(LocalRequestKind_InitCustom, 0, text, strlen(text), ui.pin,
-			  strlen(ui.pin));
+		snprintf(ui.mnemonic, sizeof(ui.mnemonic), "%s", text);
+		ui_push(UI_PAGE_PASSPHRASE);
 		break;
 	case UI_PAGE_VERIFY:
 		/* Entering "oskey" instead of the phrase is an intentional product option. */
@@ -115,8 +243,23 @@ static void keyboard_done(lv_event_t *event)
 			ui_input_error("Recovery phrase does not match");
 			return;
 		}
-		ui_submit(LocalRequestKind_InitCustom, 0, ui.mnemonic, strlen(ui.mnemonic), ui.pin,
-			  strlen(ui.pin));
+		ui_push(UI_PAGE_PASSPHRASE);
+		break;
+	case UI_PAGE_PASSPHRASE:
+		ui_wipe(ui.passphrase, sizeof(ui.passphrase));
+		snprintf(ui.passphrase, sizeof(ui.passphrase), "%s", text);
+		if (text[0] == '\0') {
+			submit_wallet();
+		} else {
+			ui_push(UI_PAGE_PASSPHRASE_CONFIRM);
+		}
+		break;
+	case UI_PAGE_PASSPHRASE_CONFIRM:
+		if (strcmp(ui.passphrase, text) != 0) {
+			ui_input_error("Passphrases do not match");
+			return;
+		}
+		submit_wallet();
 		break;
 	case UI_PAGE_WIFI_PASSWORD:
 		ui_wifi_password_submit(text);
@@ -124,146 +267,6 @@ static void keyboard_done(lv_event_t *event)
 	default:
 		break;
 	}
-}
-
-static void input_clicked(lv_event_t *event)
-{
-	ARG_UNUSED(event);
-	ui_keyboard_show();
-}
-
-static void password_toggled(lv_event_t *event)
-{
-	if (ui.input == NULL) {
-		return;
-	}
-	bool hidden = lv_textarea_get_password_mode(ui.input);
-	lv_textarea_set_password_mode(ui.input, !hidden);
-	lv_image_set_src(lv_event_get_user_data(event), hidden ? &oskey_eye_off : &oskey_eye);
-}
-
-void ui_input_page(const char *title, const char *hint, bool password)
-{
-	lv_obj_t *content = ui_page_begin(title, ui.page == UI_PAGE_LOCKED ? UI_NAVIGATION_NONE
-									   : UI_NAVIGATION_BACK);
-	lv_obj_t *description = lv_label_create(content);
-	lv_obj_set_width(description, LV_PCT(100));
-	lv_obj_set_style_text_color(description, lv_color_hex(0x929eaa), 0);
-	lv_obj_set_style_text_font(description, UI_FONT_BODY, 0);
-	lv_label_set_long_mode(description, LV_LABEL_LONG_WRAP);
-	lv_label_set_text(description, hint);
-
-	lv_obj_t *form = lv_obj_create(content);
-	lv_obj_set_size(form, LV_PCT(100), LV_SIZE_CONTENT);
-	lv_obj_set_style_bg_opa(form, LV_OPA_TRANSP, 0);
-	lv_obj_set_style_border_width(form, 0, 0);
-	lv_obj_set_style_radius(form, 0, 0);
-	lv_obj_set_style_pad_all(form, 0, 0);
-	lv_obj_set_style_pad_row(form, 4, 0);
-	lv_obj_set_flex_flow(form, LV_FLEX_FLOW_COLUMN);
-	lv_obj_remove_flag(form, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE |
-					 LV_OBJ_FLAG_SCROLLABLE);
-
-	lv_obj_t *field = lv_obj_create(form);
-	lv_obj_set_size(field, LV_PCT(100), password ? 40 : LV_MIN(88, ui.height / 4));
-	lv_obj_set_style_bg_opa(field, LV_OPA_TRANSP, 0);
-	lv_obj_set_style_border_color(field, lv_color_hex(0x484848), 0);
-	lv_obj_set_style_border_width(field, 1, 0);
-	lv_obj_set_style_border_color(field, lv_color_hex(0x4da3ff), LV_STATE_FOCUSED);
-	lv_obj_set_style_radius(field, 3, 0);
-	lv_obj_set_style_pad_all(field, 0, 0);
-	lv_obj_set_style_pad_column(field, 0, 0);
-	lv_obj_set_flex_flow(field, LV_FLEX_FLOW_ROW);
-	lv_obj_set_flex_align(field, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
-			      LV_FLEX_ALIGN_CENTER);
-	lv_obj_clear_flag(field, LV_OBJ_FLAG_SCROLLABLE);
-	lv_obj_add_event_cb(field, input_clicked, LV_EVENT_CLICKED, NULL);
-
-	ui.input = lv_textarea_create(field);
-	lv_obj_set_height(ui.input, LV_PCT(100));
-	lv_obj_set_width(ui.input, password ? 0 : LV_PCT(100));
-	if (password) {
-		lv_obj_set_flex_grow(ui.input, 1);
-	}
-	lv_textarea_set_one_line(ui.input, password);
-	lv_textarea_set_password_mode(ui.input, password);
-	lv_textarea_set_max_length(ui.input, password ? UI_PIN_SIZE - 1 : UI_MNEMONIC_SIZE - 1);
-	const char *placeholder = ui.page == UI_PAGE_WIFI_PASSWORD
-					  ? "Enter network password"
-					  : (password ? "Enter PIN" : "word1 word2 ...");
-	lv_textarea_set_placeholder_text(ui.input, placeholder);
-	lv_obj_set_style_text_font(ui.input, UI_FONT_BODY, 0);
-	lv_obj_set_style_text_color(ui.input, lv_color_hex(0xf2f5f7), 0);
-	lv_obj_set_style_bg_color(ui.input, lv_color_hex(0x4da3ff),
-				  LV_PART_CURSOR | LV_STATE_FOCUSED);
-	lv_obj_set_style_bg_opa(ui.input, LV_OPA_COVER, LV_PART_CURSOR | LV_STATE_FOCUSED);
-	lv_obj_set_style_text_color(ui.input, lv_color_hex(0xf2f5f7),
-				    LV_PART_CURSOR | LV_STATE_FOCUSED);
-	lv_obj_set_style_text_color(ui.input, lv_color_hex(0x727e89), LV_PART_TEXTAREA_PLACEHOLDER);
-	lv_obj_set_style_text_font(ui.input, UI_FONT_BODY, LV_PART_TEXTAREA_PLACEHOLDER);
-	lv_obj_set_style_bg_opa(ui.input, LV_OPA_TRANSP, 0);
-	lv_obj_set_style_border_width(ui.input, 0, 0);
-	lv_obj_set_style_radius(ui.input, 0, 0);
-	lv_obj_set_style_pad_all(ui.input, 6, 0);
-	lv_obj_add_event_cb(ui.input, input_changed, LV_EVENT_VALUE_CHANGED, NULL);
-	if (password) {
-		lv_obj_t *button = lv_button_create(field);
-		lv_obj_set_size(button, 44, 38);
-		lv_obj_set_style_bg_opa(button, LV_OPA_TRANSP, 0);
-		ui_press_feedback(button);
-		lv_obj_set_style_border_width(button, 0, 0);
-		lv_obj_set_style_shadow_width(button, 0, 0);
-		lv_obj_set_ext_click_area(button, 3);
-		lv_obj_remove_flag(button,
-				   LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_SCROLL_ON_FOCUS);
-		lv_obj_t *eye = ui_icon(button, &oskey_eye);
-		ui_icon_color(eye, ui_tone_color(UI_TONE_MUTED));
-		lv_obj_center(eye);
-		lv_obj_add_event_cb(button, password_toggled, LV_EVENT_CLICKED, eye);
-	}
-
-	ui.input_error = lv_label_create(form);
-	lv_obj_set_width(ui.input_error, LV_PCT(100));
-	lv_obj_set_style_text_color(ui.input_error, lv_color_hex(0xe36a78), 0);
-	lv_obj_set_style_text_font(ui.input_error, UI_FONT_BODY, 0);
-	lv_label_set_long_mode(ui.input_error, LV_LABEL_LONG_WRAP);
-	lv_obj_add_flag(ui.input_error, LV_OBJ_FLAG_HIDDEN);
-
-	ui.keyboard = lv_keyboard_create(ui.screen);
-	lv_keyboard_set_popovers(ui.keyboard, true);
-	lv_obj_set_size(ui.keyboard, LV_PCT(100), LV_MIN(ui.height * 55 / 100, 200));
-	lv_obj_align(ui.keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
-	lv_obj_set_style_bg_opa(ui.keyboard, LV_OPA_TRANSP, LV_PART_MAIN);
-	lv_obj_set_style_border_width(ui.keyboard, 0, LV_PART_MAIN);
-	lv_obj_set_style_bg_color(ui.keyboard, lv_palette_lighten(LV_PALETTE_GREY, 2),
-				  LV_PART_ITEMS);
-	lv_obj_set_style_bg_opa(ui.keyboard, LV_OPA_COVER, LV_PART_ITEMS);
-	lv_obj_set_style_text_color(ui.keyboard, lv_palette_darken(LV_PALETTE_GREY, 4),
-				    LV_PART_ITEMS);
-	lv_obj_set_style_border_color(ui.keyboard, lv_color_hex(0x303944), LV_PART_ITEMS);
-	lv_obj_set_style_border_width(ui.keyboard, 1, LV_PART_ITEMS);
-	lv_obj_set_style_shadow_width(ui.keyboard, 0, LV_PART_ITEMS);
-	lv_obj_set_style_bg_color(ui.keyboard, lv_palette_lighten(LV_PALETTE_GREY, 2),
-				  LV_PART_ITEMS | LV_STATE_CHECKED);
-	lv_obj_set_style_text_color(ui.keyboard, lv_palette_darken(LV_PALETTE_GREY, 4),
-				    LV_PART_ITEMS | LV_STATE_CHECKED);
-	lv_obj_set_style_bg_color(ui.keyboard, lv_color_white(), LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_bg_opa(ui.keyboard, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_border_color(ui.keyboard, lv_color_hex(0x20242a),
-				      LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_border_width(ui.keyboard, 2, LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_radius(ui.keyboard, 6, LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_shadow_color(ui.keyboard, lv_color_black(),
-				      LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_shadow_width(ui.keyboard, 6, LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_shadow_opa(ui.keyboard, LV_OPA_30, LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_text_color(ui.keyboard, lv_color_black(),
-				    LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_set_style_text_font(ui.keyboard, UI_FONT_BODY, LV_PART_ITEMS);
-	lv_obj_set_style_text_font(ui.keyboard, UI_FONT_LARGE, LV_PART_ITEMS | LV_STATE_PRESSED);
-	lv_obj_add_event_cb(ui.keyboard, keyboard_done, LV_EVENT_ALL, NULL);
-	lv_obj_add_event_cb(ui.input, input_clicked, LV_EVENT_CLICKED, NULL);
-	lv_obj_add_flag(ui.keyboard, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void navigate(lv_event_t *event)
@@ -369,17 +372,6 @@ static void show_capabilities(void)
 	}
 }
 
-static void show_locked(void)
-{
-	ui_input_page("Unlock OSKey", "Enter the PIN for this wallet", true);
-	ui_list_row(ui.content, &oskey_warning, "Failed PIN attempts can erase the wallet",
-		    "Wallet data is erased after 10 failed attempts", NULL, UI_TONE_WARNING, NULL,
-		    NULL);
-	ui_section(ui.content, "RECOVERY");
-	ui_list_row(ui.content, &oskey_trash, "Erase wallet", "Remove wallet data and start again",
-		    NULL, UI_TONE_DANGER, confirm_reset, NULL);
-}
-
 static void show_home(void)
 {
 	lv_obj_t *content = ui_page_begin("OSKey", UI_NAVIGATION_NONE);
@@ -387,8 +379,10 @@ static void show_home(void)
 
 	ui_list_row(content, &oskey_wallet, "Hardware wallet", "USB, Bluetooth or UART", NULL,
 		    UI_TONE_ACTIVE, NULL, NULL);
+#if defined(CONFIG_OSKEY_FIDO2)
 	ui_list_row(content, &oskey_passkey, "Passkeys", "FIDO2 over USB", NULL, UI_TONE_ACTIVE,
 		    NULL, NULL);
+#endif
 	ui_list_row(content, &oskey_settings, "Device settings", NULL, NULL, UI_TONE_ACTIVE,
 		    navigate, (void *)(uintptr_t)UI_PAGE_SETTINGS);
 }
@@ -411,30 +405,6 @@ static void show_settings(void)
 #if defined(CONFIG_OSKEY_USB)
 	ui_list_row(content, &oskey_usb, "USB", "Host connection and available interfaces", NULL,
 		    UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_USB);
-#endif
-#if defined(CONFIG_OSKEY_FIDO2)
-	struct oskey_fido_pin_info pin;
-	int ret = oskey_fido_pin_info_get(&pin);
-	char detail[48];
-
-	ui_section(content, "PASSKEYS");
-	if (ret < 0) {
-		ui_list_row(content, &oskey_passkey, "FIDO PIN", "Status unavailable", NULL,
-			    UI_TONE_WARNING, NULL, NULL);
-	} else if (!pin.set) {
-		ui_list_row(content, &oskey_passkey, "Set FIDO PIN",
-			    "Protect passkeys with a separate PIN", NULL, UI_TONE_ACTIVE, navigate,
-			    (void *)(uintptr_t)UI_PAGE_FIDO_PIN_NEW);
-	} else {
-		if (pin.retries == 0) {
-			snprintf(detail, sizeof(detail), "Blocked after failed attempts");
-		} else {
-			snprintf(detail, sizeof(detail), "Configured · %u attempts remaining",
-				 pin.retries);
-		}
-		ui_list_row(content, &oskey_passkey, "FIDO PIN", detail, NULL,
-			    pin.retries == 0 ? UI_TONE_DANGER : UI_TONE_SUCCESS, NULL, NULL);
-	}
 #endif
 	ui_section(content, "MAINTENANCE");
 	ui_list_row(content, &oskey_refresh, "Restart", "Restart without changing data", NULL,
@@ -653,7 +623,18 @@ void ui_render(void)
 		show_capabilities();
 		break;
 	case UI_PAGE_LOCKED:
-		show_locked();
+	case UI_PAGE_PIN_NEW:
+	case UI_PAGE_PIN_CONFIRM:
+#if defined(CONFIG_OSKEY_FIDO2)
+	case UI_PAGE_FIDO_PIN_CURRENT:
+	case UI_PAGE_FIDO_PIN_NEW:
+	case UI_PAGE_FIDO_PIN_CONFIRM:
+#endif
+	case UI_PAGE_IMPORT:
+	case UI_PAGE_VERIFY:
+	case UI_PAGE_PASSPHRASE:
+	case UI_PAGE_PASSPHRASE_CONFIRM:
+		ui_input_page(&input_pages[ui.page], submit_current_input);
 		break;
 	case UI_PAGE_HOME:
 		show_home();
@@ -673,36 +654,20 @@ void ui_render(void)
 	case UI_PAGE_USB:
 		ui_usb_render();
 		break;
-	case UI_PAGE_PIN_NEW:
-		ui_input_page("Create PIN", "Use upper, lower, number and symbol", true);
-		break;
-	case UI_PAGE_PIN_CONFIRM:
-		ui_input_page("Confirm PIN", "Enter the same PIN again", true);
-		break;
+#if !defined(CONFIG_OSKEY_FIDO2)
+	case UI_PAGE_FIDO_PIN_CURRENT:
 	case UI_PAGE_FIDO_PIN_NEW:
-#if defined(CONFIG_OSKEY_FIDO2)
-		ui_input_page("Set FIDO PIN", "This PIN is separate from the wallet PIN", true);
-#endif
-		break;
 	case UI_PAGE_FIDO_PIN_CONFIRM:
-#if defined(CONFIG_OSKEY_FIDO2)
-		ui_input_page("Confirm FIDO PIN", "Enter the same PIN again", true);
-#endif
 		break;
+#endif
 	case UI_PAGE_SOURCE:
 		show_source();
 		break;
 	case UI_PAGE_LENGTH:
 		show_length();
 		break;
-	case UI_PAGE_IMPORT:
-		ui_input_page("Import wallet", "Enter the recovery phrase in order", false);
-		break;
 	case UI_PAGE_MNEMONIC:
 		show_mnemonic();
-		break;
-	case UI_PAGE_VERIFY:
-		ui_input_page("Verify phrase", "Enter the recovery phrase again", false);
 		break;
 	case UI_PAGE_ENTROPY:
 		show_entropy();

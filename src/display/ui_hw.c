@@ -6,6 +6,7 @@
 
 #include "assets/assets.h"
 #include "net/wifi.h"
+#include "usb/fido2_pin.h"
 
 static bool wifi_available(void)
 {
@@ -276,7 +277,7 @@ void ui_wifi_render(void)
 		return;
 	}
 	bool scanning = ui.wifi_scan.state == APP_WIFI_SCAN_SCANNING;
-	ui_list_row(content, &oskey_refresh, scanning ? "Scanning…" : "Scan networks",
+	ui_list_row(content, &oskey_refresh, scanning ? "Scanning..." : "Scan networks",
 		    scanning ? "Looking for nearby Wi-Fi" : "Refresh the network list", NULL,
 		    scanning ? UI_TONE_WARNING : UI_TONE_ACTIVE,
 		    scanning || wifi_sta_busy() ? NULL : wifi_scan_requested, NULL);
@@ -296,7 +297,7 @@ void ui_wifi_render(void)
 	for (size_t i = 0; i < ui.wifi_scan.count; ++i) {
 		const struct app_wifi_network *network = &ui.wifi_scan.networks[i];
 		char network_detail[64];
-		snprintf(network_detail, sizeof(network_detail), "%s · %s",
+		snprintf(network_detail, sizeof(network_detail), "%s - %s",
 			 wifi_security(network->security), wifi_signal(network->rssi));
 		bool saved = strcmp(network->ssid, ui.wifi_config.saved_ssid) == 0;
 		ui_list_row(
@@ -315,7 +316,16 @@ void ui_wifi_password_render(void)
 	char hint[80];
 	snprintf(title, sizeof(title), "Save %s", ui.wifi_ssid);
 	snprintf(hint, sizeof(hint), "Enter the password for %s", ui.wifi_ssid);
-	ui_input_page(title, hint, true);
+	const struct ui_input_config config = {
+		.title = title,
+		.hint = hint,
+		.placeholder = "Enter network password",
+		.action = "Connect",
+		.action_detail = "Save this network and connect",
+		.max_length = APP_WIFI_PASSWORD_MAX_LEN,
+		.password = true,
+	};
+	ui_input_page(&config, ui_wifi_password_submit);
 }
 
 void ui_wifi_password_submit(const char *password)
@@ -445,6 +455,24 @@ static enum ui_tone usb_tone(enum app_usb_state state)
 	}
 }
 
+#if defined(CONFIG_OSKEY_FIDO2)
+static void fido_pin_open(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	ui_wipe(ui.fido_pin_current, sizeof(ui.fido_pin_current));
+	ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
+	ui_push(UI_PAGE_FIDO_PIN_NEW);
+}
+
+static void fido_pin_change_open(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	ui_wipe(ui.fido_pin_current, sizeof(ui.fido_pin_current));
+	ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
+	ui_push(UI_PAGE_FIDO_PIN_CURRENT);
+}
+#endif
+
 void ui_usb_render(void)
 {
 	lv_obj_t *content = ui_page_begin("USB", UI_NAVIGATION_BACK);
@@ -459,4 +487,30 @@ void ui_usb_render(void)
 		    IS_ENABLED(CONFIG_OSKEY_USB) ? UI_TONE_DEFAULT : UI_TONE_MUTED, NULL, NULL);
 	ui_list_row(content, &oskey_passkey, "FIDO2", "Passkeys and security-key operations", NULL,
 		    IS_ENABLED(CONFIG_OSKEY_FIDO2) ? UI_TONE_DEFAULT : UI_TONE_MUTED, NULL, NULL);
+
+#if defined(CONFIG_OSKEY_FIDO2)
+	struct oskey_fido_pin_info pin;
+	int ret = oskey_fido_pin_info_get(&pin);
+	char detail[48];
+
+	ui_section(content, "FIDO SECURITY");
+	if (ret < 0) {
+		ui_list_row(content, &oskey_passkey, "FIDO PIN", "Status unavailable", NULL,
+			    UI_TONE_WARNING, NULL, NULL);
+	} else if (!pin.set) {
+		ui_list_row(content, &oskey_passkey, "Set FIDO PIN",
+			    "Protect passkeys with a separate PIN", NULL, UI_TONE_ACTIVE,
+			    fido_pin_open, NULL);
+	} else {
+		if (pin.retries == 0) {
+			snprintf(detail, sizeof(detail), "Blocked after failed attempts");
+		} else {
+			snprintf(detail, sizeof(detail), "Configured, %u attempts remaining",
+				 pin.retries);
+		}
+		ui_list_row(content, &oskey_passkey, "FIDO PIN", detail, NULL,
+			    pin.retries == 0 ? UI_TONE_DANGER : UI_TONE_SUCCESS,
+			    pin.retries == 0 ? NULL : fido_pin_change_open, NULL);
+	}
+#endif
 }

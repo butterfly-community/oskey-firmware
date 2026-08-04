@@ -151,18 +151,11 @@ static void process_network_events(void)
 static void apply_confirmation(const struct app_confirmation_state *state)
 {
 	if (state->phase == APP_CONFIRMATION_REQUIRED) {
-		if (ui.page == UI_PAGE_CONFIRMATION && ui.confirmation_id == state->id) {
-			return;
-		}
-
-		bool new_confirmation = ui.confirmation_id != state->id;
 		cancel_startup();
 		if (ui.page == UI_PAGE_SPLASH) {
 			ui_show_startup();
 		}
-		if (new_confirmation) {
-			ui_set_busy(false);
-		}
+		ui_set_busy(false);
 		ui_show_confirmation(state->id);
 		return;
 	}
