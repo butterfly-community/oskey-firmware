@@ -8,6 +8,10 @@ config OSKEY_MESSAGE_BUS
 	select NET_BUF
 	select ZBUS
 
+config HEAP_MEM_POOL_ADD_SIZE_OSKEY
+	int
+	default 8192
+
 config OSKEY_TEST_FIRMWARE
 	bool "Test firmware"
 	depends on OSKEY_RUST
