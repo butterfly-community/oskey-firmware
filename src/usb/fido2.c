@@ -8,7 +8,6 @@
 #include <string.h>
 #include <zephyr/authentication/fido2/fido2.h>
 #include <zephyr/authentication/fido2/fido2_credentials.h>
-#include <zephyr/authentication/fido2/fido2_storage.h>
 #include <zephyr/authentication/fido2/fido2_types.h>
 #include <zephyr/authentication/fido2/fido2_up.h>
 #include <zephyr/kernel.h>
@@ -41,79 +40,80 @@ struct fido2_request {
 
 static struct fido2_request current_request;
 
-static int pin_info_get(void *user_data)
-{
-	struct oskey_fido_pin_info *info = user_data;
-	uint8_t hash[FIDO2_PIN_HASH_SIZE];
-	int ret;
-
-	ret = fido2_storage_pin_get(hash);
-	mbedtls_platform_zeroize(hash, sizeof(hash));
-	if (ret < 0 && ret != -ENOENT) {
-		return ret;
-	}
-	info->set = ret == 0;
-	return fido2_storage_pin_retries_get(&info->retries);
-}
-
 int oskey_fido_pin_info_get(struct oskey_fido_pin_info *info)
 {
-	return info == NULL ? -EINVAL : fido2_run_exclusive(pin_info_get, info);
+	if (info == NULL) {
+		return -EINVAL;
+	}
+
+	return fido2_pin_info_get(&info->set, &info->retries);
 }
 
-struct pin_request {
-	const char *pin;
-	size_t len;
-};
-
-static int pin_set(void *user_data)
+static bool pin_valid(const char *pin, size_t len)
 {
-	const struct pin_request *request = user_data;
+	if (pin == NULL || len < CONFIG_FIDO2_MIN_PIN_LENGTH || len > 63) {
+		return false;
+	}
+	for (size_t i = 0; i < len; ++i) {
+		if ((uint8_t)pin[i] < 0x20 || (uint8_t)pin[i] > 0x7e) {
+			return false;
+		}
+	}
+	return true;
+}
+
+static int pin_hash(const char *pin, size_t len, uint8_t output[FIDO2_PIN_HASH_SIZE])
+{
 	uint8_t hash[FIDO2_SHA256_SIZE];
 	size_t hash_len;
 	psa_status_t status;
+
+	status = psa_hash_compute(PSA_ALG_SHA_256, (const uint8_t *)pin, len, hash, sizeof(hash),
+				  &hash_len);
+	if (status != PSA_SUCCESS || hash_len != FIDO2_SHA256_SIZE) {
+		mbedtls_platform_zeroize(hash, sizeof(hash));
+		return -EIO;
+	}
+
+	memcpy(output, hash, FIDO2_PIN_HASH_SIZE);
+	mbedtls_platform_zeroize(hash, sizeof(hash));
+	return 0;
+}
+
+static int pin_update(const char *current_pin, size_t current_len, const char *new_pin,
+		      size_t new_len)
+{
+	uint8_t current_hash[FIDO2_PIN_HASH_SIZE];
+	uint8_t new_hash[FIDO2_PIN_HASH_SIZE];
 	int ret;
 
-	struct oskey_fido_pin_info info;
-	ret = pin_info_get(&info);
-	if (ret < 0) {
-		return ret;
-	}
-	if (info.set) {
-		return -EALREADY;
+	if ((current_pin != NULL && !pin_valid(current_pin, current_len)) ||
+	    !pin_valid(new_pin, new_len)) {
+		return -EINVAL;
 	}
 
-	status = psa_hash_compute(PSA_ALG_SHA_256, (const uint8_t *)request->pin, request->len,
-				  hash, sizeof(hash), &hash_len);
-	if (status != PSA_SUCCESS || hash_len != FIDO2_SHA256_SIZE) {
-		ret = -EIO;
-	} else {
-		ret = fido2_storage_pin_set(hash);
-		if (ret == 0) {
-			ret = fido2_storage_pin_retries_reset();
-		}
+	ret = current_pin == NULL ? 0 : pin_hash(current_pin, current_len, current_hash);
+	if (ret == 0) {
+		ret = pin_hash(new_pin, new_len, new_hash);
+	}
+	if (ret == 0) {
+		ret = fido2_pin_update(current_pin == NULL ? NULL : current_hash, new_hash);
 	}
 
-	mbedtls_platform_zeroize(hash, sizeof(hash));
+	mbedtls_platform_zeroize(current_hash, sizeof(current_hash));
+	mbedtls_platform_zeroize(new_hash, sizeof(new_hash));
 	return ret;
 }
 
 int oskey_fido_pin_set(const char *pin, size_t len)
 {
-	if (pin == NULL || len < CONFIG_FIDO2_MIN_PIN_LENGTH || len > 63) {
-		return -EINVAL;
-	}
-	for (size_t i = 0; i < len; ++i) {
-		if ((uint8_t)pin[i] < 0x20 || (uint8_t)pin[i] > 0x7e) {
-			return -EINVAL;
-		}
-	}
+	return pin_update(NULL, 0, pin, len);
+}
 
-	struct pin_request request = {
-		.pin = pin,
-		.len = len,
-	};
-	return fido2_run_exclusive(pin_set, &request);
+int oskey_fido_pin_change(const char *current_pin, size_t current_len, const char *new_pin,
+			  size_t new_len)
+{
+	return pin_update(current_pin, current_len, new_pin, new_len);
 }
 
 static uint32_t request_id_next(void)

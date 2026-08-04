@@ -12,5 +12,7 @@ struct oskey_fido_pin_info {
 
 int oskey_fido_pin_info_get(struct oskey_fido_pin_info *info);
 int oskey_fido_pin_set(const char *pin, size_t len);
+int oskey_fido_pin_change(const char *current_pin, size_t current_len, const char *new_pin,
+			  size_t new_len);
 
 #endif

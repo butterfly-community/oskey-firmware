@@ -347,7 +347,7 @@ config OSKEY_USBD_REMOTE_WAKEUP
 
 config OSKEY_USBD_MAX_POWER
 	int "USB device bMaxPower value"
-	default 125
+	default 250
 	range 0 250
 	help
 	  bMaxPower value in the USB configuration in 2 mA units.
