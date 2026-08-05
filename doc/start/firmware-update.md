@@ -196,3 +196,14 @@ application is running.
 
 Use `mcumgr` over UART. For Bluetooth on Linux, use `smpclient` through BlueZ so the client reuses
 the authenticated bond. Upload `zephyr/zephyr.signed.bin`, never the unsigned binary.
+
+When Wi-Fi and MCUboot are enabled, upload the same signed image from the settings page or with
+`curl`, then restart the device to install it:
+
+```sh
+curl --fail --data-binary @zephyr.signed.bin \
+  -H "Content-Type: application/octet-stream" \
+  -H "X-OSKey-Request: 1" \
+  http://DEVICE/firmware
+curl --fail -X POST -H "X-OSKey-Request: 1" http://DEVICE/reboot
+```

@@ -5,6 +5,10 @@
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
+#ifdef CONFIG_OSKEY_MCUBOOT
+#include <zephyr/dfu/flash_img.h>
+#include <zephyr/dfu/mcuboot.h>
+#endif
 #include <zephyr/kernel.h>
 #include <zephyr/net/http/server.h>
 #include <zephyr/net/http/service.h>
@@ -29,6 +33,12 @@ static char request_body[WIFI_PORTAL_REQUEST_SIZE];
 static size_t request_body_len;
 static bool request_authorized;
 static wifi_portal_submit_cb_t portal_submit_cb;
+
+#ifdef CONFIG_OSKEY_MCUBOOT
+static struct flash_img_context firmware_image;
+static int firmware_upload_result;
+static bool firmware_upload_open;
+#endif
 
 HTTP_SERVER_REGISTER_HEADER_CAPTURE(oskey_request_header, "X-OSKey-Request");
 
@@ -227,6 +237,68 @@ static int post_handler(struct http_client_ctx *client, enum http_transaction_st
 	return 0;
 }
 
+#ifdef CONFIG_OSKEY_MCUBOOT
+static void firmware_upload_reset(void)
+{
+	if (firmware_upload_open) {
+		(void)flash_img_buffered_write(&firmware_image, NULL, 0, true);
+	}
+
+	firmware_upload_open = false;
+	firmware_upload_result = 0;
+	request_authorized = false;
+}
+
+static int firmware_upload_handler(struct http_client_ctx *client,
+				   enum http_transaction_status status,
+				   const struct http_request_ctx *request_ctx,
+				   struct http_response_ctx *response_ctx, void *user_data)
+{
+	ARG_UNUSED(client);
+	ARG_UNUSED(user_data);
+
+	if (status == HTTP_SERVER_TRANSACTION_ABORTED ||
+	    status == HTTP_SERVER_TRANSACTION_COMPLETE) {
+		firmware_upload_reset();
+		return 0;
+	}
+
+	if (request_ctx->headers_status != HTTP_HEADER_STATUS_NONE) {
+		request_authorized = request_has_authorization(request_ctx);
+		if (request_authorized) {
+			firmware_upload_result = flash_img_init(&firmware_image);
+			firmware_upload_open = firmware_upload_result == 0;
+		}
+	}
+
+	bool final = status == HTTP_SERVER_REQUEST_DATA_FINAL;
+
+	if (request_authorized && firmware_upload_result == 0) {
+		firmware_upload_result = flash_img_buffered_write(
+			&firmware_image, request_ctx->data, request_ctx->data_len, final);
+		firmware_upload_open = !final;
+	}
+
+	if (!final) {
+		return 0;
+	}
+
+	if (!request_authorized) {
+		response_ctx->status = HTTP_403_FORBIDDEN;
+	} else if (firmware_upload_result != 0) {
+		response_ctx->status = HTTP_500_INTERNAL_SERVER_ERROR;
+	} else if (flash_img_bytes_written(&firmware_image) == 0) {
+		response_ctx->status = HTTP_400_BAD_REQUEST;
+	} else {
+		response_ctx->status = boot_request_upgrade(BOOT_UPGRADE_TEST) == 0
+					       ? HTTP_200_OK
+					       : HTTP_500_INTERNAL_SERVER_ERROR;
+	}
+	response_ctx->final_chunk = true;
+	return 0;
+}
+#endif
+
 static struct http_resource_detail_static portal_resource_detail = {
 	.common =
 		{
@@ -280,6 +352,17 @@ static struct http_resource_detail_dynamic reboot_resource_detail = {
 	.user_data = &reboot_endpoint,
 };
 
+#ifdef CONFIG_OSKEY_MCUBOOT
+static struct http_resource_detail_dynamic firmware_resource_detail = {
+	.common =
+		{
+			.type = HTTP_RESOURCE_TYPE_DYNAMIC,
+			.bitmask_of_supported_http_methods = BIT(HTTP_POST),
+		},
+	.cb = firmware_upload_handler,
+};
+#endif
+
 static uint16_t portal_port = 80;
 
 HTTP_SERVICE_DEFINE(wifi_portal_service, NULL, &portal_port, 1, 1, NULL,
@@ -292,11 +375,19 @@ HTTP_RESOURCE_DEFINE(wifi_portal_configure, wifi_portal_service, "/configure",
 HTTP_RESOURCE_DEFINE(wifi_portal_hostname, wifi_portal_service, "/hostname",
 		     &hostname_resource_detail);
 HTTP_RESOURCE_DEFINE(wifi_portal_reboot, wifi_portal_service, "/reboot", &reboot_resource_detail);
+#ifdef CONFIG_OSKEY_MCUBOOT
+HTTP_RESOURCE_DEFINE(wifi_portal_firmware, wifi_portal_service, "/firmware",
+		     &firmware_resource_detail);
+#endif
 
 int wifi_portal_init(wifi_portal_submit_cb_t submit_cb)
 {
 	request_body_reset();
 	request_authorized = false;
+#ifdef CONFIG_OSKEY_MCUBOOT
+	firmware_upload_open = false;
+	firmware_upload_result = 0;
+#endif
 	portal_submit_cb = submit_cb;
 	return http_server_start();
 }

@@ -279,6 +279,23 @@
             </form>
           </div>
         </details>
+        <details id="firmwareSetting" hidden>
+          <summary>Firmware update</summary>
+          <div class="setting">
+            <p>Upload a signed OSKey firmware image.</p>
+            <form id="firmwareForm">
+              <input
+                id="firmwareFile"
+                type="file"
+                aria-label="Firmware image"
+                accept=".bin,application/octet-stream"
+                required
+              >
+              <button type="submit">Upload</button>
+              <p id="firmwareStatus" class="status" role="status"></p>
+            </form>
+          </div>
+        </details>
         <details>
           <summary>Restart</summary>
           <div class="setting">
@@ -298,6 +315,10 @@
       const hostnameStatus = document.getElementById("hostnameStatus");
       const rebootButton = document.getElementById("rebootButton");
       const rebootStatus = document.getElementById("rebootStatus");
+      const firmwareSetting = document.getElementById("firmwareSetting");
+      const firmwareForm = document.getElementById("firmwareForm");
+      const firmwareButton = firmwareForm.querySelector("button");
+      const firmwareStatus = document.getElementById("firmwareStatus");
       const tabs = document.querySelectorAll("nav button");
 
       document.getElementById("wifiMode").textContent =
@@ -403,6 +424,40 @@
           response?.ok ? "success" : "error",
         );
       };
+
+      if ("@CONFIG_OSKEY_MCUBOOT@" === "y") {
+        firmwareSetting.hidden = false;
+        firmwareForm.onsubmit = async (event) => {
+          event.preventDefault();
+          const file = document.getElementById("firmwareFile").files[0];
+
+          firmwareButton.disabled = true;
+          firmwareButton.textContent = "Uploading…";
+          status(firmwareStatus, "Uploading firmware…");
+
+          let response = null;
+          try {
+            response = await fetch("/firmware", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/octet-stream",
+                "X-OSKey-Request": "1",
+              },
+              body: file,
+            });
+          } catch {}
+
+          firmwareButton.disabled = false;
+          firmwareButton.textContent = "Upload";
+          status(
+            firmwareStatus,
+            response?.ok
+              ? "Firmware uploaded. Restart to install."
+              : "Firmware upload failed.",
+            response?.ok ? "success" : "error",
+          );
+        };
+      }
 
       rebootButton.onclick = async () => {
         if (!confirm("Restart OSKey now?")) {
