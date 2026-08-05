@@ -47,9 +47,9 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	buffer[APP_FEATURE_STORAGE] = true;
 #endif
 
-#if defined(CONFIG_ENTROPY_DEVICE_RANDOM_GENERATOR) && defined(CONFIG_ENTROPY_HAS_DRIVER)
-	buffer[APP_FEATURE_HARDWARE_RNG] = true;
-#endif
+	buffer[APP_FEATURE_HARDWARE_RNG] = IS_ENABLED(CONFIG_CSPRNG_ENABLED) &&
+					   !IS_ENABLED(CONFIG_TEST_RANDOM_GENERATOR) &&
+					   !IS_ENABLED(CONFIG_FAKE_ENTROPY_NATIVE_SIM);
 
 	buffer[APP_FEATURE_DISPLAY_INPUT] = app_display_ready();
 

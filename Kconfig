@@ -39,6 +39,7 @@ config OSKEY_RUST
 	select RUST
 	select RUST_ALLOC
 	select PSA_CRYPTO
+	select CSPRNG_NEEDED
 	select PSA_WANT_ALG_PBKDF2_HMAC
 	select PSA_WANT_ALG_SHA_512
 	select PSA_WANT_ALG_SHA_256

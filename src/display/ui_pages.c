@@ -186,11 +186,23 @@ static void navigate(lv_event_t *event)
 	ui_push((enum ui_page)(uintptr_t)lv_event_get_user_data(event));
 }
 
+static void open_mnemonic_length(void)
+{
+	ui.custom_entropy = false;
+	ui_push(UI_PAGE_LENGTH);
+}
+
 static void generate_mnemonic(lv_event_t *event)
 {
 	ARG_UNUSED(event);
-	ui.custom_entropy = false;
-	ui_push(UI_PAGE_LENGTH);
+	if (!ui.features[APP_FEATURE_HARDWARE_RNG]) {
+		ui_dialog_show(&oskey_warning, "No hardware RNG",
+			       "Test only. Do not use this phrase for real assets.", "Continue",
+			       UI_TONE_WARNING, open_mnemonic_length);
+		return;
+	}
+
+	open_mnemonic_length();
 }
 
 static void enable_custom_entropy(lv_event_t *event)
@@ -332,8 +344,9 @@ static void show_source(void)
 		    "Generate a new phrase or restore one", NULL, UI_TONE_ACTIVE, NULL, NULL);
 	ui_section(content, "RECOVERY SOURCE");
 	ui_list_row(content, &oskey_wallet, "Generate recovery phrase",
-		    "Create a new wallet with hardware randomness", NULL, UI_TONE_ACTIVE,
-		    generate_mnemonic, NULL);
+		    ui.features[APP_FEATURE_HARDWARE_RNG] ? "Create with hardware randomness"
+							  : "Test-only without hardware RNG",
+		    NULL, UI_TONE_ACTIVE, generate_mnemonic, NULL);
 	ui_list_row(content, &oskey_document, "Import recovery phrase",
 		    "Restore an existing wallet", NULL, UI_TONE_ACTIVE, navigate,
 		    (void *)(uintptr_t)UI_PAGE_IMPORT);
