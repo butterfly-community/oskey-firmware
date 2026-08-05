@@ -8,6 +8,7 @@
 struct storage_ids {
 	uint16_t seed;
 	uint16_t unlock_failures;
+	uint16_t firmware_update;
 };
 
 extern const struct storage_ids storage_ids;

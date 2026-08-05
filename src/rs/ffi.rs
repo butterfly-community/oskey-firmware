@@ -21,6 +21,7 @@ use crate::rs::platform::Platform;
 pub struct StorageIds {
     pub seed: u16,
     pub unlock_failures: u16,
+    pub firmware_update: u16,
 }
 
 #[repr(C)]
@@ -268,6 +269,7 @@ extern "C" {
     pub(crate) fn app_storage_reset() -> bool;
     pub(crate) fn app_fido_pin_recover();
     pub(crate) fn app_restart();
+    pub(crate) fn app_update_request() -> bool;
 }
 
 pub struct AppCore {
@@ -362,7 +364,9 @@ fn wipe_response(response: &mut oskey_action::proto::ResData) {
     };
     match payload {
         Payload::ErrorResponse(response) => response.message.zeroize(),
-        Payload::Unknown(_) | Payload::WaitForUserActionResponse(_) => {}
+        Payload::Unknown(_)
+        | Payload::WaitForUserActionResponse(_)
+        | Payload::FirmwareUpdateResponse(_) => {}
         Payload::VersionResponse(response) => {
             response.version.zeroize();
             response.sn.zeroize();

@@ -426,29 +426,32 @@ config OSKEY_MQTT_BROKER_PORT
 endif
 
 config OSKEY_MCUBOOT
-	bool "MCUboot and MCUmgr"
-	select BOOTLOADER_MCUBOOT
+	bool "Signed firmware updates"
+	default y if BOOTLOADER_MCUBOOT
+	depends on BOOTLOADER_MCUBOOT
+	select OSKEY_STORAGE
 	select MCUBOOT_BOOTLOADER_NO_DOWNGRADE
 	select MCUMGR
 	select MCUMGR_GRP_IMG
 	select MCUMGR_GRP_OS
-	select MCUMGR_GRP_STAT
-	select MCUMGR_TRANSPORT_BT if BT
+	select MCUMGR_GRP_OS_MCUMGR_PARAMS
+	select MCUMGR_TRANSPORT_BT if OSKEY_BLUETOOTH
+	select UART_MCUMGR
+	select MCUMGR_TRANSPORT_UART
+	select BASE64
 	select ZCBOR
 	select CRC
 	select IMG_MANAGER
+	select IMG_ERASE_PROGRESSIVELY
 	select STREAM_FLASH
+	help
+	  Enable signed MCUboot updates over authenticated Bluetooth, or over UART
+	  after the application explicitly reboots into firmware update mode.
 
 if OSKEY_MCUBOOT
 
-config MCUBOOT_SIGNATURE_KEY_FILE
-	default "bootloader/mcuboot/root-ec-p256.pem"
-
-config MCUBOOT_GENERATE_UNSIGNED_IMAGE
-	default n
-
-config MCUBOOT_IMGTOOL_SIGN_VERSION
-	default "0.0.2"
+config MCUMGR_TRANSPORT_BT_CONN_PARAM_CONTROL
+	default y if OSKEY_BLUETOOTH
 
 endif
 

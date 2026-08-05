@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/random/random.h>
+#include <zephyr/app_version.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/sys/util.h>
@@ -21,8 +22,15 @@ bool app_csrand_get(void *dst, size_t len)
 
 void app_version_get(void *ver, size_t len)
 {
-	snprintf(ver, len, "0.7.1");
+	snprintf(ver, len, "%s", APP_VERSION_STRING);
 }
+
+#ifndef CONFIG_OSKEY_MCUBOOT
+bool app_update_request(void)
+{
+	return false;
+}
+#endif
 
 bool app_check_feature(uint8_t *buffer, size_t len)
 {

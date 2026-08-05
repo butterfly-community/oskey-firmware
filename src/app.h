@@ -27,5 +27,6 @@ bool app_storage_reset(void);
 int app_fido_pin_retries(void);
 void app_fido_pin_recover(void);
 void app_restart(void);
+bool app_update_request(void);
 
 #endif

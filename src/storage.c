@@ -9,6 +9,7 @@
 const struct storage_ids storage_ids = {
 	.seed = 2,
 	.unlock_failures = 3,
+	.firmware_update = 4,
 };
 
 static bool storage_initialized;

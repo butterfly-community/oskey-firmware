@@ -15,13 +15,16 @@ target_sources(app PRIVATE
   src/uart.c
   src/bluetooth/bluetooth.c
   src/storage.c
-  src/boot.c
   src/net/wifi.c
   src/net/mqtt.c
   src/gpio.c
   src/usb/webusb.c
   src/app.c
   src/display/display.c
+)
+
+target_sources_ifdef(CONFIG_OSKEY_MCUBOOT app PRIVATE
+  src/boot.c
 )
 
 target_sources_ifdef(CONFIG_OSKEY_RUST app PRIVATE

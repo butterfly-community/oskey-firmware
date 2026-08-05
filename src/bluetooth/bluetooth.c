@@ -13,6 +13,9 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/services/nus.h>
+#ifdef CONFIG_OSKEY_MCUBOOT
+#include <zephyr/mgmt/mcumgr/transport/smp_bt.h>
+#endif
 
 LOG_MODULE_REGISTER(oskey_bt);
 
@@ -34,6 +37,9 @@ static void publish_bluetooth_state(enum app_bluetooth_state state)
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
+#ifdef CONFIG_OSKEY_MCUBOOT
+	BT_DATA_BYTES(BT_DATA_UUID128_ALL, SMP_BT_SVC_UUID_VAL),
+#endif
 };
 
 static const struct bt_data sd[] = {
