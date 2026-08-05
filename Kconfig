@@ -131,6 +131,72 @@ config LV_Z_DOUBLE_VDB
 config LV_Z_FLUSH_THREAD
 	default y if OSKEY_ESP_SPIRAM
 
+config LV_USE_ANIMIMG
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_ARCLABEL
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_BAR
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_CALENDAR
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_CANVAS
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_CHART
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_CHECKBOX
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_DROPDOWN
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_IMAGEBUTTON
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_LED
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_LINE
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_LIST
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_MENU
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_ROLLER
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_SCALE
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_SLIDER
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_SPAN
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_SPINBOX
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_SWITCH
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_TABVIEW
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_TILEVIEW
+	default n if !OSKEY_LVGL_BENCHMARK
+
+config LV_USE_WIN
+	default n if !OSKEY_LVGL_BENCHMARK
+
 choice LV_COLOR_DEPTH
 	default LV_COLOR_DEPTH_16
 endchoice
