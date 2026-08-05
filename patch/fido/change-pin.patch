@@ -1,0 +1,324 @@
+From 02d8b26d2c5306bcdf797908953b3dc378a20789 Mon Sep 17 00:00:00 2001
+From: Siratul Islam <siratul.islam@linux.dev>
+Date: Mon, 3 Aug 2026 22:50:43 +0600
+Subject: [PATCH] authentication: fido2: implement changePIN
+
+Implement changePIN subprotocol for clientPIN
+
+Signed-off-by: Siratul Islam <siratul.islam@linux.dev>
+---
+ .../zephyr/authentication/fido2/fido2_types.h |  21 +++
+ subsys/authentication/fido2/fido2_cbor.h      |  19 +--
+ subsys/authentication/fido2/fido2_clientpin.c | 132 ++++++++++++++++++
+ subsys/authentication/fido2/fido2_clientpin.h |  31 ++--
+ subsys/authentication/fido2/fido2_core.c      |  12 +-
+ 5 files changed, 188 insertions(+), 27 deletions(-)
+
+diff --git a/include/zephyr/authentication/fido2/fido2_types.h b/include/zephyr/authentication/fido2/fido2_types.h
+index f82b1371c522..2b0af6902a51 100644
+--- a/include/zephyr/authentication/fido2/fido2_types.h
++++ b/include/zephyr/authentication/fido2/fido2_types.h
+@@ -54,6 +54,27 @@ extern "C" {
+ /** @brief PIN hash size */
+ #define FIDO2_PIN_HASH_SIZE 16
+ 
++/** @brief Maximum encrypted PIN hash size */
++#define FIDO2_PIN_HASH_ENC_MAX_SIZE 32
++
++/** @brief Maximum encrypted PIN size */
++#define FIDO2_PIN_ENC_MAX_SIZE 80
++
++/** @brief PIN Protocol 1 auth param size */
++#define FIDO2_PIN_AUTH_SIZE_P1 16
++
++/** @brief PIN Protocol 2 auth param size */
++#define FIDO2_PIN_AUTH_SIZE_P2 32
++
++/** @brief Maximum PIN auth param size */
++#define FIDO2_PIN_AUTH_MAX_SIZE 32
++
++/** @brief Padded PIN size */
++#define FIDO2_PIN_PADDED_SIZE 64
++
++/** @brief Encrypted PIN token size */
++#define FIDO2_PIN_TOKEN_ENC_MAX_SIZE 48
++
+ /** @brief Size of a discoverable credential ID */
+ #define FIDO2_DISCOVERABLE_CRED_ID_SIZE 32
+ 
+diff --git a/subsys/authentication/fido2/fido2_cbor.h b/subsys/authentication/fido2/fido2_cbor.h
+index 87994eb765d2..313dfae6ec91 100644
+--- a/subsys/authentication/fido2/fido2_cbor.h
++++ b/subsys/authentication/fido2/fido2_cbor.h
+@@ -13,15 +13,6 @@
+ /** Maximum number of algorithms in pubKeyCredParams */
+ #define FIDO2_MAX_ALGORITHMS 8
+ 
+-/** Maximum PIN auth param size across all supported protocols */
+-#define FIDO2_CBOR_PIN_AUTH_MAX_SIZE 32
+-
+-/** Maximum encrypted PIN size */
+-#define FIDO2_CBOR_PIN_ENC_MAX_SIZE 80
+-
+-/** Encrypted PIN hash size */
+-#define FIDO2_CBOR_PIN_HASH_ENC_SIZE 32
+-
+ /** Number of attestation statement format identifiers */
+ #define FIDO2_CBOR_MAX_ATTESTATION_FORMATS 4
+ 
+@@ -77,7 +68,7 @@ struct fido2_make_credential_params {
+ 	/** Whether options.uv was present */
+ 	bool has_uv_option;
+ 	/** 0x08: pinUvAuthParam */
+-	uint8_t pin_uv_auth_param[FIDO2_CBOR_PIN_AUTH_MAX_SIZE];
++	uint8_t pin_uv_auth_param[FIDO2_PIN_AUTH_MAX_SIZE];
+ 	/** Length of pinUvAuthParam (0 = probe, 16 = P1, 32 = P2) */
+ 	size_t pin_uv_auth_param_len;
+ 	/** Whether pinUvAuthParam key was present */
+@@ -120,7 +111,7 @@ struct fido2_get_assertion_params {
+ 	/** Whether options.uv was present */
+ 	bool has_uv_option;
+ 	/** 0x06: pinUvAuthParam */
+-	uint8_t pin_uv_auth_param[FIDO2_CBOR_PIN_AUTH_MAX_SIZE];
++	uint8_t pin_uv_auth_param[FIDO2_PIN_AUTH_MAX_SIZE];
+ 	/** Length of pinUvAuthParam (0 = probe, 16 = P1, 32 = P2) */
+ 	size_t pin_uv_auth_param_len;
+ 	/** Whether pinUvAuthParam key was present */
+@@ -157,19 +148,19 @@ struct fido2_client_pin_params {
+ 	/** Whether keyAgreement was present */
+ 	bool has_key_agreement;
+ 	/** 0x04: pinUvAuthParam */
+-	uint8_t pin_uv_auth_param[FIDO2_CBOR_PIN_AUTH_MAX_SIZE];
++	uint8_t pin_uv_auth_param[FIDO2_PIN_AUTH_MAX_SIZE];
+ 	/** Length of pinUvAuthParam */
+ 	size_t pin_uv_auth_param_len;
+ 	/** Whether pinUvAuthParam was present */
+ 	bool has_pin_uv_auth_param;
+ 	/** 0x05: newPinEnc */
+-	uint8_t new_pin_enc[FIDO2_CBOR_PIN_ENC_MAX_SIZE];
++	uint8_t new_pin_enc[FIDO2_PIN_ENC_MAX_SIZE];
+ 	/** newPinEnc len */
+ 	size_t new_pin_enc_len;
+ 	/** Whether newPinEnc was present */
+ 	bool has_new_pin_enc;
+ 	/** 0x06: pinHashEnc */
+-	uint8_t pin_hash_enc[FIDO2_CBOR_PIN_HASH_ENC_SIZE];
++	uint8_t pin_hash_enc[FIDO2_PIN_HASH_ENC_MAX_SIZE];
+ 	/** pinHashEnc len */
+ 	size_t pin_hash_enc_len;
+ 	/** Whether pinHashEnc was present */
+diff --git a/subsys/authentication/fido2/fido2_clientpin.c b/subsys/authentication/fido2/fido2_clientpin.c
+index e33c32eacff6..346b10230ba6 100644
+--- a/subsys/authentication/fido2/fido2_clientpin.c
++++ b/subsys/authentication/fido2/fido2_clientpin.c
+@@ -312,6 +312,138 @@ enum fido2_status fido2_clientpin_cmd_set_pin(uint8_t protocol, const uint8_t *p
+ 	return FIDO2_OK;
+ }
+ 
++enum fido2_status fido2_clientpin_cmd_change_pin(uint8_t protocol, const uint8_t *platform_key,
++						 size_t platform_key_len,
++						 const uint8_t *pin_hash_enc,
++						 size_t pin_hash_enc_len,
++						 const uint8_t *new_pin_enc, size_t new_pin_enc_len,
++						 const uint8_t *pin_uv_auth_param)
++{
++	uint8_t pin_enc_w_hash_enc[FIDO2_PIN_ENC_MAX_SIZE + FIDO2_PIN_HASH_ENC_MAX_SIZE];
++	uint8_t pin_hash[FIDO2_PIN_HASH_SIZE];
++	size_t pin_hash_len;
++	uint8_t stored_pin_hash[FIDO2_PIN_HASH_SIZE];
++	uint8_t padded_pin[FIDO2_PIN_PADDED_SIZE];
++	size_t padded_pin_len;
++	size_t new_pin_len;
++	uint8_t new_pin_hash[FIDO2_SHA256_SIZE];
++	uint8_t retries;
++	int ret;
++
++	if (!fido2_clientpin_pin_is_set()) {
++		return FIDO2_ERR_PIN_AUTH_INVALID;
++	}
++
++	ret = fido2_storage_pin_retries_get(&retries);
++	if (ret) {
++		return FIDO2_ERR_OTHER;
++	}
++	if (retries == 0) {
++		return FIDO2_ERR_PIN_BLOCKED;
++	}
++
++	ret = decapsulate(platform_key, platform_key_len, protocol);
++	if (ret) {
++		return FIDO2_ERR_INVALID_PARAMETER;
++	}
++
++	if (new_pin_enc_len + pin_hash_enc_len > sizeof(pin_enc_w_hash_enc)) {
++		return FIDO2_ERR_INVALID_PARAMETER;
++	}
++	memcpy(pin_enc_w_hash_enc, new_pin_enc, new_pin_enc_len);
++	memcpy(pin_enc_w_hash_enc + new_pin_enc_len, pin_hash_enc, pin_hash_enc_len);
++
++	ret = verify(shared_secret, pin_enc_w_hash_enc, new_pin_enc_len + pin_hash_enc_len,
++		     pin_uv_auth_param,
++		     protocol == FIDO2_PIN_PROTOCOL_V1 ? FIDO2_PIN_AUTH_SIZE_P1
++						       : FIDO2_PIN_AUTH_SIZE_P2);
++	if (ret) {
++		return FIDO2_ERR_PIN_AUTH_INVALID;
++	}
++
++	ret = fido2_storage_pin_retries_decrement();
++	if (ret) {
++		return FIDO2_ERR_OTHER;
++	}
++
++	ret = decrypt(protocol, pin_hash_enc, pin_hash_enc_len, pin_hash, sizeof(pin_hash),
++		      &pin_hash_len);
++	if (ret) {
++		return FIDO2_ERR_PIN_AUTH_INVALID;
++	}
++
++	ret = fido2_storage_pin_get(stored_pin_hash);
++	if (ret) {
++		return FIDO2_ERR_OTHER;
++	}
++
++	if (memcmp(pin_hash, stored_pin_hash, FIDO2_PIN_HASH_SIZE) != 0) {
++		ret = generate_key_agreement();
++		if (ret) {
++			return FIDO2_ERR_OTHER;
++		}
++
++		ret = fido2_storage_pin_retries_get(&retries);
++		if (ret) {
++			return FIDO2_ERR_OTHER;
++		}
++
++		if (retries == 0) {
++			return FIDO2_ERR_PIN_BLOCKED;
++		}
++
++		++consecutive_pin_mismatches;
++		if (consecutive_pin_mismatches >= 3) {
++			return FIDO2_ERR_PIN_AUTH_BLOCKED;
++		}
++
++		return FIDO2_ERR_PIN_INVALID;
++	}
++
++	consecutive_pin_mismatches = 0;
++
++	ret = fido2_storage_pin_retries_reset();
++	if (ret) {
++		return FIDO2_ERR_OTHER;
++	}
++
++	ret = decrypt(protocol, new_pin_enc, new_pin_enc_len, padded_pin, sizeof(padded_pin),
++		      &padded_pin_len);
++	if (ret) {
++		return FIDO2_ERR_PIN_AUTH_INVALID;
++	}
++
++	if (padded_pin_len != FIDO2_PIN_PADDED_SIZE) {
++		return FIDO2_ERR_INVALID_PARAMETER;
++	}
++
++	/* Remove trailng 0s */
++	new_pin_len = strnlen((const char *)padded_pin, FIDO2_PIN_PADDED_SIZE);
++	if (new_pin_len < CONFIG_FIDO2_MIN_PIN_LENGTH) {
++		return FIDO2_ERR_PIN_POLICY_VIOLATION;
++	}
++
++	ret = fido2_crypto_sha256(padded_pin, new_pin_len, new_pin_hash);
++	if (ret) {
++		return FIDO2_ERR_OTHER;
++	}
++
++	ret = fido2_storage_pin_set(new_pin_hash);
++	if (ret) {
++		return FIDO2_ERR_OTHER;
++	}
++
++	/* Reset again because spec says so. */
++	ret = fido2_storage_pin_retries_reset();
++	if (ret) {
++		return FIDO2_ERR_OTHER;
++	}
++
++	reset_pin_uv_auth_token();
++
++	return FIDO2_OK;
++}
++
+ enum fido2_status fido2_clientpin_cmd_get_pin_token_pin_w_perms(
+ 	uint8_t protocol, const uint8_t *platform_key, size_t platform_key_len,
+ 	const uint8_t *pin_hash_enc, size_t pin_hash_enc_len, uint8_t permissions,
+diff --git a/subsys/authentication/fido2/fido2_clientpin.h b/subsys/authentication/fido2/fido2_clientpin.h
+index 6d208d499961..8f4e361c7fef 100644
+--- a/subsys/authentication/fido2/fido2_clientpin.h
++++ b/subsys/authentication/fido2/fido2_clientpin.h
+@@ -9,17 +9,6 @@
+ 
+ #include <zephyr/authentication/fido2/fido2_types.h>
+ 
+-/** PIN Protocol 1 auth param size */
+-#define FIDO2_PIN_AUTH_SIZE_P1       16
+-/** PIN Protocol 2 auth param size */
+-#define FIDO2_PIN_AUTH_SIZE_P2       32
+-/** Maximum PIN auth param size */
+-#define FIDO2_PIN_AUTH_MAX_SIZE      32
+-/** Padded PIN size */
+-#define FIDO2_PIN_PADDED_SIZE        64
+-/** Encrypted PIN token size */
+-#define FIDO2_PIN_TOKEN_ENC_MAX_SIZE 48
+-
+ #define FIDO2_CLIENTPIN_GET_PIN_RETRIES           0x01 /**< getPINRetries */
+ #define FIDO2_CLIENTPIN_GET_KEY_AGREEMENT         0x02 /**< getKeyAgreement */
+ #define FIDO2_CLIENTPIN_SET_PIN                   0x03 /**< setPIN */
+@@ -109,6 +98,26 @@ enum fido2_status fido2_clientpin_cmd_set_pin(uint8_t protocol, const uint8_t *p
+ 					      size_t new_pin_enc_len,
+ 					      const uint8_t *pin_uv_auth_param);
+ 
++/**
++ * Handle changePIN.
++ *
++ * @param protocol PIN/UV auth protocol version.
++ * @param platform_key Platform's ECDH public key.
++ * @param platform_key_len Length of @p platform_key in bytes.
++ * @param pin_hash_enc Encrypted PIN hash.
++ * @param pin_hash_enc_len Length of @p pin_hash_enc in bytes.
++ * @param new_pin_enc Encrypted new pin.
++ * @param new_pin_enc_len Length of @p new_pin_enc in bytes.
++ * @param pin_uv_auth_param Result of calling authenticate(shared secret, newPinEnc).
++ * @return FIDO2_OK on success, FIDO2_ERR_* on failure.
++ */
++enum fido2_status fido2_clientpin_cmd_change_pin(uint8_t protocol, const uint8_t *platform_key,
++						 size_t platform_key_len,
++						 const uint8_t *pin_hash_enc,
++						 size_t pin_hash_enc_len,
++						 const uint8_t *new_pin_enc, size_t new_pin_enc_len,
++						 const uint8_t *pin_uv_auth_param);
++
+ /**
+  * Handle getPinToken / getPinUvAuthTokenUsingPinWithPermissions.
+  *
+diff --git a/subsys/authentication/fido2/fido2_core.c b/subsys/authentication/fido2/fido2_core.c
+index 4b767bdc685d..8514b9474649 100644
+--- a/subsys/authentication/fido2/fido2_core.c
++++ b/subsys/authentication/fido2/fido2_core.c
+@@ -803,8 +803,16 @@ static enum fido2_status handle_client_pin(uint8_t *cbor_in, size_t cbor_in_len,
+ 			cp_params.key_agreement_len, cp_params.new_pin_enc,
+ 			cp_params.new_pin_enc_len, cp_params.pin_uv_auth_param);
+ 	case FIDO2_CLIENTPIN_CHANGE_PIN:
+-		/* TODO */
+-		return FIDO2_ERR_INVALID_SUBCOMMAND;
++		if (!cp_params.has_pin_uv_auth_protocol || !cp_params.has_pin_uv_auth_param ||
++		    !cp_params.has_new_pin_enc || !cp_params.has_pin_hash_enc ||
++		    !cp_params.has_key_agreement) {
++			return FIDO2_ERR_MISSING_PARAMETER;
++		}
++		return fido2_clientpin_cmd_change_pin(
++			cp_params.pin_uv_auth_protocol, cp_params.key_agreement,
++			cp_params.key_agreement_len, cp_params.pin_hash_enc,
++			cp_params.pin_hash_enc_len, cp_params.new_pin_enc,
++			cp_params.new_pin_enc_len, cp_params.pin_uv_auth_param);
+ 	case FIDO2_CLIENTPIN_GET_PIN_TOKEN: /* Backwards compatibility */
+ 		if (!cp_params.has_pin_uv_auth_protocol || !cp_params.has_key_agreement ||
+ 		    !cp_params.has_pin_hash_enc) {

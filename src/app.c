@@ -10,6 +10,10 @@
 #include "display/display.h"
 #include "storage.h"
 
+#if defined(CONFIG_OSKEY_FIDO2)
+#include <zephyr/authentication/fido2/fido2_storage.h>
+#endif
+
 bool app_csrand_get(void *dst, size_t len)
 {
 	return sys_csrand_get(dst, len) == 0;
@@ -89,6 +93,43 @@ bool app_storage_reset(void)
 	}
 	sys_reboot(SYS_REBOOT_COLD);
 	return true;
+}
+
+int app_fido_pin_info_get(bool *is_set, uint8_t *retries)
+{
+#if defined(CONFIG_OSKEY_FIDO2)
+	uint8_t pin_hash[FIDO2_PIN_HASH_SIZE];
+	int ret;
+
+	if (is_set == NULL || retries == NULL) {
+		return -EINVAL;
+	}
+
+	ret = fido2_storage_pin_get(pin_hash);
+	memset(pin_hash, 0, sizeof(pin_hash));
+	*is_set = ret == 0;
+	*retries = 0;
+	if (ret == -ENOENT) {
+		return 0;
+	}
+	return ret == 0 ? fido2_storage_pin_retries_get(retries) : ret;
+#else
+	ARG_UNUSED(is_set);
+	ARG_UNUSED(retries);
+	return -ENOTSUP;
+#endif
+}
+
+void app_fido_pin_recover(void)
+{
+#if defined(CONFIG_OSKEY_FIDO2)
+	bool pin_set;
+	uint8_t retries;
+
+	if (app_fido_pin_info_get(&pin_set, &retries) == 0 && pin_set && retries == 0) {
+		(void)fido2_storage_pin_retries_reset();
+	}
+#endif
 }
 
 void app_restart(void)

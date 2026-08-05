@@ -3,11 +3,7 @@
  */
 
 #include <errno.h>
-#include <mbedtls/platform_util.h>
-#include <psa/crypto.h>
 #include <string.h>
-#include <zephyr/authentication/fido2/fido2.h>
-#include <zephyr/authentication/fido2/fido2_credentials.h>
 #include <zephyr/authentication/fido2/fido2_types.h>
 #include <zephyr/authentication/fido2/fido2_up.h>
 #include <zephyr/kernel.h>
@@ -15,7 +11,6 @@
 #include <zephyr/sys/atomic.h>
 
 #include "bus.h"
-#include "fido2_pin.h"
 
 LOG_MODULE_REGISTER(oskey_fido2);
 
@@ -40,80 +35,27 @@ struct fido2_request {
 
 static struct fido2_request current_request;
 
-int oskey_fido_pin_info_get(struct oskey_fido_pin_info *info)
+enum fido2_status oskey_fido2_status(void)
 {
-	if (info == NULL) {
-		return -EINVAL;
+	enum WalletState state;
+	int ret = zbus_chan_read(&app_wallet_state_chan, &state, K_NO_WAIT);
+
+	if (ret < 0) {
+		return FIDO2_ERR_OTHER;
 	}
 
-	return fido2_pin_info_get(&info->set, &info->retries);
-}
-
-static bool pin_valid(const char *pin, size_t len)
-{
-	if (pin == NULL || len < CONFIG_FIDO2_MIN_PIN_LENGTH || len > 63) {
-		return false;
+	switch (state) {
+	case WalletState_Ready:
+	case WalletState_Busy:
+		return FIDO2_OK;
+	case WalletState_Setup:
+		return FIDO2_ERR_NOT_ALLOWED;
+	case WalletState_Locked:
+		return FIDO2_ERR_OPERATION_DENIED;
+	case WalletState_Disabled:
+	default:
+		return FIDO2_ERR_OTHER;
 	}
-	for (size_t i = 0; i < len; ++i) {
-		if ((uint8_t)pin[i] < 0x20 || (uint8_t)pin[i] > 0x7e) {
-			return false;
-		}
-	}
-	return true;
-}
-
-static int pin_hash(const char *pin, size_t len, uint8_t output[FIDO2_PIN_HASH_SIZE])
-{
-	uint8_t hash[FIDO2_SHA256_SIZE];
-	size_t hash_len;
-	psa_status_t status;
-
-	status = psa_hash_compute(PSA_ALG_SHA_256, (const uint8_t *)pin, len, hash, sizeof(hash),
-				  &hash_len);
-	if (status != PSA_SUCCESS || hash_len != FIDO2_SHA256_SIZE) {
-		mbedtls_platform_zeroize(hash, sizeof(hash));
-		return -EIO;
-	}
-
-	memcpy(output, hash, FIDO2_PIN_HASH_SIZE);
-	mbedtls_platform_zeroize(hash, sizeof(hash));
-	return 0;
-}
-
-static int pin_update(const char *current_pin, size_t current_len, const char *new_pin,
-		      size_t new_len)
-{
-	uint8_t current_hash[FIDO2_PIN_HASH_SIZE];
-	uint8_t new_hash[FIDO2_PIN_HASH_SIZE];
-	int ret;
-
-	if ((current_pin != NULL && !pin_valid(current_pin, current_len)) ||
-	    !pin_valid(new_pin, new_len)) {
-		return -EINVAL;
-	}
-
-	ret = current_pin == NULL ? 0 : pin_hash(current_pin, current_len, current_hash);
-	if (ret == 0) {
-		ret = pin_hash(new_pin, new_len, new_hash);
-	}
-	if (ret == 0) {
-		ret = fido2_pin_update(current_pin == NULL ? NULL : current_hash, new_hash);
-	}
-
-	mbedtls_platform_zeroize(current_hash, sizeof(current_hash));
-	mbedtls_platform_zeroize(new_hash, sizeof(new_hash));
-	return ret;
-}
-
-int oskey_fido_pin_set(const char *pin, size_t len)
-{
-	return pin_update(NULL, 0, pin, len);
-}
-
-int oskey_fido_pin_change(const char *current_pin, size_t current_len, const char *new_pin,
-			  size_t new_len)
-{
-	return pin_update(current_pin, current_len, new_pin, new_len);
 }
 
 static uint32_t request_id_next(void)
@@ -217,9 +159,9 @@ static int request(enum FidoRequestKind kind, uint32_t value, const void *data, 
 	return -ETIMEDOUT;
 }
 
-int fido2_credentials_make(const char *rp_id, uint8_t cred_protect,
-			   uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
-			   uint8_t public_key[FIDO2_P256_UNCOMPRESSED_KEY_SIZE])
+int oskey_fido2_make(const char *rp_id, uint8_t cred_protect,
+		     uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
+		     uint8_t public_key[FIDO2_P256_UNCOMPRESSED_KEY_SIZE])
 {
 	struct fido2_response response;
 	int ret = request(FidoRequestKind_Register, cred_protect, rp_id, strlen(rp_id), NULL, 0,
@@ -237,8 +179,8 @@ int fido2_credentials_make(const char *rp_id, uint8_t cred_protect,
 	return ret;
 }
 
-int fido2_credentials_validate(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
-			       const uint8_t rp_id_hash[FIDO2_SHA256_SIZE], uint8_t *cred_protect)
+int oskey_fido2_validate(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
+			 const uint8_t rp_id_hash[FIDO2_SHA256_SIZE], uint8_t *cred_protect)
 {
 	struct fido2_response response;
 	int ret = request(FidoRequestKind_Validate, 0, credential_id,
@@ -247,7 +189,6 @@ int fido2_credentials_validate(const uint8_t credential_id[FIDO2_NON_DISCOVERABL
 	if (ret == -EACCES) {
 		ret = -ENOENT;
 	}
-
 	if (ret == 0 && response.data_len != sizeof(uint8_t)) {
 		ret = -EIO;
 	}
@@ -258,10 +199,10 @@ int fido2_credentials_validate(const uint8_t credential_id[FIDO2_NON_DISCOVERABL
 	return ret;
 }
 
-int fido2_credentials_sign(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
-			   const uint8_t rp_id_hash[FIDO2_SHA256_SIZE],
-			   const uint8_t hash[FIDO2_SHA256_SIZE], bool preflight,
-			   uint8_t *signature, size_t signature_size, size_t *signature_len)
+int oskey_fido2_sign(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CRED_ID_SIZE],
+		     const uint8_t rp_id_hash[FIDO2_SHA256_SIZE],
+		     const uint8_t hash[FIDO2_SHA256_SIZE], bool preflight, uint8_t *signature,
+		     size_t signature_size, size_t *signature_len)
 {
 	uint8_t auxiliary[FIDO2_SHA256_SIZE * 2];
 	struct fido2_response response;
@@ -284,8 +225,9 @@ int fido2_credentials_sign(const uint8_t credential_id[FIDO2_NON_DISCOVERABLE_CR
 	return ret;
 }
 
-void fido2_up_set_request(uint8_t command, const char *rp_id, const uint8_t *user_id,
-			  size_t user_id_len, const char *user_name, const char *user_display_name)
+void oskey_fido2_set_request(uint8_t command, const char *rp_id, const uint8_t *user_id,
+			     size_t user_id_len, const char *user_name,
+			     const char *user_display_name)
 {
 	current_request = (struct fido2_request){
 		.command = command,

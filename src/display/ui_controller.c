@@ -172,6 +172,20 @@ static void handle_local_result(struct app_local_result *result)
 
 	switch (result->action) {
 	case LocalAction_Ready:
+#if defined(CONFIG_OSKEY_FIDO2)
+		if (ui.page == UI_PAGE_FIDO_PIN_RECOVER) {
+			bool pin_set;
+			uint8_t retries;
+
+			if (app_fido_pin_info_get(&pin_set, &retries) == 0 && pin_set &&
+			    retries > 0) {
+				ui_back();
+			} else {
+				ui_input_error("Could not recover FIDO PIN");
+			}
+			break;
+		}
+#endif
 		ui_open(UI_PAGE_HOME);
 		break;
 	case LocalAction_Mnemonic: {
@@ -190,7 +204,8 @@ static void handle_local_result(struct app_local_result *result)
 	case LocalAction_Error: {
 		char buffer[32];
 		const char *text = error_text(result->error, result->value, buffer, sizeof(buffer));
-		if (result->error == AppError_UnlockFailed && ui.page == UI_PAGE_LOCKED) {
+		if (result->error == AppError_UnlockFailed &&
+		    (ui.page == UI_PAGE_LOCKED || ui.page == UI_PAGE_FIDO_PIN_RECOVER)) {
 			ui_input_error(text);
 		} else {
 			ui_error(text);

@@ -6,7 +6,6 @@
 
 #include "assets/assets.h"
 #include "net/wifi.h"
-#include "usb/fido2_pin.h"
 
 static bool wifi_available(void)
 {
@@ -456,20 +455,10 @@ static enum ui_tone usb_tone(enum app_usb_state state)
 }
 
 #if defined(CONFIG_OSKEY_FIDO2)
-static void fido_pin_open(lv_event_t *event)
+static void fido_pin_recover_open(lv_event_t *event)
 {
 	ARG_UNUSED(event);
-	ui_wipe(ui.fido_pin_current, sizeof(ui.fido_pin_current));
-	ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
-	ui_push(UI_PAGE_FIDO_PIN_NEW);
-}
-
-static void fido_pin_change_open(lv_event_t *event)
-{
-	ARG_UNUSED(event);
-	ui_wipe(ui.fido_pin_current, sizeof(ui.fido_pin_current));
-	ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
-	ui_push(UI_PAGE_FIDO_PIN_CURRENT);
+	ui_push(UI_PAGE_FIDO_PIN_RECOVER);
 }
 #endif
 
@@ -489,28 +478,28 @@ void ui_usb_render(void)
 		    IS_ENABLED(CONFIG_OSKEY_FIDO2) ? UI_TONE_DEFAULT : UI_TONE_MUTED, NULL, NULL);
 
 #if defined(CONFIG_OSKEY_FIDO2)
-	struct oskey_fido_pin_info pin;
-	int ret = oskey_fido_pin_info_get(&pin);
+	bool pin_set;
+	uint8_t retries;
+	int ret = app_fido_pin_info_get(&pin_set, &retries);
 	char detail[48];
 
 	ui_section(content, "FIDO SECURITY");
 	if (ret < 0) {
 		ui_list_row(content, &oskey_passkey, "FIDO PIN", "Status unavailable", NULL,
 			    UI_TONE_WARNING, NULL, NULL);
-	} else if (!pin.set) {
-		ui_list_row(content, &oskey_passkey, "Set FIDO PIN",
-			    "Protect passkeys with a separate PIN", NULL, UI_TONE_ACTIVE,
-			    fido_pin_open, NULL);
+	} else if (!pin_set) {
+		ui_list_row(content, &oskey_passkey, "FIDO PIN", "Not configured on USB host", NULL,
+			    UI_TONE_MUTED, NULL, NULL);
 	} else {
-		if (pin.retries == 0) {
+		if (retries == 0) {
 			snprintf(detail, sizeof(detail), "Blocked after failed attempts");
 		} else {
 			snprintf(detail, sizeof(detail), "Configured, %u attempts remaining",
-				 pin.retries);
+				 retries);
 		}
 		ui_list_row(content, &oskey_passkey, "FIDO PIN", detail, NULL,
-			    pin.retries == 0 ? UI_TONE_DANGER : UI_TONE_SUCCESS,
-			    pin.retries == 0 ? NULL : fido_pin_change_open, NULL);
+			    retries == 0 ? UI_TONE_DANGER : UI_TONE_SUCCESS,
+			    retries == 0 ? fido_pin_recover_open : NULL, NULL);
 	}
 #endif
 }

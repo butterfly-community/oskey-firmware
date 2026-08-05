@@ -266,6 +266,7 @@ extern "C" {
     pub(crate) fn storage_general_read(data: *mut u8, len: usize, id: u16) -> c_int;
     pub(crate) fn storage_general_write(data: *const u8, len: usize, id: u16) -> bool;
     pub(crate) fn app_storage_reset() -> bool;
+    pub(crate) fn app_fido_pin_recover();
     pub(crate) fn app_restart();
 }
 

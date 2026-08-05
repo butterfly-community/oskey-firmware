@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oskey)
 
+if(CONFIG_OSKEY_FIDO2 AND CONFIG_NATIVE_LIBC)
+  zephyr_compile_definitions(_POSIX_C_SOURCE=200809L)
+endif()
+
 include(cmake/lvgl.cmake)
 
 target_sources(app PRIVATE

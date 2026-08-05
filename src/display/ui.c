@@ -679,8 +679,6 @@ void ui_back(void)
 void ui_clear_sensitive(void)
 {
 	ui_wipe(ui.pin, sizeof(ui.pin));
-	ui_wipe(ui.fido_pin_current, sizeof(ui.fido_pin_current));
-	ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
 	ui_wipe(ui.mnemonic, sizeof(ui.mnemonic));
 	ui_wipe(ui.passphrase, sizeof(ui.passphrase));
 	ui_wipe(ui.entropy, sizeof(ui.entropy));

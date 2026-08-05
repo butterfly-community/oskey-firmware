@@ -1,12 +1,10 @@
 #include "ui.h"
 
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/sys/util.h>
 
 #include "assets/assets.h"
-#include "usb/fido2_pin.h"
 
 static bool valid_pin(const char *pin)
 {
@@ -30,13 +28,6 @@ static bool valid_pin(const char *pin)
 	}
 	return digit && lower && upper && symbol;
 }
-
-#if defined(CONFIG_OSKEY_FIDO2)
-static bool valid_fido_pin(const char *pin)
-{
-	return strlen(pin) >= CONFIG_FIDO2_MIN_PIN_LENGTH;
-}
-#endif
 
 static const struct ui_input_config input_pages[] = {
 	[UI_PAGE_LOCKED] =
@@ -69,33 +60,13 @@ static const struct ui_input_config input_pages[] = {
 			.max_length = UI_PIN_SIZE - 1,
 			.password = true,
 		},
-	[UI_PAGE_FIDO_PIN_CURRENT] =
+	[UI_PAGE_FIDO_PIN_RECOVER] =
 		{
-			.title = "Change FIDO PIN",
-			.hint = "Verify the current FIDO PIN",
-			.placeholder = "Current PIN",
-			.action = "Continue",
-			.action_detail = "Choose a new FIDO PIN",
-			.max_length = UI_PIN_SIZE - 1,
-			.password = true,
-		},
-	[UI_PAGE_FIDO_PIN_NEW] =
-		{
-			.title = "New FIDO PIN",
-			.hint = "This PIN is separate from the wallet PIN",
-			.placeholder = "Enter PIN",
-			.action = "Continue",
-			.action_detail = "Confirm this FIDO PIN",
-			.max_length = UI_PIN_SIZE - 1,
-			.password = true,
-		},
-	[UI_PAGE_FIDO_PIN_CONFIRM] =
-		{
-			.title = "Confirm FIDO PIN",
-			.hint = "Enter the same PIN again",
-			.placeholder = "Enter PIN",
-			.action = "Save PIN",
-			.action_detail = "Protect FIDO operations with this PIN",
+			.title = "Recover FIDO PIN",
+			.hint = "Verify the OSKey wallet PIN",
+			.placeholder = "Wallet PIN",
+			.action = "Recover",
+			.action_detail = "Restore FIDO PIN attempts",
 			.max_length = UI_PIN_SIZE - 1,
 			.password = true,
 		},
@@ -156,6 +127,7 @@ static void submit_current_input(const char *text)
 {
 	switch (ui.page) {
 	case UI_PAGE_LOCKED:
+	case UI_PAGE_FIDO_PIN_RECOVER:
 		ui_submit(LocalRequestKind_Unlock, 0, text, strlen(text), NULL, 0);
 		break;
 	case UI_PAGE_PIN_NEW:
@@ -173,66 +145,6 @@ static void submit_current_input(const char *text)
 		}
 		ui_push(UI_PAGE_SOURCE);
 		break;
-#if defined(CONFIG_OSKEY_FIDO2)
-	case UI_PAGE_FIDO_PIN_CURRENT:
-		if (!valid_fido_pin(text)) {
-			ui_input_error("FIDO PIN is too short");
-			return;
-		}
-		snprintf(ui.fido_pin_current, sizeof(ui.fido_pin_current), "%s", text);
-		ui_push(UI_PAGE_FIDO_PIN_NEW);
-		break;
-	case UI_PAGE_FIDO_PIN_NEW:
-		if (!valid_fido_pin(text)) {
-			ui_input_error("FIDO PIN is too short");
-			return;
-		}
-		snprintf(ui.fido_pin, sizeof(ui.fido_pin), "%s", text);
-		ui_push(UI_PAGE_FIDO_PIN_CONFIRM);
-		break;
-	case UI_PAGE_FIDO_PIN_CONFIRM: {
-		if (strcmp(ui.fido_pin, text) != 0) {
-			ui_input_error("PINs do not match");
-			return;
-		}
-
-		bool changing = ui.fido_pin_current[0] != '\0';
-		int ret = changing ? oskey_fido_pin_change(
-					     ui.fido_pin_current, strlen(ui.fido_pin_current), text,
-					     strlen(text))
-				   : oskey_fido_pin_set(text, strlen(text));
-		ui_wipe(ui.fido_pin_current, sizeof(ui.fido_pin_current));
-		ui_wipe(ui.fido_pin, sizeof(ui.fido_pin));
-		if (ret == 0 || ret == -EALREADY) {
-			ui_back();
-			ui_back();
-			if (changing) {
-				ui_back();
-			}
-		} else if (changing && (ret == -EACCES || ret == -EPERM)) {
-			struct oskey_fido_pin_info info;
-			char error[48];
-
-			ui_back();
-			ui_back();
-			if (oskey_fido_pin_info_get(&info) == 0 && info.retries > 0) {
-				snprintf(error, sizeof(error), "Incorrect PIN, %u attempts remaining",
-					 info.retries);
-				ui_input_error(error);
-			} else {
-				ui_input_error("FIDO PIN is blocked");
-			}
-		} else {
-			ui_back();
-			if (changing) {
-				ui_back();
-			}
-			ui_input_error(ret == -EBUSY ? "FIDO is busy; try again"
-						     : "Could not save FIDO PIN");
-		}
-		break;
-	}
-#endif
 	case UI_PAGE_IMPORT:
 		snprintf(ui.mnemonic, sizeof(ui.mnemonic), "%s", text);
 		ui_push(UI_PAGE_PASSPHRASE);
@@ -626,9 +538,7 @@ void ui_render(void)
 	case UI_PAGE_PIN_NEW:
 	case UI_PAGE_PIN_CONFIRM:
 #if defined(CONFIG_OSKEY_FIDO2)
-	case UI_PAGE_FIDO_PIN_CURRENT:
-	case UI_PAGE_FIDO_PIN_NEW:
-	case UI_PAGE_FIDO_PIN_CONFIRM:
+	case UI_PAGE_FIDO_PIN_RECOVER:
 #endif
 	case UI_PAGE_IMPORT:
 	case UI_PAGE_VERIFY:
@@ -655,9 +565,7 @@ void ui_render(void)
 		ui_usb_render();
 		break;
 #if !defined(CONFIG_OSKEY_FIDO2)
-	case UI_PAGE_FIDO_PIN_CURRENT:
-	case UI_PAGE_FIDO_PIN_NEW:
-	case UI_PAGE_FIDO_PIN_CONFIRM:
+	case UI_PAGE_FIDO_PIN_RECOVER:
 		break;
 #endif
 	case UI_PAGE_SOURCE:

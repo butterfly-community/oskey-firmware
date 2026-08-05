@@ -11,9 +11,10 @@ use core::mem::size_of_val;
 use oskey_action::WalletPlatform;
 
 use crate::rs::ffi::{
-    app_check_feature, app_check_storage, app_csrand_get, app_display_ready, app_get_chip_model,
-    app_get_device_id, app_get_eui64, app_restart, app_storage_reset, app_version_get,
-    storage_general_check, storage_general_read, storage_general_write, storage_ids,
+    app_check_feature, app_check_storage, app_csrand_get, app_display_ready, app_fido_pin_recover,
+    app_get_chip_model, app_get_device_id, app_get_eui64, app_restart, app_storage_reset,
+    app_version_get, storage_general_check, storage_general_read, storage_general_write,
+    storage_ids,
 };
 
 pub(crate) struct Platform;
@@ -137,6 +138,10 @@ impl WalletPlatform for Platform {
                 storage_ids.unlock_failures,
             )
         }
+    }
+
+    fn recover_fido_pin(&self) {
+        unsafe { app_fido_pin_recover() };
     }
 
     fn reset_storage(&self) -> bool {

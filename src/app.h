@@ -24,6 +24,8 @@ void app_get_chip_model(char *buffer, size_t len);
 int app_get_eui64(uint8_t *buffer, size_t len);
 int app_get_device_id(uint8_t *buffer, size_t len);
 bool app_storage_reset(void);
+int app_fido_pin_info_get(bool *is_set, uint8_t *retries);
+void app_fido_pin_recover(void);
 void app_restart(void);
 
 #endif

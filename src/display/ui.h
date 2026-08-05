@@ -47,9 +47,7 @@ enum ui_page {
 	UI_PAGE_USB,
 	UI_PAGE_PIN_NEW,
 	UI_PAGE_PIN_CONFIRM,
-	UI_PAGE_FIDO_PIN_CURRENT,
-	UI_PAGE_FIDO_PIN_NEW,
-	UI_PAGE_FIDO_PIN_CONFIRM,
+	UI_PAGE_FIDO_PIN_RECOVER,
 	UI_PAGE_SOURCE,
 	UI_PAGE_LENGTH,
 	UI_PAGE_IMPORT,
@@ -96,8 +94,6 @@ struct ui_context {
 	uint8_t history_len;
 	bool custom_entropy;
 	char pin[UI_PIN_SIZE];
-	char fido_pin_current[UI_PIN_SIZE];
-	char fido_pin[UI_PIN_SIZE];
 	char mnemonic[UI_MNEMONIC_SIZE];
 	char passphrase[UI_PASSPHRASE_SIZE];
 	char wifi_ssid[APP_WIFI_SSID_MAX_LEN + 1];

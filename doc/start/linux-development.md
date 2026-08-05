@@ -36,13 +36,15 @@ Apply them in this order from the OSKey source directory:
 
 ```sh
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/tf-psa-threading.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/clientpin.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/storage.patch"
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/change-pin.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/oskey.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/usb-busy.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/keepalive.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/usb-dwc2-zlp-cache.patch"
 ```
+
+`change-pin.patch` mirrors upstream Zephyr PR #115238 and can be removed once that change is
+present in the Zephyr tree.
 
 ## Build
 
