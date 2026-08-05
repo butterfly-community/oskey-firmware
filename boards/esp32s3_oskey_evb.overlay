@@ -3,7 +3,6 @@
 #include <zephyr/dt-bindings/display/panel.h>
 
 / {
-  /* Deprecated hardware definition retained for reference. */
   chosen {
     zephyr,display = &st7789v;
     zephyr,touch = &ft6336;
@@ -90,6 +89,10 @@
 
 &dma {
   status = "okay";
+};
+
+&spi3 {
+  status = "disabled";
 };
 
 &psram0 {
