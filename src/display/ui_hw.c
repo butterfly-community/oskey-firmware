@@ -1,5 +1,6 @@
 #include "ui.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/sys/util.h>
@@ -478,23 +479,21 @@ void ui_usb_render(void)
 		    IS_ENABLED(CONFIG_OSKEY_FIDO2) ? UI_TONE_DEFAULT : UI_TONE_MUTED, NULL, NULL);
 
 #if defined(CONFIG_OSKEY_FIDO2)
-	bool pin_set;
-	uint8_t retries;
-	int ret = app_fido_pin_info_get(&pin_set, &retries);
+	int retries = app_fido_pin_retries();
 	char detail[48];
 
 	ui_section(content, "FIDO SECURITY");
-	if (ret < 0) {
-		ui_list_row(content, &oskey_passkey, "FIDO PIN", "Status unavailable", NULL,
-			    UI_TONE_WARNING, NULL, NULL);
-	} else if (!pin_set) {
+	if (retries == -ENOENT) {
 		ui_list_row(content, &oskey_passkey, "FIDO PIN", "Not configured on USB host", NULL,
 			    UI_TONE_MUTED, NULL, NULL);
+	} else if (retries < 0) {
+		ui_list_row(content, &oskey_passkey, "FIDO PIN", "Status unavailable", NULL,
+			    UI_TONE_WARNING, NULL, NULL);
 	} else {
 		if (retries == 0) {
 			snprintf(detail, sizeof(detail), "Blocked after failed attempts");
 		} else {
-			snprintf(detail, sizeof(detail), "Configured, %u attempts remaining",
+			snprintf(detail, sizeof(detail), "Configured, %d attempts remaining",
 				 retries);
 		}
 		ui_list_row(content, &oskey_passkey, "FIDO PIN", detail, NULL,

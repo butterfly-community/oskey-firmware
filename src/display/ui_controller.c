@@ -174,11 +174,7 @@ static void handle_local_result(struct app_local_result *result)
 	case LocalAction_Ready:
 #if defined(CONFIG_OSKEY_FIDO2)
 		if (ui.page == UI_PAGE_FIDO_PIN_RECOVER) {
-			bool pin_set;
-			uint8_t retries;
-
-			if (app_fido_pin_info_get(&pin_set, &retries) == 0 && pin_set &&
-			    retries > 0) {
+			if (app_fido_pin_retries() > 0) {
 				ui_back();
 			} else {
 				ui_input_error("Could not recover FIDO PIN");
