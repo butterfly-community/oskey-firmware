@@ -13,17 +13,21 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/services/nus.h>
+#include <zephyr/settings/settings.h>
 #ifdef CONFIG_OSKEY_MCUBOOT
 #include <zephyr/mgmt/mcumgr/transport/smp_bt.h>
 #endif
 
 LOG_MODULE_REGISTER(oskey_bt);
 
+#define ADDRESS_PRIVACY_SETTING "bluetooth/address_privacy"
+
 K_MUTEX_DEFINE(oskey_bt_conn_lock);
 static struct bt_conn *active_conn;
 static struct bt_nus_inst *nus_instance;
 static uint32_t active_session_id;
 static uint32_t session_sequence;
+static bool address_privacy;
 
 static void publish_bluetooth_state(enum app_bluetooth_state state)
 {
@@ -143,13 +147,19 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 static void start_advertising(void)
 {
 	/* Some BlueZ/Realtek adapters require scanning before reconnecting to private addresses. */
-	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+	struct bt_le_adv_param params = *BT_LE_ADV_CONN_FAST_2;
+
+	if (!address_privacy) {
+		params.options |= BT_LE_ADV_OPT_USE_IDENTITY;
+	}
+	int err = bt_le_adv_start(&params, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 
 	if (err) {
 		LOG_ERR("Failed to start advertising: %d", err);
 		publish_bluetooth_state(APP_BLUETOOTH_IDLE);
 	} else {
-		LOG_INF("Advertising started");
+		LOG_INF("Advertising started with %s address",
+			address_privacy ? "private" : "identity");
 		publish_bluetooth_state(APP_BLUETOOTH_ADVERTISING);
 	}
 }
@@ -310,6 +320,8 @@ int oskey_bt_init(void)
 
 int oskey_bt_start(void)
 {
+	address_privacy = oskey_bt_address_privacy_enabled();
+
 	int err = bt_conn_auth_cb_register(&auth_callbacks);
 	if (err) {
 		return err;
@@ -323,6 +335,19 @@ int oskey_bt_start(void)
 	start_advertising();
 
 	return 0;
+}
+
+bool oskey_bt_address_privacy_enabled(void)
+{
+	bool enabled = false;
+	ssize_t len = settings_load_one(ADDRESS_PRIVACY_SETTING, &enabled, sizeof(enabled));
+
+	return len == sizeof(enabled) && enabled;
+}
+
+int oskey_bt_address_privacy_set(bool enabled)
+{
+	return settings_save_one(ADDRESS_PRIVACY_SETTING, &enabled, sizeof(enabled));
 }
 
 int oskey_bt_send(uint32_t session_id, const uint8_t *data, size_t len)

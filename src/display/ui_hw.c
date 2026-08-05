@@ -6,6 +6,7 @@
 #include <zephyr/sys/util.h>
 
 #include "assets/assets.h"
+#include "bluetooth/bluetooth.h"
 #include "net/wifi.h"
 
 static bool wifi_available(void)
@@ -387,10 +388,26 @@ static enum ui_tone bluetooth_tone(enum app_bluetooth_state state)
 	}
 }
 
+#ifdef CONFIG_OSKEY_BLUETOOTH
+static void bluetooth_privacy_toggled(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	int ret = oskey_bt_address_privacy_set(!oskey_bt_address_privacy_enabled());
+
+	ui_refresh();
+	if (ret < 0) {
+		ui_error("Could not change Bluetooth address privacy");
+	}
+}
+#endif
+
 void ui_bluetooth_render(void)
 {
 	lv_obj_t *content = ui_page_begin("Bluetooth", UI_NAVIGATION_BACK);
 	enum app_bluetooth_state state = ui.status.bluetooth;
+#ifdef CONFIG_OSKEY_BLUETOOTH
+	bool privacy = oskey_bt_address_privacy_enabled();
+#endif
 
 	ui_section(content, "STATUS");
 	ui_list_row(content, &oskey_bluetooth, bluetooth_state_name(state),
@@ -403,6 +420,14 @@ void ui_bluetooth_render(void)
 			    : "Encrypted wallet communication over Bluetooth",
 		    NULL, state == APP_BLUETOOTH_DISABLED ? UI_TONE_MUTED : UI_TONE_DEFAULT, NULL,
 		    NULL);
+
+#ifdef CONFIG_OSKEY_BLUETOOTH
+	ui_section(content, "ADDRESS");
+	ui_list_row(content, &oskey_bluetooth, "Address privacy",
+		    "Changes take effect after restart", privacy ? "On" : "Off",
+		    privacy ? UI_TONE_ACTIVE : UI_TONE_MUTED,
+		    state == APP_BLUETOOTH_DISABLED ? NULL : bluetooth_privacy_toggled, NULL);
+#endif
 }
 
 static const char *usb_state_name(enum app_usb_state state)
