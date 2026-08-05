@@ -36,6 +36,7 @@ Apply them in this order from the OSKey source directory:
 
 ```sh
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/tf-psa-threading.patch"
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/esp32-virtual-efuse.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/change-pin.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/oskey.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/usb-busy.patch"

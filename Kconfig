@@ -425,10 +425,25 @@ config OSKEY_MQTT_BROKER_PORT
 
 endif
 
+choice OSKEY_MCUBOOT_BACKEND
+	prompt "Signed firmware updates"
+	optional
+
+config OSKEY_MCUBOOT_ZEPHYR
+	bool "Zephyr MCUboot port"
+	select BOOTLOADER_MCUBOOT
+
+config OSKEY_MCUBOOT_ESP
+	bool "Espressif MCUboot port"
+	depends on SOC_SERIES_ESP32S3
+	select BOOTLOADER_MCUBOOT
+	select ESP_FLASH_ENCRYPTION
+
+endchoice
+
 config OSKEY_MCUBOOT
-	bool "Signed firmware updates"
-	default y if BOOTLOADER_MCUBOOT
-	depends on BOOTLOADER_MCUBOOT
+	bool
+	default y if OSKEY_MCUBOOT_ZEPHYR || OSKEY_MCUBOOT_ESP
 	select OSKEY_STORAGE
 	select MCUBOOT_BOOTLOADER_NO_DOWNGRADE
 	select MCUMGR
@@ -447,6 +462,22 @@ config OSKEY_MCUBOOT
 	help
 	  Enable signed MCUboot updates over authenticated Bluetooth, or over UART
 	  after the application explicitly reboots into firmware update mode.
+
+config MCUBOOT_GENERATE_UNSIGNED_IMAGE
+	default n if OSKEY_MCUBOOT_ESP
+
+config MCUBOOT_SIGNATURE_KEY_FILE
+	default "$(APP_DIR)/sign/root-ec-p256.pem" if OSKEY_MCUBOOT_ESP
+
+config OSKEY_MCUBOOT_ESP_VIRTUAL_EFUSE
+	bool "Use virtual eFuses"
+	depends on OSKEY_MCUBOOT_ESP
+	default y
+	select ESP32_EFUSE_VIRTUAL
+	select ESP32_EFUSE_VIRTUAL_KEEP_IN_FLASH
+	help
+	  Persist simulated eFuses in flash so Secure Boot and flash encryption
+	  flows can be tested without changing the chip's real eFuses.
 
 if OSKEY_MCUBOOT
 

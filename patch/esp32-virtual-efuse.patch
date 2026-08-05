@@ -1,0 +1,11 @@
+diff --git a/drivers/flash/flash_esp32.c b/drivers/flash/flash_esp32.c
+--- a/drivers/flash/flash_esp32.c
++++ b/drivers/flash/flash_esp32.c
+@@ -19,6 +19,7 @@
+ #include <esp_flash_encrypt.h>
+ #include <esp_flash_internal.h>
+ #include <bootloader_flash_priv.h>
++#include <hal/efuse_hal.h>
+ 
+ #include <zephyr/kernel.h>
+ #include <zephyr/device.h>
