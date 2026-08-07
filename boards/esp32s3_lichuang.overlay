@@ -1,11 +1,13 @@
 #include <zephyr/dt-bindings/mipi_dbi/mipi_dbi.h>
 #include <zephyr/dt-bindings/gpio/gpio.h>
 #include <zephyr/dt-bindings/display/panel.h>
+#include <zephyr/dt-bindings/pinctrl/esp32s3-pinctrl.h>
 
 / {
   chosen {
     zephyr,display = &st7789v;
     zephyr,touch = &ft6336;
+    zephyr,camera = &lcd_cam_dvp;
   };
 
   aliases {
@@ -72,6 +74,63 @@
     reg = <0x38>;
     screen-height = <240>;
     inverted-y;
+  };
+
+  gc0308: gc0308@21 {
+    compatible = "galaxycore,gc0308";
+    reg = <0x21>;
+    pwdn-gpios = <&pca9557 2 GPIO_ACTIVE_HIGH>;
+    status = "okay";
+
+    port {
+      gc0308_ep_out: endpoint {
+        remote-endpoint-label = "dvp_ep_in";
+      };
+    };
+  };
+};
+
+&pinctrl {
+  lcd_cam_default: lcd_cam_default {
+    group1 {
+      pinmux = <LCD_CAM_CAM_CLK_GPIO5>;
+      output-enable;
+    };
+
+    group2 {
+      pinmux = <LCD_CAM_V_SYNC_CAM_GPIO3>,
+               <LCD_CAM_H_ENABLE_CAM_GPIO46>,
+               <LCD_CAM_CAM_PCLK_GPIO7>,
+               <LCD_CAM_DATA_IN0_GPIO16>,
+               <LCD_CAM_DATA_IN1_GPIO18>,
+               <LCD_CAM_DATA_IN2_GPIO8>,
+               <LCD_CAM_DATA_IN3_GPIO17>,
+               <LCD_CAM_DATA_IN4_GPIO15>,
+               <LCD_CAM_DATA_IN5_GPIO6>,
+               <LCD_CAM_DATA_IN6_GPIO4>,
+               <LCD_CAM_DATA_IN7_GPIO9>;
+      input-enable;
+      bias-disable;
+    };
+  };
+};
+
+&lcd_cam {
+  status = "okay";
+  pinctrl-0 = <&lcd_cam_default>;
+  pinctrl-names = "default";
+};
+
+&lcd_cam_dvp {
+  status = "okay";
+  cam-clk = <20000000>;
+  data-width = <8>;
+  source = <&gc0308>;
+
+  port {
+    dvp_ep_in: endpoint {
+      remote-endpoint-label = "gc0308_ep_out";
+    };
   };
 };
 

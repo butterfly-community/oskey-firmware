@@ -35,6 +35,15 @@ target_sources_ifdef(CONFIG_OSKEY_TEST_FIRMWARE app PRIVATE
   src/test.c
 )
 
+target_sources_ifdef(CONFIG_OSKEY_CAMERA app PRIVATE
+  src/camera/gc0308.c
+  src/camera/camera.c
+)
+
+target_sources_ifdef(CONFIG_OSKEY_CAMERA_TEST app PRIVATE
+  src/camera/camera_test.c
+)
+
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
   src/display/ui.c
   src/display/ui_controller.c

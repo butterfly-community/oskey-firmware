@@ -1,0 +1,18 @@
+# Copyright (c) 2026 OSKey contributors
+# SPDX-License-Identifier: Apache-2.0
+
+description: GalaxyCore GC0308 CMOS video sensor
+
+compatible: "galaxycore,gc0308"
+
+include: i2c-device.yaml
+
+properties:
+  pwdn-gpios:
+    type: phandle-array
+    required: true
+    description: Active-high sensor power-down signal
+
+child-binding:
+  child-binding:
+    include: video-interfaces.yaml

@@ -84,6 +84,27 @@ config OSKEY_STORAGE
 config MPU_ALLOW_FLASH_WRITE
 	default y if OSKEY_STORAGE || OSKEY_XIP
 
+config OSKEY_CAMERA
+	bool "GC0308 camera"
+	depends on SOC_SERIES_ESP32S3
+	depends on DT_HAS_GALAXYCORE_GC0308_ENABLED
+	depends on DT_HAS_ESPRESSIF_ESP32_LCD_CAM_DVP_ENABLED
+	select I2C
+	select GPIO
+	select VIDEO
+	select OSKEY_ESP_SPIRAM
+	help
+	  Enable the GC0308 sensor and the ESP32-S3 LCD_CAM DVP capture path.
+
+config DMA_ESP32_MAX_DESCRIPTOR_NUM
+	default 64 if OSKEY_CAMERA
+
+config VIDEO_BUFFER_USE_SHARED_MULTI_HEAP
+	default y if OSKEY_CAMERA
+
+config VIDEO_BUFFER_SMH_ATTRIBUTE
+	default 2 if OSKEY_CAMERA
+
 menuconfig OSKEY_DISPLAY
 	bool "Display and input"
 	select I2C
@@ -584,6 +605,13 @@ config OSKEY_DEBUG
 	select DEBUG
 	select STACK_USAGE
 	select STATS
+
+config OSKEY_CAMERA_TEST
+	bool "GC0308 live preview test"
+	depends on OSKEY_CAMERA
+	select DISPLAY
+	help
+	  Replace the normal application startup with a camera-to-display preview loop.
 
 config OSKEY_TEST_RNG
 	bool "Insecure test random generator"
