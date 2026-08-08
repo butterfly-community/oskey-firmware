@@ -7,11 +7,18 @@
 #include <zephyr/sys/util.h>
 #include <lvgl_zephyr.h>
 
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+#include "camera/qr_scanner.h"
+#endif
+
 enum ui_pending_event {
 	UI_EVENT_STATUS = BIT(0),
 	UI_EVENT_NETWORK = BIT(1),
 	UI_EVENT_CONFIRMATION = BIT(2),
 	UI_EVENT_LOCAL_RESULT = BIT(3),
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+	UI_EVENT_QR_SCANNER = BIT(4),
+#endif
 };
 
 struct ui_pending_network {
@@ -28,12 +35,17 @@ static atomic_t pending_events;
 static struct ui_pending_network pending_network;
 K_SEM_DEFINE(event_sem, 0, 1);
 K_MUTEX_DEFINE(network_pending_lock);
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+static struct app_qr_scanner_event pending_qr_event;
+K_MUTEX_DEFINE(qr_pending_lock);
+#endif
 
 static void read_device_status(struct ui_status *status)
 {
 	(void)zbus_chan_read(&app_bluetooth_state_chan, &status->bluetooth, K_FOREVER);
 	(void)zbus_chan_read(&app_usb_state_chan, &status->usb, K_FOREVER);
 	(void)zbus_chan_read(&app_storage_state_chan, &status->storage, K_FOREVER);
+	(void)zbus_chan_read(&app_camera_state_chan, &status->camera, K_FOREVER);
 	(void)zbus_chan_read(&app_wallet_state_chan, &status->wallet, K_FOREVER);
 }
 
@@ -80,6 +92,7 @@ static bool active_status_page(void)
 	case UI_PAGE_WIFI:
 	case UI_PAGE_BLUETOOTH:
 	case UI_PAGE_USB:
+	case UI_PAGE_CAMERA:
 		return true;
 	default:
 		return false;
@@ -89,13 +102,18 @@ static bool active_status_page(void)
 static void apply_status(const struct ui_status *next)
 {
 	struct ui_status previous = ui.status;
+	bool camera_page = ui.page == UI_PAGE_CAMERA;
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+	camera_page = camera_page || ui.page == UI_PAGE_QR_SCANNER;
+#endif
 
 	ui.status = *next;
 	ui_status_update(next);
 	if (active_status_page()) {
 		ui_refresh();
 	}
-	if (previous.storage != APP_STORAGE_ERROR && next->storage == APP_STORAGE_ERROR) {
+	if (previous.storage != APP_STORAGE_ERROR && next->storage == APP_STORAGE_ERROR &&
+	    !camera_page) {
 		ui_open(UI_PAGE_STORAGE_ERROR);
 	} else if (previous.wallet != WalletState_Locked && next->wallet == WalletState_Locked) {
 		ui_open(UI_PAGE_LOCKED);
@@ -260,12 +278,21 @@ static void ui_bus_changed(const struct zbus_channel *channel)
 			events = UI_EVENT_NETWORK;
 		}
 	} else if (channel == &app_bluetooth_state_chan || channel == &app_usb_state_chan ||
-		   channel == &app_storage_state_chan || channel == &app_wallet_state_chan) {
+		   channel == &app_storage_state_chan || channel == &app_camera_state_chan ||
+		   channel == &app_wallet_state_chan) {
 		events = UI_EVENT_STATUS;
 	} else if (channel == &app_local_result_event_chan) {
 		events = UI_EVENT_LOCAL_RESULT;
 	} else if (channel == &app_confirmation_state_chan) {
 		events = UI_EVENT_CONFIRMATION;
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+	} else if (channel == &app_qr_scanner_event_chan) {
+		k_mutex_lock(&qr_pending_lock, K_FOREVER);
+		pending_qr_event =
+			*(const struct app_qr_scanner_event *)zbus_chan_const_msg(channel);
+		k_mutex_unlock(&qr_pending_lock);
+		events = UI_EVENT_QR_SCANNER;
+#endif
 	}
 
 	if (events != 0) {
@@ -279,9 +306,13 @@ ZBUS_CHAN_ADD_OBS(app_network_event_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_bluetooth_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_usb_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_storage_state_chan, ui_bus_listener, 0);
+ZBUS_CHAN_ADD_OBS(app_camera_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_wallet_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_local_result_event_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_confirmation_state_chan, ui_bus_listener, 0);
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+ZBUS_CHAN_ADD_OBS(app_qr_scanner_event_chan, ui_bus_listener, 0);
+#endif
 
 static void ui_event_thread(void *first, void *second, void *third)
 {
@@ -317,6 +348,16 @@ static void ui_event_thread(void *first, void *second, void *third)
 						     &next_confirmation, K_FOREVER);
 				apply_confirmation(&next_confirmation);
 			}
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+			if ((events & UI_EVENT_QR_SCANNER) != 0) {
+				struct app_qr_scanner_event event;
+
+				k_mutex_lock(&qr_pending_lock, K_FOREVER);
+				event = pending_qr_event;
+				k_mutex_unlock(&qr_pending_lock);
+				ui_qr_event(&event);
+			}
+#endif
 		}
 		lvgl_unlock();
 	}

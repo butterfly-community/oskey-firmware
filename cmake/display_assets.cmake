@@ -41,6 +41,7 @@ endfunction()
 
 generate_asset(back back 24)
 generate_asset(bluetooth bluetooth 24)
+generate_asset(camera camera 24)
 generate_asset(chevron_right chevron_right 24)
 generate_asset(document document 24)
 generate_asset(ethereum ethereum 24)

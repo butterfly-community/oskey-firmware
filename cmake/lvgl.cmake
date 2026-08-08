@@ -35,6 +35,7 @@ if(CONFIG_OSKEY_DISPLAY)
   foreach(asset
       back
       bluetooth
+      camera
       chevron_right
       document
       ethereum

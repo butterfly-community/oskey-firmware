@@ -36,12 +36,31 @@ target_sources_ifdef(CONFIG_OSKEY_TEST_FIRMWARE app PRIVATE
 )
 
 target_sources_ifdef(CONFIG_OSKEY_CAMERA app PRIVATE
-  src/camera/gc0308.c
   src/camera/camera.c
 )
 
-target_sources_ifdef(CONFIG_OSKEY_CAMERA_TEST app PRIVATE
-  src/camera/camera_test.c
+target_sources_ifdef(CONFIG_OSKEY_CAMERA_GC0308 app PRIVATE
+  src/camera/gc0308.c
+)
+
+if(CONFIG_OSKEY_QR_CODE)
+  add_library(quirc STATIC
+    lib/quirc/lib/decode.c
+    lib/quirc/lib/identify.c
+    lib/quirc/lib/quirc.c
+    lib/quirc/lib/version_db.c
+  )
+  target_include_directories(quirc PUBLIC lib/quirc/lib)
+  target_compile_definitions(quirc PRIVATE QUIRC_FLOAT_TYPE=float QUIRC_USE_TGMATH=1)
+  target_link_libraries(quirc PUBLIC zephyr_interface)
+
+  target_sources(app PRIVATE src/camera/qr_decoder.c)
+  target_link_libraries(app PRIVATE quirc)
+endif()
+
+target_sources_ifdef(CONFIG_OSKEY_QR_SCANNER app PRIVATE
+  src/camera/qr_scanner.c
+  src/display/ui_qr.c
 )
 
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE

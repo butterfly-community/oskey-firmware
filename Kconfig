@@ -85,25 +85,69 @@ config MPU_ALLOW_FLASH_WRITE
 	default y if OSKEY_STORAGE || OSKEY_XIP
 
 config OSKEY_CAMERA
-	bool "GC0308 camera"
-	depends on SOC_SERIES_ESP32S3
-	depends on DT_HAS_GALAXYCORE_GC0308_ENABLED
-	depends on DT_HAS_ESPRESSIF_ESP32_LCD_CAM_DVP_ENABLED
-	select I2C
-	select GPIO
+	bool "Camera capture"
 	select VIDEO
-	select OSKEY_ESP_SPIRAM
 	help
-	  Enable the GC0308 sensor and the ESP32-S3 LCD_CAM DVP capture path.
-
-config DMA_ESP32_MAX_DESCRIPTOR_NUM
-	default 64 if OSKEY_CAMERA
+	  Enable the generic camera capture service. A board must provide a
+	  zephyr,camera chosen video device.
 
 config VIDEO_BUFFER_USE_SHARED_MULTI_HEAP
 	default y if OSKEY_CAMERA
 
 config VIDEO_BUFFER_SMH_ATTRIBUTE
 	default 2 if OSKEY_CAMERA
+
+config VIDEO_BUFFER_POOL_NUM_MAX
+	default 4 if OSKEY_CAMERA
+
+config OSKEY_CAMERA_GC0308
+	bool "GC0308 camera sensor"
+	depends on OSKEY_CAMERA
+	depends on DT_HAS_GALAXYCORE_GC0308_ENABLED
+	select I2C
+	select GPIO
+	help
+	  Enable the GalaxyCore GC0308 image sensor driver.
+
+if SOC_SERIES_ESP32S3
+config DMA_ESP32_MAX_DESCRIPTOR_NUM
+	default 64 if OSKEY_CAMERA
+endif
+
+config OSKEY_QR_CODE
+	bool "QR code decoder"
+	depends on OSKEY_CAMERA
+	help
+	  Decode camera frames locally with quirc.
+
+config OSKEY_QR_SCANNER
+	bool "QR code scanner"
+	depends on OSKEY_CAMERA && OSKEY_DISPLAY
+	select OSKEY_QR_CODE
+	help
+	  Add QR decoding to the camera page.
+
+config OSKEY_QR_DECODE_INTERVAL_MS
+	int "QR code decode interval in milliseconds"
+	depends on OSKEY_QR_CODE
+	default 1000
+	range 100 60000
+
+config OSKEY_QR_MAX_PAYLOAD_SIZE
+	int "Maximum accepted QR code payload size"
+	depends on OSKEY_QR_CODE
+	default 2048
+	range 1 8896
+
+config OSKEY_QR_THREAD_STACK_SIZE
+	int "QR code decoder thread stack size"
+	depends on OSKEY_QR_CODE
+	default 65536
+
+config OSKEY_QR_SCANNER_THREAD_STACK_SIZE
+	int "QR scanner thread stack size"
+	depends on OSKEY_QR_SCANNER
+	default 4096
 
 menuconfig OSKEY_DISPLAY
 	bool "Display and input"
@@ -606,13 +650,6 @@ config OSKEY_DEBUG
 	select STACK_USAGE
 	select STATS
 
-config OSKEY_CAMERA_TEST
-	bool "GC0308 live preview test"
-	depends on OSKEY_CAMERA
-	select DISPLAY
-	help
-	  Replace the normal application startup with a camera-to-display preview loop.
-
 config OSKEY_TEST_RNG
 	bool "Insecure test random generator"
 	select TEST_RANDOM_GENERATOR
@@ -635,6 +672,9 @@ config OSKEY_ESP_SPIRAM
 	select RUST_ALLOC_ESP_SPIRAM if OSKEY_RUST
 	select SPIRAM_FETCH_INSTRUCTIONS if SOC_SERIES_ESP32S3
 	select SPIRAM_RODATA if SOC_SERIES_ESP32S3
+
+config ESP_SPIRAM_HEAP_SIZE
+	default 4194304 if OSKEY_ESP_SPIRAM
 endmenu
 
 config HW_STACK_PROTECTION

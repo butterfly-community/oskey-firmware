@@ -5,6 +5,7 @@
 
 extern const lv_image_dsc_t oskey_back;
 extern const lv_image_dsc_t oskey_bluetooth;
+extern const lv_image_dsc_t oskey_camera;
 extern const lv_image_dsc_t oskey_chevron_right;
 extern const lv_image_dsc_t oskey_document;
 extern const lv_image_dsc_t oskey_ethereum;

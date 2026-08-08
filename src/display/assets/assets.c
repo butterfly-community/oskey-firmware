@@ -20,6 +20,9 @@ A8_DATA(back) = {
 A8_DATA(bluetooth) = {
 #include <oskey_bluetooth.a8.inc>
 };
+A8_DATA(camera) = {
+#include <oskey_camera.a8.inc>
+};
 A8_DATA(chevron_right) = {
 #include <oskey_chevron_right.a8.inc>
 };
@@ -77,6 +80,7 @@ A8_DATA(wifi_ap) = {
 
 A8_DESCRIPTOR(back, 24, 24);
 A8_DESCRIPTOR(bluetooth, 24, 24);
+A8_DESCRIPTOR(camera, 24, 24);
 A8_DESCRIPTOR(chevron_right, 24, 24);
 A8_DESCRIPTOR(document, 24, 24);
 A8_DESCRIPTOR(ethereum, 24, 24);

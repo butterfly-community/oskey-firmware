@@ -9,6 +9,7 @@ enum status_item {
 	STATUS_ITEM_WIFI_AP,
 	STATUS_ITEM_BLUETOOTH,
 	STATUS_ITEM_USB,
+	STATUS_ITEM_CAMERA,
 };
 
 static enum ui_tone wifi_sta_tone(enum app_wifi_sta_state state)
@@ -57,14 +58,30 @@ static enum ui_tone usb_tone(enum app_usb_state state)
 	}
 }
 
+enum ui_tone ui_camera_tone(enum app_camera_state state)
+{
+	switch (state) {
+	case APP_CAMERA_ACTIVE:
+		return UI_TONE_SUCCESS;
+	case APP_CAMERA_INITIALIZING:
+	case APP_CAMERA_STARTING:
+		return UI_TONE_WARNING;
+	case APP_CAMERA_ERROR:
+		return UI_TONE_DANGER;
+	case APP_CAMERA_READY:
+	case APP_CAMERA_DISABLED:
+	default:
+		return UI_TONE_MUTED;
+	}
+}
+
 static void status_clicked(lv_event_t *event)
 {
+	enum status_item item = (enum status_item)(uintptr_t)lv_event_get_user_data(event);
+	enum ui_page page;
 	if (ui.status.wallet != WalletState_Ready) {
 		return;
 	}
-
-	enum status_item item = (enum status_item)(uintptr_t)lv_event_get_user_data(event);
-	enum ui_page page;
 
 	switch (item) {
 	case STATUS_ITEM_WIFI_STA:
@@ -77,13 +94,17 @@ static void status_clicked(lv_event_t *event)
 	case STATUS_ITEM_USB:
 		page = UI_PAGE_USB;
 		break;
+	case STATUS_ITEM_CAMERA:
+		page = UI_PAGE_CAMERA;
+		break;
 	default:
 		return;
 	}
 	if (ui.page == page) {
 		return;
 	}
-	if (ui.page == UI_PAGE_WIFI || ui.page == UI_PAGE_BLUETOOTH || ui.page == UI_PAGE_USB) {
+	if (ui.page == UI_PAGE_WIFI || ui.page == UI_PAGE_BLUETOOTH || ui.page == UI_PAGE_USB ||
+	    ui.page == UI_PAGE_CAMERA) {
 		ui.page = page;
 		ui_render();
 	} else {
@@ -159,6 +180,7 @@ void ui_status_init(const struct ui_status *status)
 	ui.wifi_ap_icon = status_icon(status_icons, &oskey_wifi_ap, STATUS_ITEM_WIFI_AP);
 	ui.bluetooth_icon = status_icon(status_icons, &oskey_bluetooth, STATUS_ITEM_BLUETOOTH);
 	ui.usb_icon = status_icon(status_icons, &oskey_usb, STATUS_ITEM_USB);
+	ui.camera_icon = status_icon(status_icons, &oskey_camera, STATUS_ITEM_CAMERA);
 
 	ui_status_navigation(UI_NAVIGATION_NONE);
 	ui_status_update(status);
@@ -184,4 +206,5 @@ void ui_status_update(const struct ui_status *status)
 	}
 	ui_icon_color(ui.bluetooth_icon, ui_tone_color(bluetooth_tone(status->bluetooth)));
 	ui_icon_color(ui.usb_icon, ui_tone_color(usb_tone(status->usb)));
+	ui_icon_color(ui.camera_icon, ui_tone_color(ui_camera_tone(status->camera)));
 }

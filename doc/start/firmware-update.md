@@ -13,9 +13,12 @@ Build the bootloader and application together with sysbuild:
 ```sh
 west build --sysbuild -p always \
   -b esp32s3_devkitc/esp32s3/procpu \
+  -S espressif-flash-16M \
+  -S espressif-psram-8M \
   -- \
   -DCONFIG_OSKEY_MCUBOOT_ZEPHYR=y \
   -DCONFIG_OSKEY_BLUETOOTH=y \
+  -DEXTRA_CONF_FILE=boards/esp32s3_lichuang.conf \
   -DEXTRA_DTC_OVERLAY_FILE="boards/esp32s3_lichuang.overlay;boards/overlay/mcumgr_uart0.overlay"
 ```
 
@@ -35,6 +38,7 @@ mcuboot_dir=$(west list mcuboot -f '{abspath}')
 esp_port="$mcuboot_dir/boot/espressif"
 upstream_profile="$esp_port/port/esp32s3/bootloader.conf"
 overlays="boards/esp32s3_lichuang.overlay;boards/overlay/mcuboot_esp.overlay;boards/overlay/mcumgr_uart0.overlay"
+board_conf="boards/esp32s3_lichuang.conf"
 port=/dev/ttyACM0
 
 source /path/to/esp-idf/export.sh
@@ -83,12 +87,15 @@ Build the application without sysbuild:
 ```sh
 west build -p always \
   -b esp32s3_devkitc/esp32s3/procpu \
+  -S espressif-flash-16M \
+  -S espressif-psram-8M \
   --build-dir "$output/app" \
   -- \
   -DCONFIG_OSKEY_MCUBOOT_ESP=y \
   -DCONFIG_OSKEY_MCUBOOT_ESP_VIRTUAL_EFUSE="$virtual_efuse" \
   -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE="$mcuboot_key" \
   -DCONFIG_OSKEY_BLUETOOTH=y \
+  -DEXTRA_CONF_FILE="$board_conf" \
   -DEXTRA_DTC_OVERLAY_FILE="$overlays"
 ```
 

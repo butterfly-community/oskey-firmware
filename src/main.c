@@ -8,22 +8,17 @@
 #include "net/wifi.h"
 #include "net/mqtt.h"
 #include "display/display.h"
+#if defined(CONFIG_OSKEY_CAMERA)
+#include "camera/camera.h"
+#endif
 #include "bus.h"
 #include "core.h"
 #include "gpio.h"
 #include "usb/webusb.h"
-#ifdef CONFIG_OSKEY_CAMERA_TEST
-#include "camera/camera_test.h"
-#endif
-
 LOG_MODULE_REGISTER(main);
 
 int main(void)
 {
-#ifdef CONFIG_OSKEY_CAMERA_TEST
-	return app_camera_test_run();
-#endif
-
 	bool healthy = true;
 
 	if (IS_ENABLED(CONFIG_OSKEY_TEST_FIRMWARE)) {
@@ -65,6 +60,13 @@ int main(void)
 		LOG_ERR("Core startup failed: %d", core_status);
 		healthy = false;
 	}
+
+#if defined(CONFIG_OSKEY_CAMERA)
+	ret = app_camera_init();
+	if (ret < 0) {
+		LOG_ERR("Camera startup failed: %d", ret);
+	}
+#endif
 
 	ret = app_init_display();
 	if (ret < 0) {

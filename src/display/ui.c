@@ -640,10 +640,24 @@ void ui_refresh(void)
 	lv_obj_scroll_to(ui.content, 0, scroll_y, LV_ANIM_OFF);
 }
 
+static void ui_page_leave(enum ui_page page)
+{
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+	if (page == UI_PAGE_QR_SCANNER) {
+		ui_qr_leave();
+	}
+#else
+	ARG_UNUSED(page);
+#endif
+}
+
 void ui_open(enum ui_page page)
 {
 	if (page == UI_PAGE_LOCKED || page == UI_PAGE_STORAGE_ERROR) {
 		ui_clear_sensitive();
+	}
+	if (ui.page != page) {
+		ui_page_leave(ui.page);
 	}
 	ui.history_len = 0;
 	ui.page = page;
@@ -652,9 +666,13 @@ void ui_open(enum ui_page page)
 
 void ui_push(enum ui_page page)
 {
+	if (ui.page == page) {
+		return;
+	}
 	if (ui.history_len < ARRAY_SIZE(ui.history) && ui.page != UI_PAGE_NONE) {
 		ui.history[ui.history_len++] = ui.page;
 	}
+	ui_page_leave(ui.page);
 	ui.page = page;
 	ui_render();
 }
@@ -672,6 +690,7 @@ void ui_back(void)
 	} else if (ui.page == UI_PAGE_PASSPHRASE || ui.page == UI_PAGE_PASSPHRASE_CONFIRM) {
 		ui_wipe(ui.passphrase, sizeof(ui.passphrase));
 	}
+	ui_page_leave(ui.page);
 	ui.page = ui.history[--ui.history_len];
 	ui_render();
 }

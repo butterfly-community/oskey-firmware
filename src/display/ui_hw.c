@@ -527,3 +527,64 @@ void ui_usb_render(void)
 	}
 #endif
 }
+
+static const char *camera_state_name(enum app_camera_state state)
+{
+	switch (state) {
+	case APP_CAMERA_INITIALIZING:
+	case APP_CAMERA_STARTING:
+		return "Starting";
+	case APP_CAMERA_READY:
+		return "Ready";
+	case APP_CAMERA_ACTIVE:
+		return "Active";
+	case APP_CAMERA_ERROR:
+		return "Error";
+	case APP_CAMERA_DISABLED:
+	default:
+		return "Unavailable";
+	}
+}
+
+static const char *camera_state_detail(enum app_camera_state state)
+{
+	switch (state) {
+	case APP_CAMERA_INITIALIZING:
+		return "Camera is being initialized";
+	case APP_CAMERA_STARTING:
+		return "Camera stream is starting";
+	case APP_CAMERA_READY:
+		return "Camera is available";
+	case APP_CAMERA_ACTIVE:
+		return "Camera stream is running";
+	case APP_CAMERA_ERROR:
+		return "Camera could not be started";
+	case APP_CAMERA_DISABLED:
+	default:
+		return "Camera support is not included in this firmware";
+	}
+}
+
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+static void camera_qr_open(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	ui_push(UI_PAGE_QR_SCANNER);
+}
+#endif
+
+void ui_camera_render(void)
+{
+	lv_obj_t *content = ui_page_begin("Camera", UI_NAVIGATION_BACK);
+	enum app_camera_state state = ui.status.camera;
+
+	ui_section(content, "STATUS");
+	ui_list_row(content, &oskey_camera, camera_state_name(state),
+		    camera_state_detail(state), NULL, ui_camera_tone(state), NULL, NULL);
+
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+	ui_section(content, "ACTIONS");
+	ui_list_row(content, &oskey_document, "Scan QR code", "Open preview and decode QR codes",
+		    NULL, UI_TONE_ACTIVE, camera_qr_open, NULL);
+#endif
+}

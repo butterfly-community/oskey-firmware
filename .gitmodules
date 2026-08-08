@@ -1,3 +1,6 @@
 [submodule "lib/core"]
 	path = lib/core
 	url = https://github.com/butterfly-community/oskey-lib-core.git
+[submodule "lib/quirc"]
+	path = lib/quirc
+	url = https://github.com/dlbeer/quirc.git

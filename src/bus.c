@@ -46,6 +46,10 @@ ZBUS_CHAN_DEFINE(app_storage_state_chan, enum app_storage_state, NULL, NULL, ZBU
 		 IS_ENABLED(CONFIG_OSKEY_STORAGE) ? APP_STORAGE_INITIALIZING
 						  : APP_STORAGE_DISABLED);
 
+ZBUS_CHAN_DEFINE(app_camera_state_chan, enum app_camera_state, NULL, NULL,
+		 ZBUS_OBSERVERS_EMPTY,
+		 IS_ENABLED(CONFIG_OSKEY_CAMERA) ? APP_CAMERA_INITIALIZING : APP_CAMERA_DISABLED);
+
 ZBUS_CHAN_DEFINE(app_wallet_state_chan, enum WalletState, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 IS_ENABLED(CONFIG_OSKEY_RUST) ? WalletState_Setup : WalletState_Disabled);
 

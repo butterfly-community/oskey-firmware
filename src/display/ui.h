@@ -40,6 +40,10 @@ enum ui_page {
 	UI_PAGE_CAPABILITIES,
 	UI_PAGE_LOCKED,
 	UI_PAGE_HOME,
+	UI_PAGE_CAMERA,
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+	UI_PAGE_QR_SCANNER,
+#endif
 	UI_PAGE_SETTINGS,
 	UI_PAGE_WIFI,
 	UI_PAGE_WIFI_PASSWORD,
@@ -80,6 +84,7 @@ struct ui_status {
 	enum app_bluetooth_state bluetooth;
 	enum app_usb_state usb;
 	enum app_storage_state storage;
+	enum app_camera_state camera;
 	enum WalletState wallet;
 };
 
@@ -107,6 +112,7 @@ struct ui_context {
 	lv_obj_t *wifi_ap_icon;
 	lv_obj_t *bluetooth_icon;
 	lv_obj_t *usb_icon;
+	lv_obj_t *camera_icon;
 	lv_obj_t *content;
 	lv_obj_t *notice;
 	lv_obj_t *notice_label;
@@ -165,5 +171,15 @@ void ui_wifi_password_render(void);
 void ui_wifi_password_submit(const char *password);
 void ui_bluetooth_render(void);
 void ui_usb_render(void);
+
+enum ui_tone ui_camera_tone(enum app_camera_state state);
+void ui_camera_render(void);
+
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+struct app_qr_scanner_event;
+void ui_qr_render(void);
+void ui_qr_leave(void);
+void ui_qr_event(const struct app_qr_scanner_event *event);
+#endif
 
 #endif

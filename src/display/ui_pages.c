@@ -562,6 +562,14 @@ void ui_render(void)
 	case UI_PAGE_HOME:
 		show_home();
 		break;
+	case UI_PAGE_CAMERA:
+		ui_camera_render();
+		break;
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+	case UI_PAGE_QR_SCANNER:
+		ui_qr_render();
+		break;
+#endif
 	case UI_PAGE_SETTINGS:
 		show_settings();
 		break;

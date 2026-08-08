@@ -146,6 +146,15 @@ enum app_storage_state {
 	APP_STORAGE_ERROR,
 };
 
+enum app_camera_state {
+	APP_CAMERA_DISABLED,
+	APP_CAMERA_INITIALIZING,
+	APP_CAMERA_READY,
+	APP_CAMERA_STARTING,
+	APP_CAMERA_ACTIVE,
+	APP_CAMERA_ERROR,
+};
+
 enum app_confirmation_phase {
 	APP_CONFIRMATION_IDLE,
 	APP_CONFIRMATION_REQUIRED,
@@ -186,7 +195,7 @@ struct app_fido_result {
 
 ZBUS_CHAN_DECLARE(app_local_result_event_chan, app_wifi_command_chan, app_network_event_chan,
 		  app_bluetooth_state_chan, app_usb_state_chan, app_storage_state_chan,
-		  app_wallet_state_chan, app_confirmation_state_chan);
+		  app_camera_state_chan, app_wallet_state_chan, app_confirmation_state_chan);
 
 size_t app_payload_length(const app_payload *payload);
 size_t app_payload_read(const app_payload *payload, size_t offset, void *data, size_t len);

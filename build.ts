@@ -4,17 +4,26 @@ interface Board {
   name: string;
   target: string;
   features: string[];
+  confFiles?: string[];
   overlays?: string[];
   westArgs?: string[];
   cmakeArgs?: string[];
 }
 
-const lichuangFeatures = ["STORAGE", "DISPLAY", "CAMERA"];
-const lichuangCmakeArgs = [
-  "-DCONFIG_SPI_INIT_PRIORITY=80",
-  "-DCONFIG_SPIRAM_MODE_OCT=y",
-  "-DCONFIG_ESPTOOLPY_FLASHFREQ_80M=y",
-  "-DCONFIG_SPIRAM_SPEED_80M=y",
+const lichuangFeatures = [
+  "STORAGE",
+  "DISPLAY",
+  "ESP_SPIRAM",
+  "CAMERA",
+  "CAMERA_GC0308",
+  "QR_SCANNER",
+];
+const lichuangConfFiles = ["boards/esp32s3_lichuang.conf"];
+const lichuangWestArgs = [
+  "-S",
+  "espressif-flash-16M",
+  "-S",
+  "espressif-psram-8M",
 ];
 
 const buildDir = "temp";
@@ -52,28 +61,31 @@ const boards: Board[] = [
     name: "lichuang_szpi_s3",
     target: "esp32s3_devkitc/esp32s3/procpu",
     features: lichuangFeatures,
+    confFiles: lichuangConfFiles,
+    westArgs: lichuangWestArgs,
     overlays: ["boards/esp32s3_lichuang.overlay"],
-    cmakeArgs: lichuangCmakeArgs,
   },
   {
     name: "lichuang_szpi_s3_usb_jtag_serial",
     target: "esp32s3_devkitc/esp32s3/procpu",
     features: lichuangFeatures,
+    confFiles: lichuangConfFiles,
+    westArgs: lichuangWestArgs,
     overlays: [
       "boards/esp32s3_lichuang.overlay",
       "boards/overlay/esp32_usb_jtag_serial.overlay",
     ],
-    cmakeArgs: lichuangCmakeArgs,
   },
   {
     name: "lichuang_szpi_s3_webusb",
     target: "esp32s3_devkitc/esp32s3/procpu",
     features: [...lichuangFeatures, "USB"],
+    confFiles: lichuangConfFiles,
+    westArgs: lichuangWestArgs,
     overlays: [
       "boards/esp32s3_lichuang.overlay",
       "boards/overlay/cdc_acm.overlay",
     ],
-    cmakeArgs: lichuangCmakeArgs,
   },
   {
     name: "generic_esp32e_2.8_ili9341",
@@ -160,6 +172,9 @@ async function run() {
       ...(board.westArgs ?? []),
       "--",
       ...board.features.map((feature) => `-DCONFIG_OSKEY_${feature}=y`),
+      ...(board.confFiles
+        ? [`-DEXTRA_CONF_FILE=${board.confFiles.join(";")}`]
+        : []),
       ...(board.overlays
         ? [`-DEXTRA_DTC_OVERLAY_FILE=${board.overlays.join(";")}`]
         : []),

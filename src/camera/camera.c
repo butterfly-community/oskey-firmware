@@ -9,13 +9,34 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
+#include "../bus.h"
+
 LOG_MODULE_REGISTER(app_camera, CONFIG_VIDEO_LOG_LEVEL);
 
-#define CAMERA_BUFFER_COUNT 2
+#define CAMERA_BUFFER_COUNT 4
 
 static const struct device *const camera = DEVICE_DT_GET(DT_CHOSEN(zephyr_camera));
 static struct video_buffer *camera_buffers[CAMERA_BUFFER_COUNT];
 static bool camera_streaming;
+
+static void app_camera_publish(enum app_camera_state state)
+{
+	if (zbus_chan_pub(&app_camera_state_chan, &state, K_FOREVER) < 0) {
+		LOG_WRN("Unable to publish camera state %d", state);
+	}
+}
+
+int app_camera_init(void)
+{
+	if (!device_is_ready(camera)) {
+		LOG_ERR("Camera capture device is not ready");
+		app_camera_publish(APP_CAMERA_ERROR);
+		return -ENODEV;
+	}
+
+	app_camera_publish(APP_CAMERA_READY);
+	return 0;
+}
 
 static void app_camera_release_buffers(void)
 {
@@ -51,16 +72,20 @@ int app_camera_start(struct video_format *format)
 	if (camera_streaming) {
 		return -EALREADY;
 	}
+	app_camera_publish(APP_CAMERA_STARTING);
 	if (!device_is_ready(camera)) {
 		LOG_ERR("Camera capture device is not ready");
+		app_camera_publish(APP_CAMERA_ERROR);
 		return -ENODEV;
 	}
 
 	ret = video_get_caps(camera, &caps);
 	if (ret < 0) {
+		app_camera_publish(APP_CAMERA_ERROR);
 		return ret;
 	}
 	if (caps.min_vbuf_count > CAMERA_BUFFER_COUNT) {
+		app_camera_publish(APP_CAMERA_ERROR);
 		return -ENOMEM;
 	}
 
@@ -68,11 +93,13 @@ int app_camera_start(struct video_format *format)
 	ret = video_get_format(camera, format);
 	if (ret < 0) {
 		LOG_ERR("Unable to get camera format: %d", ret);
+		app_camera_publish(APP_CAMERA_ERROR);
 		return ret;
 	}
 	ret = video_set_format(camera, format);
 	if (ret < 0) {
 		LOG_ERR("Unable to set camera format: %d", ret);
+		app_camera_publish(APP_CAMERA_ERROR);
 		return ret;
 	}
 
@@ -100,11 +127,13 @@ int app_camera_start(struct video_format *format)
 	}
 
 	camera_streaming = true;
+	app_camera_publish(APP_CAMERA_ACTIVE);
 	return 0;
 
 release_buffers:
 	video_driver_flush(camera, true);
 	app_camera_release_buffers();
+	app_camera_publish(APP_CAMERA_ERROR);
 	return ret;
 }
 
@@ -141,5 +170,6 @@ int app_camera_stop(void)
 	camera_streaming = false;
 
 	app_camera_release_buffers();
+	app_camera_publish(ret < 0 ? APP_CAMERA_ERROR : APP_CAMERA_READY);
 	return ret;
 }
