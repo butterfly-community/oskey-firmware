@@ -18,6 +18,9 @@ LOG_MODULE_REGISTER(app_imu);
 
 static const struct device *imu_dev;
 static enum app_imu_state imu_state = APP_IMU_DISABLED;
+static atomic_t imu_streaming;
+
+K_SEM_DEFINE(imu_run_sem, 0, 1);
 
 static void imu_publish_state(enum app_imu_state state)
 {
@@ -60,6 +63,21 @@ static void imu_publish_sample(void)
 	(void)zbus_chan_pub(&app_imu_sample_chan, &sample, K_MSEC(100));
 }
 
+static void imu_command_listener(const struct zbus_channel *chan)
+{
+	const struct app_imu_command *command = zbus_chan_const_msg(chan);
+
+	if (command->kind == APP_IMU_COMMAND_START) {
+		atomic_set(&imu_streaming, 1);
+		k_sem_give(&imu_run_sem);
+	} else if (command->kind == APP_IMU_COMMAND_STOP) {
+		atomic_set(&imu_streaming, 0);
+	}
+}
+
+ZBUS_LISTENER_DEFINE(imu_command_listener_ob, imu_command_listener);
+ZBUS_CHAN_ADD_OBS(app_imu_command_chan, imu_command_listener_ob, 0);
+
 static void imu_thread(void *first, void *second, void *third)
 {
 	ARG_UNUSED(first);
@@ -68,27 +86,35 @@ static void imu_thread(void *first, void *second, void *third)
 
 	int errors = 0;
 
-	while (true) {
-		int ret = sensor_sample_fetch(imu_dev);
+	imu_publish_state(APP_IMU_IDLE);
 
-		if (ret == 0) {
-			errors = 0;
-			imu_publish_state(APP_IMU_READY);
-			imu_publish_sample();
-		} else {
-			LOG_ERR("IMU sample fetch failed: %d", ret);
-			errors++;
-			if (errors >= 5) {
-				imu_publish_state(APP_IMU_ERROR);
+	while (true) {
+		k_sem_take(&imu_run_sem, K_FOREVER);
+
+		while (atomic_get(&imu_streaming)) {
+			int ret = sensor_sample_fetch(imu_dev);
+
+			if (ret == 0) {
+				errors = 0;
+				imu_publish_state(APP_IMU_READY);
+				imu_publish_sample();
+			} else {
+				LOG_ERR("IMU sample fetch failed: %d", ret);
+				errors++;
+				if (errors >= 5) {
+					imu_publish_state(APP_IMU_ERROR);
+				}
 			}
+
+			k_sleep(K_MSEC(CONFIG_OSKEY_IMU_SAMPLE_INTERVAL_MS));
 		}
 
-		k_sleep(K_MSEC(CONFIG_OSKEY_IMU_SAMPLE_INTERVAL_MS));
+		imu_publish_state(APP_IMU_IDLE);
 	}
 }
 
 K_THREAD_DEFINE(imu_thread_id, CONFIG_OSKEY_IMU_THREAD_STACK_SIZE, imu_thread, NULL, NULL, NULL,
-		K_PRIO_PREEMPT(7), 0, SYS_FOREVER_MS);
+		K_PRIO_PREEMPT(K_LOWEST_APPLICATION_THREAD_PRIO), 0, SYS_FOREVER_MS);
 
 int app_imu_init(void)
 {

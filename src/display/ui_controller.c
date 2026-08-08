@@ -95,7 +95,6 @@ static bool active_status_page(void)
 	case UI_PAGE_BLUETOOTH:
 	case UI_PAGE_USB:
 	case UI_PAGE_CAMERA:
-	case UI_PAGE_IMU:
 		return true;
 	default:
 		return false;

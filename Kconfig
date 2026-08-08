@@ -135,7 +135,7 @@ config OSKEY_IMU
 config OSKEY_IMU_SAMPLE_INTERVAL_MS
 	int "IMU sample interval in milliseconds"
 	depends on OSKEY_IMU
-	default 33
+	default 100
 	range 10 1000
 	help
 	  Period between IMU samples. Lower values update the Gyro page more

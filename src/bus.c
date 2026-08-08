@@ -66,6 +66,9 @@ ZBUS_CHAN_DEFINE(app_imu_sample_chan, struct app_imu_sample, NULL, NULL, ZBUS_OB
 		 ZBUS_MSG_INIT(.pitch = 0.0f, .roll = 0.0f, .gyro_x = 0.0f, .gyro_y = 0.0f,
 			       .gyro_z = 0.0f));
 
+ZBUS_CHAN_DEFINE(app_imu_command_chan, struct app_imu_command, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.kind = APP_IMU_COMMAND_NONE));
+
 ZBUS_CHAN_DEFINE(app_notification_event_chan, struct app_notification, NULL, NULL,
 		 ZBUS_OBSERVERS_EMPTY, ZBUS_MSG_INIT(.kind = APP_NOTIFICATION_NONE));
 
