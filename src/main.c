@@ -14,6 +14,9 @@
 #if defined(CONFIG_OSKEY_AUDIO)
 #include "audio/audio.h"
 #endif
+#if defined(CONFIG_OSKEY_IMU)
+#include "imu/imu.h"
+#endif
 #include "bus.h"
 #include "core.h"
 #include "gpio.h"
@@ -33,6 +36,13 @@ int main(void)
 	ret = app_audio_init();
 	if (ret < 0) {
 		LOG_ERR("Audio init failed: %d", ret);
+	}
+#endif
+
+#if defined(CONFIG_OSKEY_IMU)
+	ret = app_imu_init();
+	if (ret < 0) {
+		LOG_ERR("IMU init failed: %d", ret);
 	}
 #endif
 

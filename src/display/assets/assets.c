@@ -41,6 +41,9 @@ A8_DATA(eye_off) = {
 A8_DATA(failure) = {
 #include <oskey_failure.a8.inc>
 };
+A8_DATA(imu) = {
+#include <oskey_imu.a8.inc>
+};
 A8_DATA(passkey) = {
 #include <oskey_passkey.a8.inc>
 };
@@ -90,6 +93,7 @@ A8_DESCRIPTOR(ethereum, 24, 24);
 A8_DESCRIPTOR(eye, 24, 24);
 A8_DESCRIPTOR(eye_off, 24, 24);
 A8_DESCRIPTOR(failure, 24, 24);
+A8_DESCRIPTOR(imu, 24, 24);
 A8_DESCRIPTOR(passkey, 24, 24);
 A8_DESCRIPTOR(refresh, 24, 24);
 A8_DESCRIPTOR(settings, 24, 24);

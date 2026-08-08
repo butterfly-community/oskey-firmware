@@ -43,6 +43,7 @@ if(CONFIG_OSKEY_DISPLAY)
       eye
       eye_off
       failure
+      imu
       passkey
       refresh
       settings

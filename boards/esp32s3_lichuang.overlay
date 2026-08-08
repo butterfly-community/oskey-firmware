@@ -14,6 +14,7 @@
     backlight = &lcd_bk;
     audio-codec = &es8311;
     audio-i2s = &i2s0;
+    imu0 = &qmi8658a;
   };
 
   mipi_dbi {
@@ -96,6 +97,15 @@
     compatible = "everest,es8311";
     reg = <0x18>;
     pa-en-gpios = <&pca9557 1 GPIO_ACTIVE_HIGH>;
+  };
+
+  qmi8658a: qst,qmi8658a@6a {
+    compatible = "qst,qmi8658a";
+    reg = <0x6a>;
+    accel-fs = <4>;
+    gyro-fs = <512>;
+    accel-odr = <250>;
+    gyro-odr = <250>;
   };
 };
 

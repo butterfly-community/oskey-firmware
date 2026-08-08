@@ -47,6 +47,7 @@ static void read_device_status(struct ui_status *status)
 	(void)zbus_chan_read(&app_storage_state_chan, &status->storage, K_FOREVER);
 	(void)zbus_chan_read(&app_camera_state_chan, &status->camera, K_FOREVER);
 	(void)zbus_chan_read(&app_audio_state_chan, &status->audio, K_FOREVER);
+	(void)zbus_chan_read(&app_imu_state_chan, &status->imu, K_FOREVER);
 	(void)zbus_chan_read(&app_wallet_state_chan, &status->wallet, K_FOREVER);
 }
 
@@ -94,6 +95,7 @@ static bool active_status_page(void)
 	case UI_PAGE_BLUETOOTH:
 	case UI_PAGE_USB:
 	case UI_PAGE_CAMERA:
+	case UI_PAGE_IMU:
 		return true;
 	default:
 		return false;
@@ -285,7 +287,8 @@ static void ui_bus_changed(const struct zbus_channel *channel)
 		}
 	} else if (channel == &app_bluetooth_state_chan || channel == &app_usb_state_chan ||
 		   channel == &app_storage_state_chan || channel == &app_camera_state_chan ||
-		   channel == &app_audio_state_chan || channel == &app_wallet_state_chan) {
+		   channel == &app_audio_state_chan || channel == &app_imu_state_chan ||
+		   channel == &app_wallet_state_chan) {
 		events = UI_EVENT_STATUS;
 	} else if (channel == &app_local_result_event_chan) {
 		events = UI_EVENT_LOCAL_RESULT;
@@ -314,6 +317,7 @@ ZBUS_CHAN_ADD_OBS(app_usb_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_storage_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_camera_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_audio_state_chan, ui_bus_listener, 0);
+ZBUS_CHAN_ADD_OBS(app_imu_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_wallet_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_local_result_event_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_confirmation_state_chan, ui_bus_listener, 0);

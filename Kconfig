@@ -125,6 +125,29 @@ config OSKEY_AUDIO_VOLUME
 	  Initial codec output volume in the 0-100 range; adjustable at runtime
 	  from the Audio page.
 
+config OSKEY_IMU
+	bool "6-axis IMU (accelerometer and gyroscope)"
+	depends on DT_HAS_QST_QMI8658A_ENABLED
+	select SENSOR
+	help
+	  Enable the on-board QMI8658 accelerometer and gyroscope over I2C.
+
+config OSKEY_IMU_SAMPLE_INTERVAL_MS
+	int "IMU sample interval in milliseconds"
+	depends on OSKEY_IMU
+	default 33
+	range 10 1000
+	help
+	  Period between IMU samples. Lower values update the Gyro page more
+	  smoothly at the cost of I2C bus and CPU load.
+
+config OSKEY_IMU_THREAD_STACK_SIZE
+	int "IMU thread stack size"
+	depends on OSKEY_IMU
+	default 8192
+	help
+	  Stack used by the IMU sampling thread.
+
 source "$(APPLICATION_SOURCE_DIR)/drivers/Kconfig"
 
 config OSKEY_QR_CODE

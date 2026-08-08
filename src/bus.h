@@ -177,6 +177,21 @@ struct app_audio_status {
 	uint8_t volume;
 };
 
+enum app_imu_state {
+	APP_IMU_DISABLED,
+	APP_IMU_INITIALIZING,
+	APP_IMU_READY,
+	APP_IMU_ERROR,
+};
+
+struct app_imu_sample {
+	float pitch;
+	float roll;
+	float gyro_x;
+	float gyro_y;
+	float gyro_z;
+};
+
 enum app_notification_kind {
 	APP_NOTIFICATION_NONE,
 	APP_NOTIFICATION_SUCCESS,
@@ -227,7 +242,8 @@ struct app_fido_result {
 ZBUS_CHAN_DECLARE(app_local_result_event_chan, app_wifi_command_chan, app_network_event_chan,
 		  app_bluetooth_state_chan, app_usb_state_chan, app_storage_state_chan,
 		  app_camera_state_chan, app_audio_state_chan, app_audio_command_chan,
-		  app_notification_event_chan, app_wallet_state_chan, app_confirmation_state_chan);
+		  app_imu_state_chan, app_imu_sample_chan, app_notification_event_chan,
+		  app_wallet_state_chan, app_confirmation_state_chan);
 
 size_t app_payload_length(const app_payload *payload);
 size_t app_payload_read(const app_payload *payload, size_t offset, void *data, size_t len);

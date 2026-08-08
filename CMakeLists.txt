@@ -72,6 +72,10 @@ if(CONFIG_OSKEY_AUDIO)
   add_dependencies(app audio-assets)
 endif()
 
+target_sources_ifdef(CONFIG_OSKEY_IMU app PRIVATE
+  src/imu/imu.c
+)
+
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
   src/display/ui.c
   src/display/ui_controller.c

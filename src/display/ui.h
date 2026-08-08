@@ -50,6 +50,7 @@ enum ui_page {
 	UI_PAGE_BLUETOOTH,
 	UI_PAGE_USB,
 	UI_PAGE_AUDIO,
+	UI_PAGE_IMU,
 	UI_PAGE_PIN_NEW,
 	UI_PAGE_PIN_CONFIRM,
 	UI_PAGE_FIDO_PIN_RECOVER,
@@ -87,6 +88,7 @@ struct ui_status {
 	enum app_storage_state storage;
 	enum app_camera_state camera;
 	struct app_audio_status audio;
+	enum app_imu_state imu;
 	enum WalletState wallet;
 };
 
@@ -116,6 +118,7 @@ struct ui_context {
 	lv_obj_t *usb_icon;
 	lv_obj_t *camera_icon;
 	lv_obj_t *audio_icon;
+	lv_obj_t *gyro_icon;
 	lv_obj_t *content;
 	lv_obj_t *notice;
 	lv_obj_t *notice_label;

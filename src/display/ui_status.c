@@ -11,6 +11,7 @@ enum status_item {
 	STATUS_ITEM_USB,
 	STATUS_ITEM_CAMERA,
 	STATUS_ITEM_AUDIO,
+	STATUS_ITEM_GYRO,
 };
 
 static enum ui_tone wifi_sta_tone(enum app_wifi_sta_state state)
@@ -89,6 +90,21 @@ static enum ui_tone audio_tone(enum app_audio_state state)
 	}
 }
 
+static enum ui_tone gyro_tone(enum app_imu_state state)
+{
+	switch (state) {
+	case APP_IMU_READY:
+		return UI_TONE_SUCCESS;
+	case APP_IMU_INITIALIZING:
+		return UI_TONE_WARNING;
+	case APP_IMU_ERROR:
+		return UI_TONE_DANGER;
+	case APP_IMU_DISABLED:
+	default:
+		return UI_TONE_MUTED;
+	}
+}
+
 static void status_clicked(lv_event_t *event)
 {
 	enum status_item item = (enum status_item)(uintptr_t)lv_event_get_user_data(event);
@@ -114,6 +130,9 @@ static void status_clicked(lv_event_t *event)
 	case STATUS_ITEM_AUDIO:
 		page = UI_PAGE_AUDIO;
 		break;
+	case STATUS_ITEM_GYRO:
+		page = UI_PAGE_IMU;
+		break;
 	default:
 		return;
 	}
@@ -121,7 +140,7 @@ static void status_clicked(lv_event_t *event)
 		return;
 	}
 	if (ui.page == UI_PAGE_WIFI || ui.page == UI_PAGE_BLUETOOTH || ui.page == UI_PAGE_USB ||
-	    ui.page == UI_PAGE_CAMERA || ui.page == UI_PAGE_AUDIO) {
+	    ui.page == UI_PAGE_CAMERA || ui.page == UI_PAGE_AUDIO || ui.page == UI_PAGE_IMU) {
 		ui.page = page;
 		ui_render();
 	} else {
@@ -201,6 +220,9 @@ void ui_status_init(const struct ui_status *status)
 #if defined(CONFIG_OSKEY_AUDIO)
 	ui.audio_icon = status_icon(status_icons, &oskey_audio, STATUS_ITEM_AUDIO);
 #endif
+#if defined(CONFIG_OSKEY_IMU)
+	ui.gyro_icon = status_icon(status_icons, &oskey_imu, STATUS_ITEM_GYRO);
+#endif
 
 	ui_status_navigation(UI_NAVIGATION_NONE);
 	ui_status_update(status);
@@ -229,5 +251,8 @@ void ui_status_update(const struct ui_status *status)
 	ui_icon_color(ui.camera_icon, ui_tone_color(ui_camera_tone(status->camera)));
 #if defined(CONFIG_OSKEY_AUDIO)
 	ui_icon_color(ui.audio_icon, ui_tone_color(audio_tone(status->audio.state)));
+#endif
+#if defined(CONFIG_OSKEY_IMU)
+	ui_icon_color(ui.gyro_icon, ui_tone_color(gyro_tone(status->imu)));
 #endif
 }

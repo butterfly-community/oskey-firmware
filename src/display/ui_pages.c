@@ -1,5 +1,6 @@
 #include "ui.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/kernel.h>
@@ -327,6 +328,275 @@ static void show_audio(void)
 	lv_obj_add_event_cb(slider, audio_volume_changed, LV_EVENT_VALUE_CHANGED, volume_label);
 #endif
 }
+
+#if defined(CONFIG_OSKEY_IMU)
+static lv_point_precise_t imu_box_proj[8];
+static lv_timer_t *imu_box_timer_handle;
+static lv_obj_t *imu_box_obj;
+static lv_obj_t *imu_pitch_label;
+static lv_obj_t *imu_roll_label;
+static lv_obj_t *imu_gyro_label;
+static bool imu_box_paused;
+static float imu_box_face_light[6];
+
+static const uint8_t imu_box_edges[12][2] = {
+	{0, 1}, {1, 2}, {2, 3}, {3, 0},
+	{4, 5}, {5, 6}, {6, 7}, {7, 4},
+	{0, 4}, {1, 5}, {2, 6}, {3, 7},
+};
+
+static const uint8_t imu_box_faces[6][4] = {
+	{4, 5, 6, 7}, {0, 1, 2, 3},
+	{1, 2, 6, 5}, {0, 3, 7, 4},
+	{3, 2, 6, 7}, {0, 1, 5, 4},
+};
+
+static const int8_t imu_box_normals[6][3] = {
+	{0, 0, 1}, {0, 0, -1},
+	{1, 0, 0}, {-1, 0, 0},
+	{0, 1, 0}, {0, -1, 0},
+};
+
+static void imu_box_project(float pitch, float roll)
+{
+	/* Board-like cuboid: wider than tall, thin in depth. */
+	static const float vertices[8][3] = {
+		{-1.8f, -1.0f, -0.4f}, {1.8f, -1.0f, -0.4f}, {1.8f, 1.0f, -0.4f}, {-1.8f, 1.0f, -0.4f},
+		{-1.8f, -1.0f, 0.4f},  {1.8f, -1.0f, 0.4f},  {1.8f, 1.0f, 0.4f},  {-1.8f, 1.0f, 0.4f},
+	};
+	const float pr = pitch * 0.017453292519943295f;
+	const float rr = roll * 0.017453292519943295f;
+	const float cp = cosf(pr);
+	const float sp = sinf(pr);
+	const float cr = cosf(rr);
+	const float sr = sinf(rr);
+	const int32_t scale = 45;
+
+	for (size_t i = 0; i < ARRAY_SIZE(vertices); i++) {
+		const float x = vertices[i][0];
+		const float y = vertices[i][1];
+		const float z = vertices[i][2];
+		/* Roll around the Y axis, then pitch around the X axis. */
+		const float rx = x * cr + z * sr;
+		const float rz = -x * sr + z * cr;
+		const float ry = y * cp - rz * sp;
+
+		imu_box_proj[i].x = (int32_t)(rx * scale);
+		imu_box_proj[i].y = (int32_t)(ry * scale);
+	}
+
+	/* Keep the rotated face normals so the draw pass can shade and cull. */
+	for (size_t i = 0; i < ARRAY_SIZE(imu_box_normals); i++) {
+		const float nx = imu_box_normals[i][0];
+		const float ny = imu_box_normals[i][1];
+		const float nz = imu_box_normals[i][2];
+		const float rnz = -nx * sr + nz * cr;
+
+		imu_box_face_light[i] = ny * sp + rnz * cp;
+	}
+}
+
+static lv_color_t imu_box_shade(float light)
+{
+	/* Brighter faces face the viewer; scale the accent blue accordingly. */
+	const float b = 0.30f + 0.70f * light;
+
+	return lv_color_make((uint8_t)(77.0f * b), (uint8_t)(163.0f * b), (uint8_t)(255.0f * b));
+}
+
+static void imu_box_draw(lv_event_t *event)
+{
+	lv_obj_t *obj = lv_event_get_target_obj(event);
+	lv_draw_task_t *task = lv_event_get_draw_task(event);
+	lv_draw_dsc_base_t *base = (lv_draw_dsc_base_t *)lv_draw_task_get_draw_dsc(task);
+
+	if (imu_box_paused) {
+		return;
+	}
+	if (base == NULL || base->part != LV_PART_MAIN) {
+		return;
+	}
+
+	lv_layer_t *layer = base->layer;
+	lv_area_t coords;
+	lv_draw_line_dsc_t line;
+
+	lv_obj_get_coords(obj, &coords);
+	int32_t cx = (coords.x1 + coords.x2) / 2;
+	int32_t cy = (coords.y1 + coords.y2) / 2;
+
+	lv_draw_line_dsc_init(&line);
+	line.color = lv_color_hex(0xbfe0ff);
+	line.width = 2;
+
+	lv_draw_triangle_dsc_t tri;
+
+	lv_draw_triangle_dsc_init(&tri);
+	tri.opa = LV_OPA_COVER;
+
+	for (size_t i = 0; i < ARRAY_SIZE(imu_box_faces); i++) {
+		if (imu_box_face_light[i] <= 0.0f) {
+			continue;
+		}
+		uint8_t v0 = imu_box_faces[i][0];
+		uint8_t v1 = imu_box_faces[i][1];
+		uint8_t v2 = imu_box_faces[i][2];
+		uint8_t v3 = imu_box_faces[i][3];
+
+		tri.color = imu_box_shade(imu_box_face_light[i]);
+		tri.p[0] = (lv_point_precise_t){ cx + imu_box_proj[v0].x, cy + imu_box_proj[v0].y };
+		tri.p[1] = (lv_point_precise_t){ cx + imu_box_proj[v1].x, cy + imu_box_proj[v1].y };
+		tri.p[2] = (lv_point_precise_t){ cx + imu_box_proj[v2].x, cy + imu_box_proj[v2].y };
+		lv_draw_triangle(layer, &tri);
+
+		tri.p[0] = (lv_point_precise_t){ cx + imu_box_proj[v0].x, cy + imu_box_proj[v0].y };
+		tri.p[1] = (lv_point_precise_t){ cx + imu_box_proj[v2].x, cy + imu_box_proj[v2].y };
+		tri.p[2] = (lv_point_precise_t){ cx + imu_box_proj[v3].x, cy + imu_box_proj[v3].y };
+		lv_draw_triangle(layer, &tri);
+	}
+
+	for (size_t i = 0; i < ARRAY_SIZE(imu_box_edges); i++) {
+		uint8_t a = imu_box_edges[i][0];
+		uint8_t b = imu_box_edges[i][1];
+
+		line.p1 = (lv_point_precise_t){ cx + imu_box_proj[a].x, cy + imu_box_proj[a].y };
+		line.p2 = (lv_point_precise_t){ cx + imu_box_proj[b].x, cy + imu_box_proj[b].y };
+		lv_draw_line(layer, &line);
+	}
+}
+
+static void imu_box_timer(lv_timer_t *timer)
+{
+	lv_obj_t *obj = lv_timer_get_user_data(timer);
+	struct app_imu_sample sample;
+
+	if (imu_box_paused) {
+		return;
+	}
+	if (zbus_chan_read(&app_imu_sample_chan, &sample, K_NO_WAIT) == 0) {
+		char pitch[16];
+		char roll[16];
+		char gyro[16];
+		int pitch_tenths = (int)(sample.pitch * 10.0f);
+		int roll_tenths = (int)(sample.roll * 10.0f);
+		int pitch_frac = pitch_tenths % 10;
+		int roll_frac = roll_tenths % 10;
+
+		imu_box_project(sample.pitch, sample.roll);
+		snprintk(pitch, sizeof(pitch), "%+d.%d", pitch_tenths / 10,
+			 pitch_frac < 0 ? -pitch_frac : pitch_frac);
+		snprintk(roll, sizeof(roll), "%+d.%d", roll_tenths / 10,
+			 roll_frac < 0 ? -roll_frac : roll_frac);
+		snprintk(gyro, sizeof(gyro), "%+d %+d %+d", (int)sample.gyro_x,
+			 (int)sample.gyro_y, (int)sample.gyro_z);
+		lv_label_set_text_fmt(imu_pitch_label, "Pitch %s deg", pitch);
+		lv_label_set_text_fmt(imu_roll_label, "Roll %s deg", roll);
+		lv_label_set_text_fmt(imu_gyro_label, "Gyro %s dps", gyro);
+		lv_obj_invalidate(obj);
+	}
+}
+
+static void imu_box_scroll_begin(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	imu_box_paused = true;
+}
+
+static void imu_box_scroll_end(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	imu_box_paused = false;
+	if (imu_box_timer_handle != NULL) {
+		lv_obj_invalidate(imu_box_obj);
+	}
+}
+
+static void imu_box_delete(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+
+	if (imu_box_timer_handle != NULL) {
+		lv_timer_delete(imu_box_timer_handle);
+		imu_box_timer_handle = NULL;
+	}
+	imu_box_obj = NULL;
+}
+
+static void show_imu(void)
+{
+	lv_obj_t *content = ui_page_begin("Gyro", UI_NAVIGATION_BACK);
+
+	imu_box_paused = false;
+	lv_obj_add_event_cb(content, imu_box_scroll_begin, LV_EVENT_SCROLL_BEGIN, NULL);
+	lv_obj_add_event_cb(content, imu_box_scroll_end, LV_EVENT_SCROLL_END, NULL);
+
+	ui_section(content, "IMU");
+	ui_list_row(content, &oskey_imu,
+		    ui.status.imu == APP_IMU_READY
+			    ? "Ready"
+			    : ui.status.imu == APP_IMU_INITIALIZING
+				      ? "Initializing"
+				      : ui.status.imu == APP_IMU_ERROR ? "Error" : "Disabled",
+		    "Accelerometer and gyroscope", NULL,
+		    ui.status.imu == APP_IMU_READY
+			    ? UI_TONE_SUCCESS
+			    : ui.status.imu == APP_IMU_INITIALIZING
+				      ? UI_TONE_WARNING
+				      : ui.status.imu == APP_IMU_ERROR ? UI_TONE_DANGER
+								       : UI_TONE_MUTED,
+		    NULL, NULL);
+
+	if (imu_box_timer_handle != NULL) {
+		lv_timer_delete(imu_box_timer_handle);
+		imu_box_timer_handle = NULL;
+	}
+
+	imu_box_obj = lv_obj_create(content);
+	lv_obj_set_width(imu_box_obj, LV_PCT(100));
+	lv_obj_set_height(imu_box_obj, 150);
+	lv_obj_set_style_bg_color(imu_box_obj, lv_color_hex(0x14181d), 0);
+	lv_obj_set_style_bg_opa(imu_box_obj, LV_OPA_COVER, 0);
+	lv_obj_set_style_radius(imu_box_obj, 8, 0);
+	lv_obj_set_style_border_width(imu_box_obj, 1, 0);
+	lv_obj_set_style_border_color(imu_box_obj, lv_color_hex(0x242b33), 0);
+	lv_obj_set_style_pad_all(imu_box_obj, 0, 0);
+	lv_obj_remove_flag(imu_box_obj, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE |
+					 LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_add_flag(imu_box_obj, LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS);
+	lv_obj_add_event_cb(imu_box_obj, imu_box_draw, LV_EVENT_DRAW_TASK_ADDED, NULL);
+	lv_obj_add_event_cb(imu_box_obj, imu_box_delete, LV_EVENT_DELETE, NULL);
+
+	struct app_imu_sample sample;
+
+	if (zbus_chan_read(&app_imu_sample_chan, &sample, K_NO_WAIT) == 0) {
+		imu_box_project(sample.pitch, sample.roll);
+	} else {
+		imu_box_project(0.0f, 0.0f);
+	}
+
+	ui_section(content, "ORIENTATION");
+	imu_pitch_label = lv_label_create(content);
+	lv_obj_set_width(imu_pitch_label, LV_PCT(100));
+	lv_obj_set_style_text_color(imu_pitch_label, lv_color_hex(0xf2f5f7), 0);
+	lv_obj_set_style_text_font(imu_pitch_label, UI_FONT_BODY, 0);
+	lv_label_set_text(imu_pitch_label, "Pitch --.- deg");
+
+	imu_roll_label = lv_label_create(content);
+	lv_obj_set_width(imu_roll_label, LV_PCT(100));
+	lv_obj_set_style_text_color(imu_roll_label, lv_color_hex(0xf2f5f7), 0);
+	lv_obj_set_style_text_font(imu_roll_label, UI_FONT_BODY, 0);
+	lv_label_set_text(imu_roll_label, "Roll --.- deg");
+
+	imu_gyro_label = lv_label_create(content);
+	lv_obj_set_width(imu_gyro_label, LV_PCT(100));
+	lv_obj_set_style_text_color(imu_gyro_label, lv_color_hex(0x929eaa), 0);
+	lv_obj_set_style_text_font(imu_gyro_label, UI_FONT_CAPTION, 0);
+	lv_label_set_text(imu_gyro_label, "Gyro -- -- -- dps");
+
+	imu_box_timer_handle =
+		lv_timer_create(imu_box_timer, CONFIG_OSKEY_IMU_SAMPLE_INTERVAL_MS, imu_box_obj);
+}
+#endif
 
 static void show_splash(void)
 {
@@ -664,6 +934,11 @@ void ui_render(void)
 	case UI_PAGE_AUDIO:
 		show_audio();
 		break;
+#if defined(CONFIG_OSKEY_IMU)
+	case UI_PAGE_IMU:
+		show_imu();
+		break;
+#endif
 #if !defined(CONFIG_OSKEY_FIDO2)
 	case UI_PAGE_FIDO_PIN_RECOVER:
 		break;
