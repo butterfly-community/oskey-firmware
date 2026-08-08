@@ -100,21 +100,32 @@ config VIDEO_BUFFER_SMH_ATTRIBUTE
 config VIDEO_BUFFER_POOL_NUM_MAX
 	default 4 if OSKEY_CAMERA
 
-config OSKEY_CAMERA_GC0308
-	bool
-	depends on OSKEY_CAMERA
-	depends on DT_HAS_GALAXYCORE_GC0308_ENABLED
-	default y
-	select I2C
-	select GPIO
-	help
-	  Select the GalaxyCore GC0308 image sensor driver for a matching
-	  devicetree node.
-
 if SOC_SERIES_ESP32S3
 config DMA_ESP32_MAX_DESCRIPTOR_NUM
 	default 64 if OSKEY_CAMERA
 endif
+
+config OSKEY_AUDIO
+	bool "Audio output"
+	depends on DT_HAS_ESPRESSIF_ESP32_I2S_ENABLED
+	select I2S
+	select LV_USE_BAR
+	select LV_USE_SLIDER
+	help
+	  Enable speaker output through the board audio codec and the I2S bus.
+	  A board must provide a codec devicetree node and audio-codec /
+	  audio-i2s aliases.
+
+config OSKEY_AUDIO_VOLUME
+	int "Audio output volume (0-100)"
+	depends on OSKEY_AUDIO
+	default 60
+	range 0 100
+	help
+	  Initial codec output volume in the 0-100 range; adjustable at runtime
+	  from the Audio page.
+
+source "$(APPLICATION_SOURCE_DIR)/drivers/Kconfig"
 
 config OSKEY_QR_CODE
 	bool "QR code decoder"

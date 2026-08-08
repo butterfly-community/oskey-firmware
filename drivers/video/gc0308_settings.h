@@ -8,8 +8,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef OSKEY_CAMERA_GC0308_SETTINGS_H_
-#define OSKEY_CAMERA_GC0308_SETTINGS_H_
+#ifndef OSKEY_VIDEO_GC0308_SETTINGS_H_
+#define OSKEY_VIDEO_GC0308_SETTINGS_H_
 
 #include <stdint.h>
 
@@ -90,4 +90,4 @@ static const struct gc0308_reg gc0308_default_regs[] = {
 };
 /* clang-format on */
 
-#endif /* OSKEY_CAMERA_GC0308_SETTINGS_H_ */
+#endif /* OSKEY_VIDEO_GC0308_SETTINGS_H_ */

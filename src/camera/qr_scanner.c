@@ -3,6 +3,7 @@
 #include "qr_scanner.h"
 
 #include "camera.h"
+#include "bus.h"
 
 #include <errno.h>
 #include <string.h>
@@ -62,6 +63,9 @@ static void scanner_qr_found(const struct app_qr_code *code, uint32_t session, v
 
 	LOG_INF("Decoded QR payload: %u bytes in %u ms", (unsigned int)code->payload_len,
 		code->decode_time_ms);
+	struct app_notification notification = { .kind = APP_NOTIFICATION_SUCCESS };
+
+	(void)zbus_chan_pub(&app_notification_event_chan, &notification, K_MSEC(100));
 	k_mutex_lock(&result_lock, K_FOREVER);
 	if (session != (uint32_t)atomic_get(&scanner_session) ||
 	    atomic_get(&scanner_requested) == 0) {

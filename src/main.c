@@ -11,6 +11,9 @@
 #if defined(CONFIG_OSKEY_CAMERA)
 #include "camera/camera.h"
 #endif
+#if defined(CONFIG_OSKEY_AUDIO)
+#include "audio/audio.h"
+#endif
 #include "bus.h"
 #include "core.h"
 #include "gpio.h"
@@ -20,12 +23,20 @@ LOG_MODULE_REGISTER(main);
 int main(void)
 {
 	bool healthy = true;
+	int ret;
 
 	if (IS_ENABLED(CONFIG_OSKEY_TEST_FIRMWARE)) {
 		LOG_WRN("Test firmware enabled; confirmations are automatic");
 	}
 
-	int ret = storage_init();
+#if defined(CONFIG_OSKEY_AUDIO)
+	ret = app_audio_init();
+	if (ret < 0) {
+		LOG_ERR("Audio init failed: %d", ret);
+	}
+#endif
+
+	ret = storage_init();
 	if (ret < 0) {
 		LOG_ERR("Storage startup failed: %d", ret);
 		healthy = false;

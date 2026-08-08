@@ -1,0 +1,4 @@
+# Project-local Zephyr drivers (hardware stays out of the application).
+
+rsource "audio/Kconfig"
+rsource "video/Kconfig"

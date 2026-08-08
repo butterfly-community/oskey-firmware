@@ -16,6 +16,7 @@ extern const lv_image_dsc_t oskey_passkey;
 extern const lv_image_dsc_t oskey_refresh;
 extern const lv_image_dsc_t oskey_settings;
 extern const lv_image_dsc_t oskey_shuffle;
+extern const lv_image_dsc_t oskey_audio;
 extern const lv_image_dsc_t oskey_success;
 extern const lv_image_dsc_t oskey_trash;
 extern const lv_image_dsc_t oskey_usb;

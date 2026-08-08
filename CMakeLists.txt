@@ -1,13 +1,19 @@
 cmake_minimum_required(VERSION 3.20.0)
 
+# Project-local drivers ship their own devicetree bindings.
+list(APPEND DTS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/drivers)
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oskey)
+
+add_subdirectory(drivers)
 
 if(CONFIG_OSKEY_FIDO2 AND CONFIG_NATIVE_LIBC)
   zephyr_compile_definitions(_POSIX_C_SOURCE=200809L)
 endif()
 
 include(cmake/lvgl.cmake)
+include(cmake/audio.cmake)
 
 target_sources(app PRIVATE
   src/main.c
@@ -39,10 +45,6 @@ target_sources_ifdef(CONFIG_OSKEY_CAMERA app PRIVATE
   src/camera/camera.c
 )
 
-target_sources_ifdef(CONFIG_OSKEY_CAMERA_GC0308 app PRIVATE
-  src/camera/gc0308.c
-)
-
 if(CONFIG_OSKEY_QR_CODE)
   add_library(quirc STATIC
     lib/quirc/lib/decode.c
@@ -62,6 +64,13 @@ target_sources_ifdef(CONFIG_OSKEY_QR_SCANNER app PRIVATE
   src/camera/qr_scanner.c
   src/display/ui_qr.c
 )
+
+if(CONFIG_OSKEY_AUDIO)
+  target_sources(app PRIVATE
+    src/audio/audio.c
+  )
+  add_dependencies(app audio-assets)
+endif()
 
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
   src/display/ui.c

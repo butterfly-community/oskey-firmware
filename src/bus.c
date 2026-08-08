@@ -50,6 +50,18 @@ ZBUS_CHAN_DEFINE(app_camera_state_chan, enum app_camera_state, NULL, NULL,
 		 ZBUS_OBSERVERS_EMPTY,
 		 IS_ENABLED(CONFIG_OSKEY_CAMERA) ? APP_CAMERA_INITIALIZING : APP_CAMERA_DISABLED);
 
+ZBUS_CHAN_DEFINE(app_audio_state_chan, struct app_audio_status, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.state = IS_ENABLED(CONFIG_OSKEY_AUDIO) ? APP_AUDIO_IDLE
+								       : APP_AUDIO_DISABLED,
+			       .volume = 0));
+
+ZBUS_CHAN_DEFINE(app_audio_command_chan, struct app_audio_command, NULL, NULL,
+		 ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.kind = APP_AUDIO_COMMAND_NONE, .volume = 0));
+
+ZBUS_CHAN_DEFINE(app_notification_event_chan, struct app_notification, NULL, NULL,
+		 ZBUS_OBSERVERS_EMPTY, ZBUS_MSG_INIT(.kind = APP_NOTIFICATION_NONE));
+
 ZBUS_CHAN_DEFINE(app_wallet_state_chan, enum WalletState, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 IS_ENABLED(CONFIG_OSKEY_RUST) ? WalletState_Setup : WalletState_Disabled);
 

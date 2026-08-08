@@ -3,6 +3,7 @@
 .cargo
 /build*/
 /boards/build/
+/src/audio/assets/generated/
 *.bin
 target
 /temp*/

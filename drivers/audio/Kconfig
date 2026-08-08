@@ -1,0 +1,18 @@
+# Copyright (c) 2026 OSKey contributors
+# SPDX-License-Identifier: Apache-2.0
+
+config AUDIO_ES8311
+	bool "Everest ES8311 audio codec"
+	default y
+	depends on DT_HAS_EVEREST_ES8311_ENABLED
+	select I2C
+	select GPIO
+	help
+	  Enable driver for the Everest ES8311 low power audio codec. The
+	  NS4150B class-D amplifier enable pin is driven through the
+	  pa-en-gpios devicetree property.
+
+config AUDIO_ES8311_INIT_PRIORITY
+	int "ES8311 codec initialization priority"
+	depends on AUDIO_ES8311
+	default 60

@@ -1,0 +1,11 @@
+# Copyright (c) 2026 OSKey contributors
+# SPDX-License-Identifier: Apache-2.0
+
+config VIDEO_GC0308
+	bool "GC0308 CMOS digital image sensor"
+	default y
+	depends on DT_HAS_GALAXYCORE_GC0308_ENABLED
+	select I2C
+	select GPIO
+	help
+	  Enable driver for the GalaxyCore GC0308 CMOS digital image sensor.

@@ -16,6 +16,7 @@ const lichuangFeatures = [
   "ESP_SPIRAM",
   "CAMERA",
   "QR_SCANNER",
+  "AUDIO",
 ];
 const lichuangConfFiles = ["boards/esp32s3_lichuang.conf"];
 const lichuangWestArgs = [
@@ -55,6 +56,12 @@ const boards: Board[] = [
     target: "esp32s3_devkitc/esp32s3/procpu",
     features: ["STORAGE"],
     overlays: ["boards/overlay/esp32_usb_jtag_serial.overlay"],
+  },
+  {
+    name: "esp32s3_oskey_evb",
+    target: "esp32s3_devkitc/esp32s3/procpu",
+    features: ["STORAGE", "DISPLAY"],
+    overlays: ["boards/esp32s3_oskey_evb.overlay"],
   },
   {
     name: "lichuang_szpi_s3",

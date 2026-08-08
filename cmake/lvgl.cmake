@@ -33,6 +33,7 @@ target_sources_ifdef(CONFIG_LV_USE_DEMO_WIDGETS app PRIVATE
 
 if(CONFIG_OSKEY_DISPLAY)
   foreach(asset
+      audio
       back
       bluetooth
       camera

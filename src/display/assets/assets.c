@@ -77,6 +77,9 @@ A8_DATA(wifi) = {
 A8_DATA(wifi_ap) = {
 #include <oskey_wifi_ap.a8.inc>
 };
+A8_DATA(audio) = {
+#include <oskey_audio.a8.inc>
+};
 
 A8_DESCRIPTOR(back, 24, 24);
 A8_DESCRIPTOR(bluetooth, 24, 24);
@@ -99,3 +102,4 @@ A8_DESCRIPTOR(wallet_logo, 60, 60);
 A8_DESCRIPTOR(warning, 24, 24);
 A8_DESCRIPTOR(wifi, 24, 24);
 A8_DESCRIPTOR(wifi_ap, 24, 24);
+A8_DESCRIPTOR(audio, 24, 24);

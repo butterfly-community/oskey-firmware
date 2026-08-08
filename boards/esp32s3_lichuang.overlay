@@ -12,6 +12,8 @@
 
   aliases {
     backlight = &lcd_bk;
+    audio-codec = &es8311;
+    audio-i2s = &i2s0;
   };
 
   mipi_dbi {
@@ -89,6 +91,12 @@
       };
     };
   };
+
+  es8311: es8311@18 {
+    compatible = "everest,es8311";
+    reg = <0x18>;
+    pa-en-gpios = <&pca9557 1 GPIO_ACTIVE_HIGH>;
+  };
 };
 
 &pinctrl {
@@ -156,6 +164,19 @@
 
 &spi3 {
   status = "disabled";
+};
+
+&i2s0 {
+  status = "okay";
+};
+
+&i2s0_default {
+  group1 {
+    pinmux = <I2S0_MCLK_GPIO38>,
+             <I2S0_O_BCK_GPIO14>,
+             <I2S0_O_WS_GPIO13>,
+             <I2S0_O_SD_GPIO45>;
+  };
 };
 
 &dma {

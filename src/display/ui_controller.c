@@ -46,6 +46,7 @@ static void read_device_status(struct ui_status *status)
 	(void)zbus_chan_read(&app_usb_state_chan, &status->usb, K_FOREVER);
 	(void)zbus_chan_read(&app_storage_state_chan, &status->storage, K_FOREVER);
 	(void)zbus_chan_read(&app_camera_state_chan, &status->camera, K_FOREVER);
+	(void)zbus_chan_read(&app_audio_state_chan, &status->audio, K_FOREVER);
 	(void)zbus_chan_read(&app_wallet_state_chan, &status->wallet, K_FOREVER);
 }
 
@@ -110,6 +111,11 @@ static void apply_status(const struct ui_status *next)
 	ui.status = *next;
 	ui_status_update(next);
 	if (active_status_page()) {
+		ui_refresh();
+	}
+	/* Refresh the Audio page only when playback state changes, so volume
+	 * slider updates do not rebuild the page mid-drag. */
+	if (ui.page == UI_PAGE_AUDIO && previous.audio.state != next->audio.state) {
 		ui_refresh();
 	}
 	if (previous.storage != APP_STORAGE_ERROR && next->storage == APP_STORAGE_ERROR &&
@@ -279,7 +285,7 @@ static void ui_bus_changed(const struct zbus_channel *channel)
 		}
 	} else if (channel == &app_bluetooth_state_chan || channel == &app_usb_state_chan ||
 		   channel == &app_storage_state_chan || channel == &app_camera_state_chan ||
-		   channel == &app_wallet_state_chan) {
+		   channel == &app_audio_state_chan || channel == &app_wallet_state_chan) {
 		events = UI_EVENT_STATUS;
 	} else if (channel == &app_local_result_event_chan) {
 		events = UI_EVENT_LOCAL_RESULT;
@@ -307,6 +313,7 @@ ZBUS_CHAN_ADD_OBS(app_bluetooth_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_usb_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_storage_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_camera_state_chan, ui_bus_listener, 0);
+ZBUS_CHAN_ADD_OBS(app_audio_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_wallet_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_local_result_event_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_confirmation_state_chan, ui_bus_listener, 0);

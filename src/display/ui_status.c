@@ -10,6 +10,7 @@ enum status_item {
 	STATUS_ITEM_BLUETOOTH,
 	STATUS_ITEM_USB,
 	STATUS_ITEM_CAMERA,
+	STATUS_ITEM_AUDIO,
 };
 
 static enum ui_tone wifi_sta_tone(enum app_wifi_sta_state state)
@@ -75,6 +76,19 @@ enum ui_tone ui_camera_tone(enum app_camera_state state)
 	}
 }
 
+static enum ui_tone audio_tone(enum app_audio_state state)
+{
+	switch (state) {
+	case APP_AUDIO_PLAYING:
+		return UI_TONE_ACTIVE;
+	case APP_AUDIO_IDLE:
+		return UI_TONE_SUCCESS;
+	case APP_AUDIO_DISABLED:
+	default:
+		return UI_TONE_MUTED;
+	}
+}
+
 static void status_clicked(lv_event_t *event)
 {
 	enum status_item item = (enum status_item)(uintptr_t)lv_event_get_user_data(event);
@@ -97,6 +111,9 @@ static void status_clicked(lv_event_t *event)
 	case STATUS_ITEM_CAMERA:
 		page = UI_PAGE_CAMERA;
 		break;
+	case STATUS_ITEM_AUDIO:
+		page = UI_PAGE_AUDIO;
+		break;
 	default:
 		return;
 	}
@@ -104,7 +121,7 @@ static void status_clicked(lv_event_t *event)
 		return;
 	}
 	if (ui.page == UI_PAGE_WIFI || ui.page == UI_PAGE_BLUETOOTH || ui.page == UI_PAGE_USB ||
-	    ui.page == UI_PAGE_CAMERA) {
+	    ui.page == UI_PAGE_CAMERA || ui.page == UI_PAGE_AUDIO) {
 		ui.page = page;
 		ui_render();
 	} else {
@@ -181,6 +198,9 @@ void ui_status_init(const struct ui_status *status)
 	ui.bluetooth_icon = status_icon(status_icons, &oskey_bluetooth, STATUS_ITEM_BLUETOOTH);
 	ui.usb_icon = status_icon(status_icons, &oskey_usb, STATUS_ITEM_USB);
 	ui.camera_icon = status_icon(status_icons, &oskey_camera, STATUS_ITEM_CAMERA);
+#if defined(CONFIG_OSKEY_AUDIO)
+	ui.audio_icon = status_icon(status_icons, &oskey_audio, STATUS_ITEM_AUDIO);
+#endif
 
 	ui_status_navigation(UI_NAVIGATION_NONE);
 	ui_status_update(status);
@@ -207,4 +227,7 @@ void ui_status_update(const struct ui_status *status)
 	ui_icon_color(ui.bluetooth_icon, ui_tone_color(bluetooth_tone(status->bluetooth)));
 	ui_icon_color(ui.usb_icon, ui_tone_color(usb_tone(status->usb)));
 	ui_icon_color(ui.camera_icon, ui_tone_color(ui_camera_tone(status->camera)));
+#if defined(CONFIG_OSKEY_AUDIO)
+	ui_icon_color(ui.audio_icon, ui_tone_color(audio_tone(status->audio.state)));
+#endif
 }

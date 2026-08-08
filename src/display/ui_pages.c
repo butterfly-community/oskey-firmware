@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 
 #include "assets/assets.h"
@@ -250,6 +251,81 @@ static void confirm_reset(lv_event_t *event)
 	ui_dialog_show(&oskey_trash, "Erase device data?",
 		       "Wallet, passkeys and network settings will be permanently removed.",
 		       "Erase data", UI_TONE_DANGER, erase_storage);
+}
+
+#if defined(CONFIG_OSKEY_AUDIO)
+static void audio_beep_clicked(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	struct app_audio_command command = { .kind = APP_AUDIO_COMMAND_BEEP };
+
+	(void)zbus_chan_pub(&app_audio_command_chan, &command, K_MSEC(100));
+}
+
+static void audio_volume_changed(lv_event_t *event)
+{
+	lv_obj_t *slider = lv_event_get_target(event);
+	lv_obj_t *label = lv_event_get_user_data(event);
+	struct app_audio_command command = {
+		.kind = APP_AUDIO_COMMAND_SET_VOLUME,
+		.volume = (uint8_t)lv_slider_get_value(slider),
+	};
+
+	(void)zbus_chan_pub(&app_audio_command_chan, &command, K_MSEC(100));
+	lv_label_set_text_fmt(label, "Volume %u%%", command.volume);
+}
+#endif
+
+static void show_audio(void)
+{
+	lv_obj_t *content = ui_page_begin("Audio", UI_NAVIGATION_BACK);
+#if defined(CONFIG_OSKEY_AUDIO)
+	ui_section(content, "AUDIO");
+	ui_list_row(content, &oskey_audio, "Play beep", "Play a short test sound", NULL,
+		    UI_TONE_ACTIVE, audio_beep_clicked, NULL);
+	ui_list_row(content, &oskey_audio,
+		    ui.status.audio.state == APP_AUDIO_PLAYING ? "Playing" : "Idle",
+		    "Audio codec output", NULL,
+		    ui.status.audio.state == APP_AUDIO_PLAYING ? UI_TONE_ACTIVE : UI_TONE_SUCCESS,
+		    NULL, NULL);
+
+	ui_section(content, "VOLUME");
+	lv_obj_t *row = lv_obj_create(content);
+	lv_obj_set_width(row, LV_PCT(100));
+	lv_obj_set_height(row, LV_SIZE_CONTENT);
+	lv_obj_set_style_min_height(row, 44, 0);
+	lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
+	lv_obj_set_style_border_side(row, LV_BORDER_SIDE_BOTTOM, 0);
+	lv_obj_set_style_border_color(row, lv_color_hex(0x242b33), 0);
+	lv_obj_set_style_border_width(row, 1, 0);
+	lv_obj_set_style_radius(row, 0, 0);
+	lv_obj_set_style_pad_hor(row, 4, 0);
+	/* Keep the slider clear of the page scrollbar on the right edge. */
+	lv_obj_set_style_pad_right(row, 20, 0);
+	lv_obj_set_style_pad_ver(row, 8, 0);
+	lv_obj_set_style_pad_column(row, 8, 0);
+	lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+	lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
+			      LV_FLEX_ALIGN_CENTER);
+	lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+
+	lv_obj_t *volume_label = lv_label_create(row);
+	lv_obj_set_style_text_color(volume_label, lv_color_hex(0xf2f5f7), 0);
+	lv_obj_set_style_text_font(volume_label, UI_FONT_BODY, 0);
+	lv_label_set_text_fmt(volume_label, "Volume %u%%", ui.status.audio.volume);
+
+	lv_obj_t *slider = lv_slider_create(row);
+	lv_obj_set_flex_grow(slider, 1);
+	lv_obj_set_height(slider, LV_DPX(18));
+	/* Keep the track well inside so the knob never clips, even when pressed. */
+	lv_obj_set_style_pad_hor(slider, LV_DPX(14), LV_PART_MAIN);
+	lv_slider_set_range(slider, 0, 100);
+	lv_slider_set_value(slider, ui.status.audio.volume, LV_ANIM_OFF);
+	lv_obj_set_style_bg_color(slider, lv_color_hex(0x242b33), LV_PART_MAIN);
+	lv_obj_set_style_bg_color(slider, lv_color_hex(0x4da3ff), LV_PART_INDICATOR);
+	lv_obj_set_style_bg_color(slider, lv_color_hex(0xf2f5f7), LV_PART_KNOB);
+	lv_obj_add_event_cb(slider, audio_volume_changed, LV_EVENT_VALUE_CHANGED, volume_label);
+#endif
 }
 
 static void show_splash(void)
@@ -584,6 +660,9 @@ void ui_render(void)
 		break;
 	case UI_PAGE_USB:
 		ui_usb_render();
+		break;
+	case UI_PAGE_AUDIO:
+		show_audio();
 		break;
 #if !defined(CONFIG_OSKEY_FIDO2)
 	case UI_PAGE_FIDO_PIN_RECOVER:

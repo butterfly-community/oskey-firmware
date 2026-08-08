@@ -1,0 +1,13 @@
+description: Everest ES8311 low power mono audio codec (DAC output)
+
+compatible: "everest,es8311"
+
+include: i2c-device.yaml
+
+properties:
+  pa-en-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      Optional GPIO that enables the speaker power amplifier
+      (e.g. NS4150B PA_EN behind an I/O expander).

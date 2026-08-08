@@ -155,6 +155,37 @@ enum app_camera_state {
 	APP_CAMERA_ERROR,
 };
 
+enum app_audio_state {
+	APP_AUDIO_DISABLED,
+	APP_AUDIO_IDLE,
+	APP_AUDIO_PLAYING,
+};
+
+enum app_audio_command_kind {
+	APP_AUDIO_COMMAND_NONE,
+	APP_AUDIO_COMMAND_BEEP,
+	APP_AUDIO_COMMAND_SET_VOLUME,
+};
+
+struct app_audio_command {
+	enum app_audio_command_kind kind;
+	uint8_t volume;
+};
+
+struct app_audio_status {
+	enum app_audio_state state;
+	uint8_t volume;
+};
+
+enum app_notification_kind {
+	APP_NOTIFICATION_NONE,
+	APP_NOTIFICATION_SUCCESS,
+};
+
+struct app_notification {
+	enum app_notification_kind kind;
+};
+
 enum app_confirmation_phase {
 	APP_CONFIRMATION_IDLE,
 	APP_CONFIRMATION_REQUIRED,
@@ -195,7 +226,8 @@ struct app_fido_result {
 
 ZBUS_CHAN_DECLARE(app_local_result_event_chan, app_wifi_command_chan, app_network_event_chan,
 		  app_bluetooth_state_chan, app_usb_state_chan, app_storage_state_chan,
-		  app_camera_state_chan, app_wallet_state_chan, app_confirmation_state_chan);
+		  app_camera_state_chan, app_audio_state_chan, app_audio_command_chan,
+		  app_notification_event_chan, app_wallet_state_chan, app_confirmation_state_chan);
 
 size_t app_payload_length(const app_payload *payload);
 size_t app_payload_read(const app_payload *payload, size_t offset, void *data, size_t len);
