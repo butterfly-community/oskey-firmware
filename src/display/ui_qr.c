@@ -48,16 +48,20 @@ static void preview_tick(lv_timer_t *timer)
 static int preview_prepare(void)
 {
 	struct video_format format;
+	lv_color_format_t color_format;
 	int ret = app_qr_scanner_get_format(&format);
 
 	if (ret < 0) {
 		return ret;
 	}
-	if (format.pixelformat != VIDEO_PIX_FMT_RGB565 || format.width == 0U ||
-	    format.height == 0U || format.pitch < format.width * 2U ||
+	if ((format.pixelformat != VIDEO_PIX_FMT_RGB565X &&
+	     format.pixelformat != VIDEO_PIX_FMT_RGB565) ||
+	    format.width == 0U || format.height == 0U || format.pitch < format.width * 2U ||
 	    format.size < format.pitch * format.height) {
 		return -ENOTSUP;
 	}
+	color_format = format.pixelformat == VIDEO_PIX_FMT_RGB565X ? LV_COLOR_FORMAT_RGB565_SWAPPED
+								   : LV_COLOR_FORMAT_RGB565;
 
 	if (preview_buffer == NULL) {
 		preview_buffer = shared_multi_heap_aligned_alloc(
@@ -72,7 +76,7 @@ static int preview_prepare(void)
 			.header =
 				{
 					.magic = LV_IMAGE_HEADER_MAGIC,
-					.cf = LV_COLOR_FORMAT_RGB565_SWAPPED,
+					.cf = color_format,
 					.w = format.width,
 					.h = format.height,
 					.stride = format.pitch,
@@ -80,7 +84,8 @@ static int preview_prepare(void)
 			.data_size = format.size,
 			.data = preview_buffer,
 		};
-	} else if (format.width != preview_format.width || format.height != preview_format.height ||
+	} else if (format.pixelformat != preview_format.pixelformat ||
+		   format.width != preview_format.width || format.height != preview_format.height ||
 		   format.pitch != preview_format.pitch || format.size != preview_format.size) {
 		return -ENOTSUP;
 	}
@@ -133,17 +138,15 @@ void ui_qr_event(const struct app_qr_scanner_event *event)
 	case APP_QR_SCANNER_STARTING:
 		lv_label_set_text(status_label, "Starting camera");
 		break;
-	case APP_QR_SCANNER_RUNNING:
-		{
-			int ret = preview_prepare();
+	case APP_QR_SCANNER_RUNNING: {
+		int ret = preview_prepare();
 
-			if (ret < 0) {
-				lv_label_set_text_fmt(status_label, "Preview unavailable (%d)", ret);
-			} else {
-				lv_label_set_text(status_label, "Scanning");
-			}
+		if (ret < 0) {
+			lv_label_set_text_fmt(status_label, "Preview unavailable (%d)", ret);
+		} else {
+			lv_label_set_text(status_label, "Scanning");
 		}
-		break;
+	} break;
 	case APP_QR_SCANNER_STOPPING:
 		lv_label_set_text(status_label, "Stopping");
 		break;

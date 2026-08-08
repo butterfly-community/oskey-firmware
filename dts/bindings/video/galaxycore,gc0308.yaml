@@ -10,8 +10,15 @@ include: i2c-device.yaml
 properties:
   pwdn-gpios:
     type: phandle-array
-    required: true
     description: Active-high sensor power-down signal
+
+  reset-gpios:
+    type: phandle-array
+    description: Active-low sensor reset signal
+
+  h-mirror:
+    type: boolean
+    description: Enable horizontal image mirroring
 
 child-binding:
   child-binding:

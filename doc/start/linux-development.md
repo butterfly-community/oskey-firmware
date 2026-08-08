@@ -42,6 +42,7 @@ git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/oskey.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/usb-busy.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/keepalive.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/usb-dwc2-zlp-cache.patch"
+git -C "$ZEPHYR_BASE" apply "$PWD/patch/video-rgb565x-bpp.patch"
 ```
 
 `change-pin.patch` mirrors upstream Zephyr PR #115238 and can be removed once that change is

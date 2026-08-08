@@ -101,13 +101,15 @@ config VIDEO_BUFFER_POOL_NUM_MAX
 	default 4 if OSKEY_CAMERA
 
 config OSKEY_CAMERA_GC0308
-	bool "GC0308 camera sensor"
+	bool
 	depends on OSKEY_CAMERA
 	depends on DT_HAS_GALAXYCORE_GC0308_ENABLED
+	default y
 	select I2C
 	select GPIO
 	help
-	  Enable the GalaxyCore GC0308 image sensor driver.
+	  Select the GalaxyCore GC0308 image sensor driver for a matching
+	  devicetree node.
 
 if SOC_SERIES_ESP32S3
 config DMA_ESP32_MAX_DESCRIPTOR_NUM

@@ -38,6 +38,19 @@ int app_camera_init(void)
 	return 0;
 }
 
+int app_camera_get_caps(struct video_caps *caps)
+{
+	if (caps == NULL) {
+		return -EINVAL;
+	}
+	if (!device_is_ready(camera)) {
+		return -ENODEV;
+	}
+
+	*caps = (struct video_caps){.type = VIDEO_BUF_TYPE_OUTPUT};
+	return video_get_caps(camera, caps);
+}
+
 static void app_camera_release_buffers(void)
 {
 	struct video_buffer *buffer;
@@ -89,13 +102,6 @@ int app_camera_start(struct video_format *format)
 		return -ENOMEM;
 	}
 
-	*format = (struct video_format){.type = VIDEO_BUF_TYPE_OUTPUT};
-	ret = video_get_format(camera, format);
-	if (ret < 0) {
-		LOG_ERR("Unable to get camera format: %d", ret);
-		app_camera_publish(APP_CAMERA_ERROR);
-		return ret;
-	}
 	ret = video_set_format(camera, format);
 	if (ret < 0) {
 		LOG_ERR("Unable to set camera format: %d", ret);
@@ -123,6 +129,13 @@ int app_camera_start(struct video_format *format)
 	ret = video_stream_start(camera, VIDEO_BUF_TYPE_OUTPUT);
 	if (ret < 0) {
 		LOG_ERR("Unable to start camera stream: %d", ret);
+		int stop_ret = video_stream_stop(camera, VIDEO_BUF_TYPE_OUTPUT);
+
+		if (stop_ret < 0) {
+			LOG_ERR("Unable to stop camera after start failure: %d", stop_ret);
+			app_camera_publish(APP_CAMERA_ERROR);
+			return ret;
+		}
 		goto release_buffers;
 	}
 
@@ -167,9 +180,18 @@ int app_camera_stop(void)
 	}
 
 	ret = video_stream_stop(camera, VIDEO_BUF_TYPE_OUTPUT);
+	if (ret < 0) {
+		app_camera_publish(APP_CAMERA_ERROR);
+		return ret;
+	}
 	camera_streaming = false;
 
+	ret = video_driver_flush(camera, true);
+	if (ret < 0) {
+		app_camera_publish(APP_CAMERA_ERROR);
+		return ret;
+	}
 	app_camera_release_buffers();
-	app_camera_publish(ret < 0 ? APP_CAMERA_ERROR : APP_CAMERA_READY);
-	return ret;
+	app_camera_publish(APP_CAMERA_READY);
+	return 0;
 }

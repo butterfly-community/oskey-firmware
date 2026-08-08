@@ -80,6 +80,7 @@
     compatible = "galaxycore,gc0308";
     reg = <0x21>;
     pwdn-gpios = <&pca9557 2 GPIO_ACTIVE_HIGH>;
+    h-mirror;
     status = "okay";
 
     port {

@@ -10,6 +10,7 @@
 #define DT_DRV_COMPAT galaxycore_gc0308
 
 #include <errno.h>
+#include <string.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
@@ -34,6 +35,8 @@ LOG_MODULE_REGISTER(gc0308, CONFIG_VIDEO_LOG_LEVEL);
 struct gc0308_config {
 	struct i2c_dt_spec i2c;
 	struct gpio_dt_spec pwdn;
+	struct gpio_dt_spec reset;
+	bool hmirror;
 };
 
 struct gc0308_data {
@@ -42,7 +45,7 @@ struct gc0308_data {
 
 static const struct video_format_cap gc0308_fmts[] = {
 	{
-		.pixelformat = VIDEO_PIX_FMT_RGB565,
+		.pixelformat = VIDEO_PIX_FMT_RGB565X,
 		.width_min = GC0308_WIDTH,
 		.width_max = GC0308_WIDTH,
 		.height_min = GC0308_HEIGHT,
@@ -141,21 +144,35 @@ static int gc0308_configure_qvga_rgb565(const struct device *dev)
 		return ret;
 	}
 
-	/* Match the module orientation used by the board vendor's example. */
-	return gc0308_update(dev, GC0308_MIRROR_FLIP, BIT(0) | BIT(1), BIT(0));
+	const struct gc0308_config *config = dev->config;
+
+	return gc0308_update(dev, GC0308_MIRROR_FLIP, BIT(0) | BIT(1),
+			     config->hmirror ? BIT(0) : 0U);
 }
 
 static int gc0308_set_format(const struct device *dev, struct video_format *fmt)
 {
 	struct gc0308_data *data = dev->data;
+	int ret;
 
-	if (fmt->type != VIDEO_BUF_TYPE_OUTPUT || fmt->pixelformat != VIDEO_PIX_FMT_RGB565 ||
+	if (fmt == NULL) {
+		return -EINVAL;
+	}
+	if (fmt->type != VIDEO_BUF_TYPE_OUTPUT || fmt->pixelformat != VIDEO_PIX_FMT_RGB565X ||
 	    fmt->width != GC0308_WIDTH || fmt->height != GC0308_HEIGHT) {
 		return -ENOTSUP;
 	}
 
 	fmt->pitch = GC0308_WIDTH * 2U;
 	fmt->size = fmt->pitch * GC0308_HEIGHT;
+	if (memcmp(&data->format, fmt, sizeof(*fmt)) == 0) {
+		return 0;
+	}
+
+	ret = gc0308_configure_qvga_rgb565(dev);
+	if (ret < 0) {
+		return ret;
+	}
 	data->format = *fmt;
 	return 0;
 }
@@ -195,23 +212,64 @@ static DEVICE_API(video, gc0308_api) = {
 	.get_caps = gc0308_get_caps,
 };
 
+static int gc0308_power_up(const struct device *dev)
+{
+	const struct gc0308_config *config = dev->config;
+	int ret;
+
+	if (config->pwdn.port != NULL) {
+		if (!gpio_is_ready_dt(&config->pwdn)) {
+			LOG_ERR("PWDN GPIO is not ready");
+			return -ENODEV;
+		}
+		ret = gpio_pin_configure_dt(&config->pwdn, GPIO_OUTPUT_INACTIVE);
+		if (ret < 0) {
+			return ret;
+		}
+	}
+
+	k_msleep(10);
+
+	if (config->reset.port != NULL) {
+		if (!gpio_is_ready_dt(&config->reset)) {
+			LOG_ERR("Reset GPIO is not ready");
+			return -ENODEV;
+		}
+		ret = gpio_pin_configure_dt(&config->reset, GPIO_OUTPUT_ACTIVE);
+		if (ret < 0) {
+			return ret;
+		}
+		k_msleep(10);
+		ret = gpio_pin_set_dt(&config->reset, 0);
+		if (ret < 0) {
+			return ret;
+		}
+		k_msleep(30);
+	}
+	return 0;
+}
+
 static int gc0308_init(const struct device *dev)
 {
 	const struct gc0308_config *config = dev->config;
-	struct gc0308_data *data = dev->data;
+	struct video_format format = {
+		.type = VIDEO_BUF_TYPE_OUTPUT,
+		.pixelformat = VIDEO_PIX_FMT_RGB565X,
+		.width = GC0308_WIDTH,
+		.height = GC0308_HEIGHT,
+	};
 	uint8_t product_id;
 	int ret;
 
-	if (!i2c_is_ready_dt(&config->i2c) || !gpio_is_ready_dt(&config->pwdn)) {
-		LOG_ERR("SCCB bus or PWDN GPIO is not ready");
+	if (!i2c_is_ready_dt(&config->i2c)) {
+		LOG_ERR("SCCB bus is not ready");
 		return -ENODEV;
 	}
 
-	ret = gpio_pin_configure_dt(&config->pwdn, GPIO_OUTPUT_INACTIVE);
+	ret = gc0308_power_up(dev);
 	if (ret < 0) {
 		return ret;
 	}
-	k_msleep(10);
 
 	ret = gc0308_write(dev, GC0308_PAGE_SELECT, 0x00);
 	if (ret < 0) {
@@ -239,22 +297,13 @@ static int gc0308_init(const struct device *dev)
 	}
 	k_msleep(80);
 
-	ret = gc0308_configure_qvga_rgb565(dev);
+	ret = gc0308_set_format(dev, &format);
 	if (ret < 0) {
 		LOG_ERR("QVGA RGB565 configuration failed: %d", ret);
 		return ret;
 	}
 
-	data->format = (struct video_format){
-		.type = VIDEO_BUF_TYPE_OUTPUT,
-		.pixelformat = VIDEO_PIX_FMT_RGB565,
-		.width = GC0308_WIDTH,
-		.height = GC0308_HEIGHT,
-		.pitch = GC0308_WIDTH * 2U,
-		.size = GC0308_WIDTH * GC0308_HEIGHT * 2U,
-	};
-
-	LOG_INF("GC0308 detected (PID 0x%02x), QVGA RGB565", product_id);
+	LOG_INF("GC0308 detected (PID 0x%02x), QVGA RGB565X", product_id);
 	return 0;
 }
 
@@ -262,7 +311,9 @@ static int gc0308_init(const struct device *dev)
 	static struct gc0308_data gc0308_data_##inst;                                              \
 	static const struct gc0308_config gc0308_config_##inst = {                                 \
 		.i2c = I2C_DT_SPEC_INST_GET(inst),                                                 \
-		.pwdn = GPIO_DT_SPEC_INST_GET(inst, pwdn_gpios),                                   \
+		.pwdn = GPIO_DT_SPEC_INST_GET_OR(inst, pwdn_gpios, {0}),                           \
+		.reset = GPIO_DT_SPEC_INST_GET_OR(inst, reset_gpios, {0}),                         \
+		.hmirror = DT_INST_PROP_OR(inst, h_mirror, false),                                 \
 	};                                                                                         \
 	DEVICE_DT_INST_DEFINE(inst, gc0308_init, NULL, &gc0308_data_##inst, &gc0308_config_##inst, \
 			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &gc0308_api);

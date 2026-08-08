@@ -15,7 +15,6 @@ const lichuangFeatures = [
   "DISPLAY",
   "ESP_SPIRAM",
   "CAMERA",
-  "CAMERA_GC0308",
   "QR_SCANNER",
 ];
 const lichuangConfFiles = ["boards/esp32s3_lichuang.conf"];

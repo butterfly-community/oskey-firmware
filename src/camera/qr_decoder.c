@@ -12,7 +12,6 @@
 #include <zephyr/sys/atomic.h>
 
 #define QR_DECODER_PRIORITY 12
-#define QR_DECODE_SCALE     2
 
 LOG_MODULE_REGISTER(qr_decoder, CONFIG_VIDEO_LOG_LEVEL);
 
@@ -36,19 +35,21 @@ static void *qr_callback_user_data;
 static atomic_t qr_state = ATOMIC_INIT(QR_DECODER_UNINITIALIZED);
 static int64_t qr_next_decode_ms;
 static uint32_t qr_session;
-static int qr_width;
-static int qr_height;
 static int qr_source_width;
 static int qr_source_height;
 static size_t qr_source_pitch;
+static uint32_t qr_source_pixelformat;
 static int qr_crop_x;
 static int qr_crop_y;
 static int qr_crop_width;
 static int qr_crop_height;
+static uint8_t qr_high_byte_index;
+static uint8_t qr_low_byte_index;
 
-static uint8_t rgb565_be_to_gray(const uint8_t *pixel)
+static uint8_t rgb565_to_gray(const uint8_t *pixel)
 {
-	uint8_t green = ((pixel[0] & 0x07U) << 3) | (pixel[1] >> 5);
+	uint8_t green =
+		((pixel[qr_high_byte_index] & 0x07U) << 3) | (pixel[qr_low_byte_index] >> 5);
 
 	return (green << 2) | (green >> 4);
 }
@@ -86,21 +87,20 @@ static void qr_decoder_thread(void *unused1, void *unused2, void *unused3)
 		int image_width;
 		int image_height;
 		uint8_t *image = quirc_begin(qr_decoder, &image_width, &image_height);
-		if (image == NULL || image_width != qr_width || image_height != qr_height) {
+		if (image == NULL || image_width != qr_crop_width ||
+		    image_height != qr_crop_height) {
 			LOG_ERR("Unable to begin QR frame: %p, %dx%d", image, image_width,
 				image_height);
 			atomic_set(&qr_state, QR_DECODER_IDLE);
 			continue;
 		}
 
-		for (int y = 0; y < qr_height; y++) {
-			int source_y = (y * qr_crop_height) / qr_height;
-			const uint8_t *row = qr_snapshot + (size_t)source_y * qr_snapshot_pitch;
-			uint8_t *gray = image + (size_t)y * qr_width;
+		for (int y = 0; y < qr_crop_height; y++) {
+			const uint8_t *row = qr_snapshot + (size_t)y * qr_snapshot_pitch;
+			uint8_t *gray = image + (size_t)y * qr_crop_width;
 
-			for (int x = 0; x < qr_width; x++) {
-				int source_x = (x * qr_crop_width) / qr_width;
-				gray[x] = rgb565_be_to_gray(row + (size_t)source_x * 2U);
+			for (int x = 0; x < qr_crop_width; x++) {
+				gray[x] = rgb565_to_gray(row + (size_t)x * 2U);
 			}
 		}
 		quirc_end(qr_decoder);
@@ -126,29 +126,46 @@ static void qr_decoder_thread(void *unused1, void *unused2, void *unused3)
 int app_qr_decoder_init(const struct video_format *format, app_qr_code_callback_t callback,
 			void *user_data)
 {
-	if (format == NULL || callback == NULL || format->pixelformat != VIDEO_PIX_FMT_RGB565 ||
-		format->width == 0U || format->width > INT_MAX || format->height == 0U ||
-		format->height > INT_MAX || format->pitch / 2U < format->width ||
-		format->height > SIZE_MAX / format->width ||
-		format->height > SIZE_MAX / format->pitch ||
-		format->size < (size_t)format->pitch * format->height) {
+	int source_width;
+	int source_height;
+	int crop_width;
+	int crop_height;
+	int crop_x;
+	int crop_y;
+
+	if (format == NULL || callback == NULL ||
+	    (format->pixelformat != VIDEO_PIX_FMT_RGB565X &&
+	     format->pixelformat != VIDEO_PIX_FMT_RGB565) ||
+	    format->width == 0U || format->width > INT_MAX || format->height == 0U ||
+	    format->height > INT_MAX || format->pitch / 2U < format->width ||
+	    format->height > SIZE_MAX / format->width ||
+	    format->height > SIZE_MAX / format->pitch ||
+	    format->size < (size_t)format->pitch * format->height) {
 		return -EINVAL;
 	}
-	qr_source_width = (int)format->width;
-	qr_source_height = (int)format->height;
-	qr_width = qr_source_width / QR_DECODE_SCALE;
-	qr_height = qr_source_height / QR_DECODE_SCALE;
-	qr_crop_width = qr_source_width - qr_source_width / 4;
-	qr_crop_height = qr_source_height - qr_source_height / 4;
-	qr_crop_x = (qr_source_width - qr_crop_width) / 2;
-	qr_crop_y = (qr_source_height - qr_crop_height) / 2;
-	if (qr_width < 1 || qr_height < 1 || qr_crop_width < 1 || qr_crop_height < 1) {
+
+	source_width = (int)format->width;
+	source_height = (int)format->height;
+	crop_width = source_width - source_width / 4;
+	crop_height = source_height - source_height / 4;
+	crop_x = (source_width - crop_width) / 2;
+	crop_y = (source_height - crop_height) / 2;
+	if (crop_width < 1 || crop_height < 1) {
 		return -EINVAL;
 	}
 	if (!atomic_cas(&qr_state, QR_DECODER_UNINITIALIZED, QR_DECODER_IDLE)) {
 		return -EALREADY;
 	}
 
+	qr_source_width = source_width;
+	qr_source_height = source_height;
+	qr_source_pixelformat = format->pixelformat;
+	qr_high_byte_index = format->pixelformat == VIDEO_PIX_FMT_RGB565X ? 0U : 1U;
+	qr_low_byte_index = 1U - qr_high_byte_index;
+	qr_crop_width = crop_width;
+	qr_crop_height = crop_height;
+	qr_crop_x = crop_x;
+	qr_crop_y = crop_y;
 	qr_source_pitch = format->pitch;
 	qr_snapshot_pitch = (size_t)qr_crop_width * 2U;
 	if ((size_t)qr_crop_height > SIZE_MAX / qr_snapshot_pitch) {
@@ -160,7 +177,7 @@ int app_qr_decoder_init(const struct video_format *format, app_qr_code_callback_
 	qr_callback_user_data = user_data;
 	qr_next_decode_ms = 0;
 	qr_decoder = quirc_new();
-	if (qr_decoder == NULL || quirc_resize(qr_decoder, qr_width, qr_height) < 0) {
+	if (qr_decoder == NULL || quirc_resize(qr_decoder, qr_crop_width, qr_crop_height) < 0) {
 		if (qr_decoder != NULL) {
 			quirc_destroy(qr_decoder);
 			qr_decoder = NULL;
@@ -185,7 +202,7 @@ int app_qr_decoder_submit(const struct video_buffer *buffer, const struct video_
 	int64_t now = k_uptime_get();
 
 	if (buffer == NULL || format == NULL || buffer->buffer == NULL ||
-	    format->pixelformat != VIDEO_PIX_FMT_RGB565 ||
+	    format->pixelformat != qr_source_pixelformat ||
 	    format->width != (uint32_t)qr_source_width ||
 	    format->height != (uint32_t)qr_source_height || format->pitch != qr_source_pitch ||
 	    buffer->bytesused < (size_t)format->pitch * format->height) {
@@ -195,8 +212,8 @@ int app_qr_decoder_submit(const struct video_buffer *buffer, const struct video_
 		return 0;
 	}
 
-	const uint8_t *source = buffer->buffer +
-		(size_t)qr_crop_y * format->pitch + (size_t)qr_crop_x * 2U;
+	const uint8_t *source =
+		buffer->buffer + (size_t)qr_crop_y * format->pitch + (size_t)qr_crop_x * 2U;
 	for (int y = 0; y < qr_crop_height; y++) {
 		memcpy(qr_snapshot + (size_t)y * qr_snapshot_pitch,
 		       source + (size_t)y * format->pitch, qr_snapshot_pitch);

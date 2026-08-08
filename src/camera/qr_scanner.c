@@ -13,7 +13,9 @@
 
 LOG_MODULE_REGISTER(qr_scanner, CONFIG_VIDEO_LOG_LEVEL);
 
-#define PREVIEW_INTERVAL_MS 100
+#define PREVIEW_INTERVAL_MS  100
+#define SCANNER_FRAME_WIDTH  320U
+#define SCANNER_FRAME_HEIGHT 240U
 
 ZBUS_CHAN_DEFINE(app_qr_scanner_event_chan, struct app_qr_scanner_event, NULL, NULL,
 		 ZBUS_OBSERVERS_EMPTY,
@@ -72,6 +74,54 @@ static void scanner_qr_found(const struct app_qr_code *code, uint32_t session, v
 	k_mutex_unlock(&result_lock);
 }
 
+static bool scanner_cap_supports(const struct video_format_cap *cap)
+{
+	if ((cap->pixelformat != VIDEO_PIX_FMT_RGB565X &&
+	     cap->pixelformat != VIDEO_PIX_FMT_RGB565) ||
+	    SCANNER_FRAME_WIDTH < cap->width_min || SCANNER_FRAME_WIDTH > cap->width_max ||
+	    SCANNER_FRAME_HEIGHT < cap->height_min || SCANNER_FRAME_HEIGHT > cap->height_max) {
+		return false;
+	}
+
+	bool width_matches =
+		cap->width_step == 0U
+			? cap->width_min == cap->width_max
+			: (SCANNER_FRAME_WIDTH - cap->width_min) % cap->width_step == 0U;
+	bool height_matches =
+		cap->height_step == 0U
+			? cap->height_min == cap->height_max
+			: (SCANNER_FRAME_HEIGHT - cap->height_min) % cap->height_step == 0U;
+
+	return width_matches && height_matches;
+}
+
+static int scanner_select_format(struct video_format *format)
+{
+	struct video_caps caps;
+	int ret = app_camera_get_caps(&caps);
+
+	if (ret < 0) {
+		return ret;
+	}
+	if (caps.format_caps == NULL) {
+		return -ENOTSUP;
+	}
+
+	for (const struct video_format_cap *cap = caps.format_caps; cap->pixelformat != 0U; cap++) {
+		if (scanner_cap_supports(cap)) {
+			*format = (struct video_format){
+				.type = VIDEO_BUF_TYPE_OUTPUT,
+				.pixelformat = cap->pixelformat,
+				.width = SCANNER_FRAME_WIDTH,
+				.height = SCANNER_FRAME_HEIGHT,
+			};
+			return 0;
+		}
+	}
+
+	return -ENOTSUP;
+}
+
 static int scanner_prepare(const struct video_format *format)
 {
 	if (preview_snapshot != NULL) {
@@ -102,7 +152,7 @@ static int scanner_decoder_start(const struct video_format *format)
 	}
 
 	int ret = app_qr_decoder_init(format, scanner_qr_found, NULL);
-	if (ret == 0 || ret == -EALREADY) {
+	if (ret == 0) {
 		decoder_initialized = true;
 		return 0;
 	}
@@ -114,7 +164,12 @@ static int scanner_decoder_start(const struct video_format *format)
 static int scanner_capture(uint32_t session)
 {
 	struct video_format format;
-	int ret = app_camera_start(&format);
+	int ret = scanner_select_format(&format);
+
+	if (ret < 0) {
+		return ret;
+	}
+	ret = app_camera_start(&format);
 
 	if (ret < 0) {
 		return ret;
@@ -144,6 +199,7 @@ static int scanner_capture(uint32_t session)
 
 		ret = app_camera_frame_get(&buffer, K_MSEC(200));
 		if (ret == -EAGAIN) {
+			ret = 0;
 			continue;
 		}
 		if (ret < 0) {
@@ -198,7 +254,7 @@ static void scanner_thread(void *unused1, void *unused2, void *unused3)
 			result = result_session == session;
 			k_mutex_unlock(&result_lock);
 			scanner_publish(result ? APP_QR_SCANNER_RESULT : APP_QR_SCANNER_STOPPED,
-					       session, 0);
+					session, 0);
 		}
 	}
 }
