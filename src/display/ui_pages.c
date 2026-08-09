@@ -338,9 +338,6 @@ static void ui_imu_command(enum app_imu_command_kind kind)
 static lv_point_precise_t imu_box_proj[8];
 static lv_timer_t *imu_box_timer_handle;
 static lv_obj_t *imu_box_obj;
-static lv_obj_t *imu_tilt_label;
-static lv_obj_t *imu_direction_label;
-static lv_obj_t *imu_gyro_label;
 static float imu_box_face_light[6];
 static bool imu_box_orientation_visible;
 
@@ -381,21 +378,6 @@ static void imu_box_project(const struct app_imu_sample *sample)
 	float qx = sample->quaternion_x;
 	float qy = sample->quaternion_y;
 	float qz = sample->quaternion_z;
-	float norm = sqrtf(qw * qw + qx * qx + qy * qy + qz * qz);
-
-	if (norm < 0.000001f) {
-		qw = 1.0f;
-		qx = 0.0f;
-		qy = 0.0f;
-		qz = 0.0f;
-	} else {
-		float inverse = 1.0f / norm;
-
-		qw *= inverse;
-		qx *= inverse;
-		qy *= inverse;
-		qz *= inverse;
-	}
 
 	const float matrix_00 = 1.0f - 2.0f * (qy * qy + qz * qz);
 	const float matrix_01 = 2.0f * (qx * qy - qw * qz);
@@ -515,36 +497,10 @@ static void imu_box_timer(lv_timer_t *timer)
 	struct app_imu_sample sample;
 
 	if (zbus_chan_read(&app_imu_sample_chan, &sample, K_NO_WAIT) == 0) {
-		char tilt[16];
-		char direction[16];
-		char gyro[16];
-
-		imu_box_orientation_visible = sample.orientation_valid;
+		imu_box_orientation_visible = sample.valid;
 		if (imu_box_orientation_visible) {
 			imu_box_project(&sample);
 		}
-		if (sample.orientation_valid) {
-			int tilt_tenths = (int)(sample.tilt * 10.0f);
-
-			snprintk(tilt, sizeof(tilt), "%d.%d", tilt_tenths / 10,
-				 tilt_tenths % 10);
-		} else {
-			snprintk(tilt, sizeof(tilt), "--.-");
-		}
-		if (sample.direction_valid) {
-			int direction_tenths = (int)(sample.direction * 10.0f);
-			int direction_frac = direction_tenths % 10;
-
-			snprintk(direction, sizeof(direction), "%+d.%d", direction_tenths / 10,
-				 direction_frac < 0 ? -direction_frac : direction_frac);
-		} else {
-			snprintk(direction, sizeof(direction), "--.-");
-		}
-		snprintk(gyro, sizeof(gyro), "%+d %+d %+d", (int)sample.gyro_x,
-			 (int)sample.gyro_y, (int)sample.gyro_z);
-		lv_label_set_text_fmt(imu_tilt_label, "Tilt %s deg", tilt);
-		lv_label_set_text_fmt(imu_direction_label, "Direction %s deg", direction);
-		lv_label_set_text_fmt(imu_gyro_label, "Gyro %s dps", gyro);
 		lv_obj_invalidate(obj);
 	}
 }
@@ -566,9 +522,6 @@ void ui_imu_leave(void)
 		imu_box_timer_handle = NULL;
 	}
 	imu_box_obj = NULL;
-	imu_tilt_label = NULL;
-	imu_direction_label = NULL;
-	imu_gyro_label = NULL;
 	imu_box_orientation_visible = false;
 }
 
@@ -577,12 +530,6 @@ static void show_imu(void)
 	lv_obj_t *content = ui_page_begin("Tilt", UI_NAVIGATION_BACK);
 
 	ui_imu_command(APP_IMU_COMMAND_START);
-
-	lv_obj_t *imu_detail = lv_label_create(content);
-	lv_obj_set_width(imu_detail, LV_PCT(100));
-	lv_obj_set_style_text_color(imu_detail, lv_color_hex(0x929eaa), 0);
-	lv_obj_set_style_text_font(imu_detail, UI_FONT_CAPTION, 0);
-	lv_label_set_text(imu_detail, "Gravity-referenced tilt");
 
 	if (imu_box_timer_handle != NULL) {
 		lv_timer_delete(imu_box_timer_handle);
@@ -605,25 +552,6 @@ static void show_imu(void)
 	lv_obj_add_event_cb(imu_box_obj, imu_box_delete, LV_EVENT_DELETE, NULL);
 
 	imu_box_orientation_visible = false;
-
-	ui_section(content, "GRAVITY");
-	imu_tilt_label = lv_label_create(content);
-	lv_obj_set_width(imu_tilt_label, LV_PCT(100));
-	lv_obj_set_style_text_color(imu_tilt_label, lv_color_hex(0xf2f5f7), 0);
-	lv_obj_set_style_text_font(imu_tilt_label, UI_FONT_BODY, 0);
-	lv_label_set_text(imu_tilt_label, "Tilt --.- deg");
-
-	imu_direction_label = lv_label_create(content);
-	lv_obj_set_width(imu_direction_label, LV_PCT(100));
-	lv_obj_set_style_text_color(imu_direction_label, lv_color_hex(0xf2f5f7), 0);
-	lv_obj_set_style_text_font(imu_direction_label, UI_FONT_BODY, 0);
-	lv_label_set_text(imu_direction_label, "Direction --.- deg");
-
-	imu_gyro_label = lv_label_create(content);
-	lv_obj_set_width(imu_gyro_label, LV_PCT(100));
-	lv_obj_set_style_text_color(imu_gyro_label, lv_color_hex(0x929eaa), 0);
-	lv_obj_set_style_text_font(imu_gyro_label, UI_FONT_CAPTION, 0);
-	lv_label_set_text(imu_gyro_label, "Gyro -- -- -- dps");
 
 	imu_box_timer_handle =
 		lv_timer_create(imu_box_timer, CONFIG_OSKEY_IMU_RENDER_INTERVAL_MS, imu_box_obj);

@@ -186,18 +186,11 @@ enum app_imu_state {
 };
 
 struct app_imu_sample {
-	float tilt;
-	float direction;
-	bool acceleration_valid;
-	bool direction_valid;
-	bool orientation_valid;
+	bool valid;
 	float quaternion_w;
 	float quaternion_x;
 	float quaternion_y;
 	float quaternion_z;
-	float gyro_x;
-	float gyro_y;
-	float gyro_z;
 };
 
 enum app_imu_command_kind {

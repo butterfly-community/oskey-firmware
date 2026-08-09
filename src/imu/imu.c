@@ -16,7 +16,6 @@ LOG_MODULE_REGISTER(app_imu);
 
 #define IMU_NODE DT_ALIAS(imu0)
 
-#define IMU_RAD_TO_DEG          (180.0f / 3.14159265358979323846f)
 #define IMU_SAMPLE_FREQUENCY_HZ DT_PROP(IMU_NODE, accel_odr)
 #define IMU_SAMPLE_PERIOD_US    DIV_ROUND_CLOSEST(USEC_PER_SEC, IMU_SAMPLE_FREQUENCY_HZ)
 
@@ -66,18 +65,11 @@ static int imu_publish_sample(struct app_imu_orientation *orientation)
 	}
 
 	struct app_imu_sample sample = {
-		.tilt = fused.tilt,
-		.direction = fused.direction,
-		.acceleration_valid = fused.acceleration_valid,
-		.direction_valid = fused.direction_valid,
-		.orientation_valid = fused.orientation_valid,
-		.quaternion_w = fused.orientation_valid ? fused.quaternion_w : 1.0f,
+		.valid = fused.valid,
+		.quaternion_w = fused.valid ? fused.quaternion_w : 1.0f,
 		.quaternion_x = fused.quaternion_x,
 		.quaternion_y = fused.quaternion_y,
 		.quaternion_z = fused.quaternion_z,
-		.gyro_x = gyro_sensor[0] * IMU_RAD_TO_DEG,
-		.gyro_y = gyro_sensor[1] * IMU_RAD_TO_DEG,
-		.gyro_z = gyro_sensor[2] * IMU_RAD_TO_DEG,
 	};
 
 	ret = zbus_chan_pub(&app_imu_sample_chan, &sample, K_MSEC(100));
