@@ -18,7 +18,7 @@ We are building core infrastructure connecting digital world with real world. No
 
 ### **Guide**
 
-**[Quick Start Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/start)**
+**[Quick Start Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/start)**
 
 ### Feature:
 
@@ -34,23 +34,23 @@ We are building core infrastructure connecting digital world with real world. No
 
 #### Init
 
-<img src="doc/image/demo/demo-1a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-1b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-1a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-1b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 #### Generate mnemonic
 
-<img src="doc/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-2b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-2c.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-2b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-2c.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 #### Custom generate mnemonic
 
-<img src="doc/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-3a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-3b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-3a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-3b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 #### Import mnemonic
 
-<img src="doc/image/demo/demo-4a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-4a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 #### Index
 
-<img src="doc/image/demo/demo-4b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-4b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 ## How to Use the Firmware
 
@@ -62,7 +62,7 @@ We provide pre-compiled firmware for development boards we own. Please check the
 
 If your development board is not included in pre-compiled firmware, please check the following links to set up the development environment and compile firmware for your board.
 
-[Click here](doc/start/compile.md)
+[Click here](docs/start/compile.md)
 
 ## Development Boards
 
@@ -78,7 +78,7 @@ We carefully selected 2 development boards representing 1 architecture from 2 di
 
 |     Name     | [Nucleo F401RE](https://docs.zephyrproject.org/latest/boards/st/nucleo_f401re/doc/index.html) | [nRF52840-MDK](https://docs.zephyrproject.org/latest/boards/makerdiary/nrf52840_mdk/doc/index.html) |
 | :----------: | :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------: |
-|    Image     |                        ![stm32f401](doc/image/board/nucleo_f401re.jpg)                        |                         ![nrf52840-mdk](doc/image/board/mdk52840-cover.png)                         |
+|    Image     |                        ![stm32f401](docs/image/board/nucleo_f401re.jpg)                        |                         ![nrf52840-mdk](docs/image/board/mdk52840-cover.png)                         |
 | Manufacturer |                                      STMicroelectronics                                       |                                        Nordic Semiconductor                                         |
 |     Chip     |                                            STM32F4                                            |                                              nRF52840                                               |
 | Architecture |                                         ARM Cortex-M4                                         |                                            ARM Cortex-M4                                            |
@@ -91,7 +91,7 @@ These models have screens and touch support, giving them full functionality as h
 
 |  Name   |                                [Lichuang ESP32-S3](https://item.szlcsc.com/43285221.html)                                 | [STM32H747I Discovery](https://docs.zephyrproject.org/latest/boards/st/stm32h747i_disco/doc/index.html#stm32h747i_disco) |
 | :-----: | :-----------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------: |
-|  Image  | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-s3" width="220" style="max-width:100%; height:auto;"> |      <img src="doc/image/board/stm32h747i_disco.jpg" alt="stm32" width="220" style="max-width:100%; height:auto;">       |
+|  Image  | <img src="docs/image/board/lichuang_esp32_s3.jpg" alt="esp32-s3" width="220" style="max-width:100%; height:auto;"> |      <img src="docs/image/board/stm32h747i_disco.jpg" alt="stm32" width="220" style="max-width:100%; height:auto;">       |
 | Display |                                                          2-inch                                                           |                                                          4-inch                                                          |
 
 By default, the chip on the development board is not security-locked and has no security features enabled.
@@ -100,5 +100,5 @@ Each chip model has its own specific locking protocol that varies by manufacture
 
 ## Powered by
 
-| <a href="https://www.gccofficial.org/" target="_blank"><img src="doc/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="doc/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
+| <a href="https://www.gccofficial.org/" target="_blank"><img src="docs/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="docs/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |

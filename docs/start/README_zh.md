@@ -4,7 +4,7 @@
 
 # 如何使用
 
-本文假设您已经完成[主页](https://github.com/butterfly-community/oskey-firmware)的开发教程或者按照[固件快速写入指南](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/board)已经把最新版本固件写入开发板。
+本文假设您已经完成[主页](https://github.com/butterfly-community/oskey-firmware)的开发教程或者按照[固件快速写入指南](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/board)已经把最新版本固件写入开发板。
 
 首先点击打开 OSKey 官方网站[https://www.oskey.xyz/settings](https://www.oskey.xyz/settings) 。
 
@@ -20,7 +20,7 @@
 
 OSKey Status 栏应显示绿色的固件版本号，例为 **OK Version: 0.3.0**。如果显示 Not Found OSKey firmware， 请确认已经写入固件或者断开连接尝试选择其他接口。
 
-如果您已经完成[固件快速写入指南](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/board)，仍然出现该提示，🔴⚠️请按照指南描述**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
+如果您已经完成[固件快速写入指南](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/board)，仍然出现该提示，🔴⚠️请按照指南描述**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
 
 <img src="../image/start/start-7.png" alt="wechat" width="400" style="max-width:100%; height:auto;"> 
 

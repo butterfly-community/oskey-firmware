@@ -81,7 +81,7 @@
 
 ---
 
-1. 点击页面上的 Connect 按钮，并选择硬件钱包连接。**[点击此处查看快速使用文档](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/start)**
+1. 点击页面上的 Connect 按钮，并选择硬件钱包连接。**[点击此处查看快速使用文档](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/start)**
 
 <br />
 

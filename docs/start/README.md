@@ -4,7 +4,7 @@
 
 # How to Use
 
-This document assumes that you have completed the development tutorial on the [homepage](https://github.com/butterfly-community/oskey-firmware) or have already flashed the latest firmware to your development board according to the [Firmware Quick Flash Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/board).
+This document assumes that you have completed the development tutorial on the [homepage](https://github.com/butterfly-community/oskey-firmware) or have already flashed the latest firmware to your development board according to the [Firmware Quick Flash Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/board).
 
 First, click to open the OSKey official website [https://www.oskey.xyz/settings](https://www.oskey.xyz/settings).
 
@@ -20,7 +20,7 @@ Click the Connect button in the upper left corner, which should change from gray
 
 The OSKey Status bar should display the firmware version number in green, for example **OK Version: 0.3.0**. If it shows "Not Found OSKey firmware", please confirm that the firmware has been flashed or disconnect and try selecting another interface.
 
-If you have completed the [Firmware Quick Flash Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/board) and still see this prompt, 🔴⚠️ please **re-plug** the hardware wallet or press the **RST** button on the hardware wallet to restart the application wallet firmware as described in the guide ⚠️🔴.
+If you have completed the [Firmware Quick Flash Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/board) and still see this prompt, 🔴⚠️ please **re-plug** the hardware wallet or press the **RST** button on the hardware wallet to restart the application wallet firmware as described in the guide ⚠️🔴.
 
 <img src="../image/start/start-7.png" alt="wechat" width="400" style="max-width:100%; height:auto;"> 
 

@@ -16,7 +16,7 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 ### **快速指南**
 
-**[快速使用指南](https://github.com/butterfly-community/oskey-firmware/tree/master/doc/start)**
+**[快速使用指南](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/start)**
 
 ### 功能:
 
@@ -32,19 +32,19 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 #### 初始化选择
 
-<img src="doc/image/demo/demo-1a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-1b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-1a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-1b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 #### 生成助记词
 
-<img src="doc/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-2b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-2c.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-2b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-2c.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 #### 自定义生成助记词
 
-<img src="doc/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-3a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="doc/image/demo/demo-3b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-3a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-3b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 #### 导入助记词
 
-<img src="doc/image/demo/demo-4a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+<img src="docs/image/demo/demo-4a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
 
 ## 如何使用固件
 
@@ -56,7 +56,7 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 如果开发板不在预编译固件中，请查看以下链接设置开发环境，为开发板编译固件。
 
-[点击此处](doc/start/compile_zh.md)
+[点击此处](docs/start/compile_zh.md)
 
 ## 开发板
 
@@ -72,7 +72,7 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 | 名称 | [Nucleo F401RE](https://docs.zephyrproject.org/latest/boards/st/nucleo_f401re/doc/index.html) | [nRF52840-MDK](https://docs.zephyrproject.org/latest/boards/makerdiary/nrf52840_mdk/doc/index.html) |
 | :--: | :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------: |
-| 图片 |                        ![stm32f401](doc/image/board/nucleo_f401re.jpg)                        |                         ![nrf52840-mdk](doc/image/board/mdk52840-cover.png)                         |
+| 图片 |                        ![stm32f401](docs/image/board/nucleo_f401re.jpg)                        |                         ![nrf52840-mdk](docs/image/board/mdk52840-cover.png)                         |
 | 厂商 |                                      STMicroelectronics                                       |                                        Nordic Semiconductor                                         |
 | 芯片 |                                         STM32F401RET6                                         |                                              nRF52840                                               |
 | 架构 |                                         ARM Cortex-M4                                         |                                            ARM Cortex-M4                                            |
@@ -83,12 +83,12 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 |   名称   |                                 [Lichuang ESP32-S3](https://item.szlcsc.com/43285221.html)                                 |    [STM32H747I Discovery](https://docs.zephyrproject.org/latest/boards/st/stm32h747i_disco/doc/index.html)    |
 | :------: | :------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------: |
-|   图片   | <img src="doc/image/board/lichuang_esp32_s3.jpg" alt="esp32-s3" width="200" style="max-width:100%; height:auto;"> | <img src="doc/image/board/stm32h747i_disco.jpg" alt="stm32" width="200" style="max-width:100%; height:auto;"> |
+|   图片   | <img src="docs/image/board/lichuang_esp32_s3.jpg" alt="esp32-s3" width="200" style="max-width:100%; height:auto;"> | <img src="docs/image/board/stm32h747i_disco.jpg" alt="stm32" width="200" style="max-width:100%; height:auto;"> |
 | 屏幕尺寸 |                                                           2-inch                                                           |                                                    4-inch                                                     |
 
 默认情况下开发板的芯片未经过安全锁定，不具备任何安全功能。如何锁定芯片请查询对应芯片的文档。
 
 ## Powered by
 
-| <a href="https://www.gccofficial.org/" target="_blank"><img src="doc/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="doc/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
+| <a href="https://www.gccofficial.org/" target="_blank"><img src="docs/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="docs/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
