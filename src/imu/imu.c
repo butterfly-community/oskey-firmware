@@ -20,8 +20,7 @@ LOG_MODULE_REGISTER(app_imu);
 
 #define IMU_SAMPLE_FREQUENCY_HZ DT_PROP(IMU_NODE, accel_odr)
 #define IMU_SAMPLE_PERIOD_US    DIV_ROUND_CLOSEST(USEC_PER_SEC, IMU_SAMPLE_FREQUENCY_HZ)
-#define IMU_STANDARD_GRAVITY    9.80665f
-#define IMU_INITIAL_ACCEL_ERROR (0.20f * IMU_STANDARD_GRAVITY)
+#define IMU_INITIAL_ACCEL_ERROR ((zsl_real_t)0.20 * (zsl_real_t)ZSL_GRAV_EARTH)
 #define IMU_AQUA_ACCEL_GAIN     0.02f
 
 BUILD_ASSERT(DT_PROP(IMU_NODE, accel_odr) == DT_PROP(IMU_NODE, gyro_odr),
@@ -75,7 +74,7 @@ static int imu_publish_sample(struct imu_fusion *fusion)
 
 	if (!fusion->initialized &&
 	    (!isfinite(accel_norm) ||
-	     fabsf(accel_norm - IMU_STANDARD_GRAVITY) > IMU_INITIAL_ACCEL_ERROR)) {
+	     ZSL_ABS(accel_norm - (zsl_real_t)ZSL_GRAV_EARTH) > IMU_INITIAL_ACCEL_ERROR)) {
 		goto publish;
 	}
 
