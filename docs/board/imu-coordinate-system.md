@@ -28,14 +28,17 @@ zscilib is pinned as the `lib/zscilib` git submodule and registered through
 `ZEPHYR_EXTRA_MODULES`. The application uses the AQUA filter with an
 accelerometer gain of 0.02 and no magnetometer.
 
-The adapter deliberately contains no local gyro-bias estimator, motion
+The IMU module deliberately contains no local gyro-bias estimator, motion
 classifier, acceleration rejection window, Euler-angle calculation, or
 inversion-specific prediction. AQUA receives each mapped accelerometer and
 gyroscope sample directly.
 
-Before the first AQUA update, the adapter waits for an acceleration magnitude
+Before the first AQUA update, `imu.c` waits for an acceleration magnitude
 within 20 percent of standard gravity. This prevents AQUA's one-time gain
 initialization from being disabled by an obviously invalid first sample.
+
+Fusion is implemented directly in `src/imu/imu.c`; there is no separate
+orientation adapter or unit-test interface.
 
 ## Coordinate mapping
 
@@ -58,12 +61,12 @@ raise the same cuboid edge.
 
 ## Invalid output
 
-After every AQUA update, the adapter verifies the quaternion norm. If the result
-is zero or non-finite, the sample is marked invalid and LVGL does not draw the
+After every AQUA update, `imu.c` verifies that all quaternion components are
+finite. Otherwise the sample is marked invalid and LVGL does not draw the
 cuboid for that frame. The quaternion is reset to identity so a later valid
 sample can resume the display.
 
-There is no separate 180-degree or anti-parallel special case in the adapter.
+There is no separate 180-degree or anti-parallel special case.
 
 ## Hardware validation
 
