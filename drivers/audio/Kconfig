@@ -3,6 +3,7 @@
 
 config AUDIO_ES8311
 	bool "Everest ES8311 audio codec"
+	depends on OSKEY_AUDIO
 	default y
 	depends on DT_HAS_EVEREST_ES8311_ENABLED
 	select I2C

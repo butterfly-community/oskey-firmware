@@ -77,6 +77,7 @@ enum ui_tone ui_camera_tone(enum app_camera_state state)
 	}
 }
 
+#if defined(CONFIG_OSKEY_AUDIO)
 static enum ui_tone audio_tone(enum app_audio_state state)
 {
 	switch (state) {
@@ -89,7 +90,9 @@ static enum ui_tone audio_tone(enum app_audio_state state)
 		return UI_TONE_MUTED;
 	}
 }
+#endif
 
+#if defined(CONFIG_OSKEY_IMU)
 static enum ui_tone gyro_tone(enum app_imu_state state)
 {
 	switch (state) {
@@ -106,6 +109,7 @@ static enum ui_tone gyro_tone(enum app_imu_state state)
 		return UI_TONE_MUTED;
 	}
 }
+#endif
 
 static void status_clicked(lv_event_t *event)
 {
@@ -141,10 +145,14 @@ static void status_clicked(lv_event_t *event)
 	if (ui.page == page) {
 		return;
 	}
-	if (ui.page == UI_PAGE_WIFI || ui.page == UI_PAGE_BLUETOOTH || ui.page == UI_PAGE_USB ||
-	    ui.page == UI_PAGE_CAMERA || ui.page == UI_PAGE_AUDIO || ui.page == UI_PAGE_IMU) {
-		ui.page = page;
-		ui_render();
+	bool status_page = ui.page == UI_PAGE_WIFI || ui.page == UI_PAGE_BLUETOOTH ||
+			   ui.page == UI_PAGE_USB || ui.page == UI_PAGE_CAMERA ||
+			   ui.page == UI_PAGE_AUDIO || ui.page == UI_PAGE_IMU;
+#if defined(CONFIG_OSKEY_QR_SCANNER)
+	status_page = status_page || ui.page == UI_PAGE_QR_SCANNER;
+#endif
+	if (status_page) {
+		ui_replace(page);
 	} else {
 		ui_push(page);
 	}

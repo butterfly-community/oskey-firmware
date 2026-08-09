@@ -280,15 +280,13 @@ static void audio_volume_changed(lv_event_t *event)
 static void show_audio(void)
 {
 	lv_obj_t *content = ui_page_begin("Audio", UI_NAVIGATION_BACK);
+#if !defined(CONFIG_OSKEY_AUDIO)
+	ARG_UNUSED(content);
+#endif
 #if defined(CONFIG_OSKEY_AUDIO)
 	ui_section(content, "AUDIO");
 	ui_list_row(content, &oskey_audio, "Play beep", "Play a short test sound", NULL,
-		    UI_TONE_ACTIVE, audio_beep_clicked, NULL);
-	ui_list_row(content, &oskey_audio,
-		    ui.status.audio.state == APP_AUDIO_PLAYING ? "Playing" : "Idle",
-		    "Audio codec output", NULL,
-		    ui.status.audio.state == APP_AUDIO_PLAYING ? UI_TONE_ACTIVE : UI_TONE_SUCCESS,
-		    NULL, NULL);
+			    UI_TONE_ACTIVE, audio_beep_clicked, NULL);
 
 	ui_section(content, "VOLUME");
 	lv_obj_t *row = lv_obj_create(content);
@@ -330,14 +328,19 @@ static void show_audio(void)
 }
 
 #if defined(CONFIG_OSKEY_IMU)
+static void ui_imu_command(enum app_imu_command_kind kind)
+{
+	struct app_imu_command command = {.kind = kind};
+
+	(void)zbus_chan_pub(&app_imu_command_chan, &command, K_MSEC(100));
+}
+
 static lv_point_precise_t imu_box_proj[8];
 static lv_timer_t *imu_box_timer_handle;
 static lv_obj_t *imu_box_obj;
 static lv_obj_t *imu_pitch_label;
 static lv_obj_t *imu_roll_label;
 static lv_obj_t *imu_gyro_label;
-static lv_obj_t *imu_state_label;
-static bool imu_box_paused;
 static float imu_box_face_light[6];
 
 static const uint8_t imu_box_edges[12][2] = {
@@ -411,9 +414,6 @@ static void imu_box_draw(lv_event_t *event)
 	lv_draw_task_t *task = lv_event_get_draw_task(event);
 	lv_draw_dsc_base_t *base = (lv_draw_dsc_base_t *)lv_draw_task_get_draw_dsc(task);
 
-	if (imu_box_paused) {
-		return;
-	}
 	if (base == NULL || base->part != LV_PART_MAIN) {
 		return;
 	}
@@ -466,35 +466,11 @@ static void imu_box_draw(lv_event_t *event)
 	}
 }
 
-static const char *imu_state_text(enum app_imu_state state)
-{
-	switch (state) {
-	case APP_IMU_READY:
-		return "Streaming";
-	case APP_IMU_IDLE:
-		return "Idle";
-	case APP_IMU_INITIALIZING:
-		return "Initializing";
-	case APP_IMU_ERROR:
-		return "Error";
-	case APP_IMU_DISABLED:
-	default:
-		return "Disabled";
-	}
-}
-
 static void imu_box_timer(lv_timer_t *timer)
 {
 	lv_obj_t *obj = lv_timer_get_user_data(timer);
 	struct app_imu_sample sample;
-	enum app_imu_state state;
 
-	if (imu_box_paused) {
-		return;
-	}
-	if (zbus_chan_read(&app_imu_state_chan, &state, K_NO_WAIT) == 0) {
-		lv_label_set_text(imu_state_label, imu_state_text(state));
-	}
 	if (zbus_chan_read(&app_imu_sample_chan, &sample, K_NO_WAIT) == 0) {
 		char pitch[16];
 		char roll[16];
@@ -518,51 +494,32 @@ static void imu_box_timer(lv_timer_t *timer)
 	}
 }
 
-static void imu_box_scroll_begin(lv_event_t *event)
-{
-	ARG_UNUSED(event);
-	imu_box_paused = true;
-}
-
-static void imu_box_scroll_end(lv_event_t *event)
-{
-	ARG_UNUSED(event);
-	imu_box_paused = false;
-	if (imu_box_timer_handle != NULL) {
-		lv_obj_invalidate(imu_box_obj);
-	}
-}
-
 static void imu_box_delete(lv_event_t *event)
 {
 	ARG_UNUSED(event);
 
-	struct app_imu_command command = { .kind = APP_IMU_COMMAND_STOP };
+	ui_imu_leave();
+	imu_box_obj = NULL;
+}
 
-	(void)zbus_chan_pub(&app_imu_command_chan, &command, K_MSEC(100));
+void ui_imu_leave(void)
+{
+	ui_imu_command(APP_IMU_COMMAND_STOP);
 	if (imu_box_timer_handle != NULL) {
 		lv_timer_delete(imu_box_timer_handle);
 		imu_box_timer_handle = NULL;
 	}
 	imu_box_obj = NULL;
+	imu_pitch_label = NULL;
+	imu_roll_label = NULL;
+	imu_gyro_label = NULL;
 }
 
 static void show_imu(void)
 {
 	lv_obj_t *content = ui_page_begin("Gyro", UI_NAVIGATION_BACK);
-	struct app_imu_command command = { .kind = APP_IMU_COMMAND_START };
 
-	(void)zbus_chan_pub(&app_imu_command_chan, &command, K_MSEC(100));
-	imu_box_paused = false;
-	lv_obj_add_event_cb(content, imu_box_scroll_begin, LV_EVENT_SCROLL_BEGIN, NULL);
-	lv_obj_add_event_cb(content, imu_box_scroll_end, LV_EVENT_SCROLL_END, NULL);
-
-	ui_section(content, "IMU");
-	imu_state_label = lv_label_create(content);
-	lv_obj_set_width(imu_state_label, LV_PCT(100));
-	lv_obj_set_style_text_color(imu_state_label, lv_color_hex(0xf2f5f7), 0);
-	lv_obj_set_style_text_font(imu_state_label, UI_FONT_BODY, 0);
-	lv_label_set_text(imu_state_label, imu_state_text(ui.status.imu));
+	ui_imu_command(APP_IMU_COMMAND_START);
 
 	lv_obj_t *imu_detail = lv_label_create(content);
 	lv_obj_set_width(imu_detail, LV_PCT(100));
@@ -961,6 +918,9 @@ void ui_render(void)
 #if defined(CONFIG_OSKEY_IMU)
 	case UI_PAGE_IMU:
 		show_imu();
+		break;
+#else
+	case UI_PAGE_IMU:
 		break;
 #endif
 #if !defined(CONFIG_OSKEY_FIDO2)

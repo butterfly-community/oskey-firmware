@@ -2,6 +2,7 @@
 
 #include "imu.h"
 
+#include <errno.h>
 #include <math.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
@@ -31,7 +32,7 @@ static void imu_publish_state(enum app_imu_state state)
 	(void)zbus_chan_pub(&app_imu_state_chan, &state, K_MSEC(100));
 }
 
-static void imu_publish_sample(void)
+static int imu_publish_sample(void)
 {
 	struct sensor_value accel[3];
 	struct sensor_value gyro[3];
@@ -39,18 +40,16 @@ static void imu_publish_sample(void)
 	if (sensor_channel_get(imu_dev, SENSOR_CHAN_ACCEL_XYZ, accel) < 0 ||
 	    sensor_channel_get(imu_dev, SENSOR_CHAN_GYRO_XYZ, gyro) < 0) {
 		LOG_ERR("IMU channel read failed");
-		return;
+		return -EIO;
 	}
 
 	float ax = sensor_value_to_float(&accel[0]);
 	float ay = sensor_value_to_float(&accel[1]);
 	float az = sensor_value_to_float(&accel[2]);
 
-	/* Tilt angles from the accelerometer, matching the board reference
-	 * formulas: angle = atan(axis / sqrt(other two axes squared)).
-	 */
-	float pitch = atanf(ax / sqrtf(ay * ay + az * az)) * IMU_RAD_TO_DEG;
-	float roll = atanf(ay / sqrtf(ax * ax + az * az)) * IMU_RAD_TO_DEG;
+	float pitch = atan2f(ax, sqrtf(ay * ay + az * az)) * IMU_RAD_TO_DEG;
+	/* The sensor Y axis points opposite to the display's horizontal tilt axis. */
+	float roll = -atan2f(ay, sqrtf(ax * ax + az * az)) * IMU_RAD_TO_DEG;
 
 	struct app_imu_sample sample = {
 		.pitch = pitch,
@@ -60,18 +59,42 @@ static void imu_publish_sample(void)
 		.gyro_z = sensor_value_to_float(&gyro[2]) * IMU_RAD_TO_DEG,
 	};
 
-	(void)zbus_chan_pub(&app_imu_sample_chan, &sample, K_MSEC(100));
+	int ret = zbus_chan_pub(&app_imu_sample_chan, &sample, K_MSEC(100));
+	if (ret < 0) {
+		LOG_ERR("IMU sample publish failed: %d", ret);
+	}
+	return ret;
+}
+
+static void imu_start(void)
+{
+	if (imu_dev == NULL || !device_is_ready(imu_dev)) {
+		imu_publish_state(APP_IMU_ERROR);
+		return;
+	}
+	if (atomic_cas(&imu_streaming, 0, 1)) {
+		k_sem_give(&imu_run_sem);
+	}
+}
+
+static void imu_stop(void)
+{
+	atomic_set(&imu_streaming, 0);
 }
 
 static void imu_command_listener(const struct zbus_channel *chan)
 {
 	const struct app_imu_command *command = zbus_chan_const_msg(chan);
 
-	if (command->kind == APP_IMU_COMMAND_START) {
-		atomic_set(&imu_streaming, 1);
-		k_sem_give(&imu_run_sem);
-	} else if (command->kind == APP_IMU_COMMAND_STOP) {
-		atomic_set(&imu_streaming, 0);
+	switch (command->kind) {
+	case APP_IMU_COMMAND_START:
+		imu_start();
+		break;
+	case APP_IMU_COMMAND_STOP:
+		imu_stop();
+		break;
+	default:
+		break;
 	}
 }
 
@@ -90,14 +113,17 @@ static void imu_thread(void *first, void *second, void *third)
 
 	while (true) {
 		k_sem_take(&imu_run_sem, K_FOREVER);
+		errors = 0;
 
 		while (atomic_get(&imu_streaming)) {
 			int ret = sensor_sample_fetch(imu_dev);
 
 			if (ret == 0) {
+				ret = imu_publish_sample();
+			}
+			if (ret == 0) {
 				errors = 0;
 				imu_publish_state(APP_IMU_READY);
-				imu_publish_sample();
 			} else {
 				LOG_ERR("IMU sample fetch failed: %d", ret);
 				errors++;

@@ -78,12 +78,19 @@ int app_camera_start(struct video_format *format)
 {
 	struct video_caps caps = {.type = VIDEO_BUF_TYPE_OUTPUT};
 	int ret;
+	int flush_ret;
 
 	if (format == NULL) {
 		return -EINVAL;
 	}
 	if (camera_streaming) {
 		return -EALREADY;
+	}
+	for (size_t i = 0; i < ARRAY_SIZE(camera_buffers); i++) {
+		if (camera_buffers[i] != NULL) {
+			LOG_ERR("Camera buffers are still owned by the driver");
+			return -EBUSY;
+		}
 	}
 	app_camera_publish(APP_CAMERA_STARTING);
 	if (!device_is_ready(camera)) {
@@ -144,8 +151,12 @@ int app_camera_start(struct video_format *format)
 	return 0;
 
 release_buffers:
-	video_driver_flush(camera, true);
-	app_camera_release_buffers();
+	flush_ret = video_driver_flush(camera, true);
+	if (flush_ret < 0) {
+		LOG_ERR("Unable to flush camera buffers: %d", flush_ret);
+	} else {
+		app_camera_release_buffers();
+	}
 	app_camera_publish(APP_CAMERA_ERROR);
 	return ret;
 }
@@ -188,6 +199,7 @@ int app_camera_stop(void)
 
 	ret = video_driver_flush(camera, true);
 	if (ret < 0) {
+		LOG_ERR("Unable to flush camera buffers: %d", ret);
 		app_camera_publish(APP_CAMERA_ERROR);
 		return ret;
 	}

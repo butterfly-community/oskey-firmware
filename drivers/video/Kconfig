@@ -3,6 +3,7 @@
 
 config VIDEO_GC0308
 	bool "GC0308 CMOS digital image sensor"
+	depends on VIDEO_DRIVERS
 	default y
 	depends on DT_HAS_GALAXYCORE_GC0308_ENABLED
 	select I2C

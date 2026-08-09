@@ -104,8 +104,9 @@
     reg = <0x6a>;
     accel-fs = <4>;
     gyro-fs = <512>;
-    accel-odr = <250>;
-    gyro-odr = <250>;
+    /* The UI samples at 10 Hz; 28 Hz avoids powering the sensor at 224 Hz. */
+    accel-odr = <28>;
+    gyro-odr = <28>;
   };
 };
 

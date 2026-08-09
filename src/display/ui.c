@@ -642,6 +642,11 @@ void ui_refresh(void)
 
 static void ui_page_leave(enum ui_page page)
 {
+#if defined(CONFIG_OSKEY_IMU)
+	if (page == UI_PAGE_IMU) {
+		ui_imu_leave();
+	}
+#endif
 #if defined(CONFIG_OSKEY_QR_SCANNER)
 	if (page == UI_PAGE_QR_SCANNER) {
 		ui_qr_leave();
@@ -649,6 +654,16 @@ static void ui_page_leave(enum ui_page page)
 #else
 	ARG_UNUSED(page);
 #endif
+}
+
+void ui_replace(enum ui_page page)
+{
+	if (ui.page == page) {
+		return;
+	}
+	ui_page_leave(ui.page);
+	ui.page = page;
+	ui_render();
 }
 
 void ui_open(enum ui_page page)

@@ -141,6 +141,7 @@ void ui_controller_init(const uint8_t features[APP_FEATURE_COUNT]);
 void ui_show_startup(void);
 void ui_open(enum ui_page page);
 void ui_push(enum ui_page page);
+void ui_replace(enum ui_page page);
 void ui_back(void);
 void ui_render(void);
 void ui_refresh(void);
@@ -186,6 +187,10 @@ struct app_qr_scanner_event;
 void ui_qr_render(void);
 void ui_qr_leave(void);
 void ui_qr_event(const struct app_qr_scanner_event *event);
+#endif
+
+#if defined(CONFIG_OSKEY_IMU)
+void ui_imu_leave(void);
 #endif
 
 #endif
