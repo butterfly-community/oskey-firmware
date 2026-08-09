@@ -47,9 +47,8 @@ static int imu_publish_sample(void)
 	float ay = sensor_value_to_float(&accel[1]);
 	float az = sensor_value_to_float(&accel[2]);
 
-	float pitch = atan2f(ax, sqrtf(ay * ay + az * az)) * IMU_RAD_TO_DEG;
-	/* The sensor Y axis points opposite to the display's horizontal tilt axis. */
-	float roll = -atan2f(ay, sqrtf(ax * ax + az * az)) * IMU_RAD_TO_DEG;
+	float pitch = -atan2f(ax, sqrtf(ay * ay + az * az)) * IMU_RAD_TO_DEG;
+	float roll = atan2f(ay, sqrtf(ax * ax + az * az)) * IMU_RAD_TO_DEG;
 
 	struct app_imu_sample sample = {
 		.pitch = pitch,
