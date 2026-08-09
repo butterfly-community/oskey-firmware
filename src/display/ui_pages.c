@@ -338,10 +338,13 @@ static void ui_imu_command(enum app_imu_command_kind kind)
 static lv_point_precise_t imu_box_proj[8];
 static lv_timer_t *imu_box_timer_handle;
 static lv_obj_t *imu_box_obj;
-static lv_obj_t *imu_pitch_label;
-static lv_obj_t *imu_roll_label;
+static lv_obj_t *imu_tilt_label;
+static lv_obj_t *imu_direction_label;
 static lv_obj_t *imu_gyro_label;
 static float imu_box_face_light[6];
+static bool imu_box_orientation_visible;
+
+#define IMU_BOX_FACE_VISIBILITY_EPSILON 0.03f
 
 static const uint8_t imu_box_edges[12][2] = {
 	{0, 1}, {1, 2}, {2, 3}, {3, 0},
@@ -367,29 +370,50 @@ static const int8_t imu_box_normals[6][3] = {
 	{0, 1, 0}, {0, -1, 0},
 };
 
-static void imu_box_project(float pitch, float roll)
+static void imu_box_project(const struct app_imu_sample *sample)
 {
 	/* Board-like cuboid: wider than tall, thin in depth. */
 	static const float vertices[8][3] = {
 		{-1.8f, -1.0f, -0.4f}, {1.8f, -1.0f, -0.4f}, {1.8f, 1.0f, -0.4f}, {-1.8f, 1.0f, -0.4f},
 		{-1.8f, -1.0f, 0.4f},  {1.8f, -1.0f, 0.4f},  {1.8f, 1.0f, 0.4f},  {-1.8f, 1.0f, 0.4f},
 	};
-	const float pr = pitch * 0.017453292519943295f;
-	const float rr = roll * 0.017453292519943295f;
-	const float cp = cosf(pr);
-	const float sp = sinf(pr);
-	const float cr = cosf(rr);
-	const float sr = sinf(rr);
+	float qw = sample->quaternion_w;
+	float qx = sample->quaternion_x;
+	float qy = sample->quaternion_y;
+	float qz = sample->quaternion_z;
+	float norm = sqrtf(qw * qw + qx * qx + qy * qy + qz * qz);
+
+	if (norm < 0.000001f) {
+		qw = 1.0f;
+		qx = 0.0f;
+		qy = 0.0f;
+		qz = 0.0f;
+	} else {
+		float inverse = 1.0f / norm;
+
+		qw *= inverse;
+		qx *= inverse;
+		qy *= inverse;
+		qz *= inverse;
+	}
+
+	const float matrix_00 = 1.0f - 2.0f * (qy * qy + qz * qz);
+	const float matrix_01 = 2.0f * (qx * qy - qw * qz);
+	const float matrix_02 = 2.0f * (qx * qz + qw * qy);
+	const float matrix_10 = 2.0f * (qx * qy + qw * qz);
+	const float matrix_11 = 1.0f - 2.0f * (qx * qx + qz * qz);
+	const float matrix_12 = 2.0f * (qy * qz - qw * qx);
+	const float matrix_20 = 2.0f * (qx * qz - qw * qy);
+	const float matrix_21 = 2.0f * (qy * qz + qw * qx);
+	const float matrix_22 = 1.0f - 2.0f * (qx * qx + qy * qy);
 	const int32_t scale = 45;
 
 	for (size_t i = 0; i < ARRAY_SIZE(vertices); i++) {
 		const float x = vertices[i][0];
 		const float y = vertices[i][1];
 		const float z = vertices[i][2];
-		/* Roll around the Y axis, then pitch around the X axis. */
-		const float rx = x * cr + z * sr;
-		const float rz = -x * sr + z * cr;
-		const float ry = y * cp - rz * sp;
+		const float rx = matrix_00 * x + matrix_01 * y + matrix_02 * z;
+		const float ry = matrix_10 * x + matrix_11 * y + matrix_12 * z;
 
 		imu_box_proj[i].x = (int32_t)(rx * scale);
 		imu_box_proj[i].y = (int32_t)(ry * scale);
@@ -400,9 +424,7 @@ static void imu_box_project(float pitch, float roll)
 		const float nx = imu_box_normals[i][0];
 		const float ny = imu_box_normals[i][1];
 		const float nz = imu_box_normals[i][2];
-		const float rnz = -nx * sr + nz * cr;
-
-		imu_box_face_light[i] = ny * sp + rnz * cp;
+		imu_box_face_light[i] = matrix_20 * nx + matrix_21 * ny + matrix_22 * nz;
 	}
 }
 
@@ -416,11 +438,15 @@ static lv_color_t imu_box_shade(float light)
 
 static bool imu_box_face_visible(size_t face)
 {
-	return imu_box_face_light[face] > 0.001f;
+	return imu_box_face_light[face] > IMU_BOX_FACE_VISIBILITY_EPSILON;
 }
 
 static void imu_box_draw(lv_event_t *event)
 {
+	if (!imu_box_orientation_visible) {
+		return;
+	}
+
 	lv_obj_t *obj = lv_event_get_target_obj(event);
 	lv_draw_task_t *task = lv_event_get_draw_task(event);
 	lv_draw_dsc_base_t *base = (lv_draw_dsc_base_t *)lv_draw_task_get_draw_dsc(task);
@@ -489,23 +515,35 @@ static void imu_box_timer(lv_timer_t *timer)
 	struct app_imu_sample sample;
 
 	if (zbus_chan_read(&app_imu_sample_chan, &sample, K_NO_WAIT) == 0) {
-		char pitch[16];
-		char roll[16];
+		char tilt[16];
+		char direction[16];
 		char gyro[16];
-		int pitch_tenths = (int)(sample.pitch * 10.0f);
-		int roll_tenths = (int)(sample.roll * 10.0f);
-		int pitch_frac = pitch_tenths % 10;
-		int roll_frac = roll_tenths % 10;
 
-		imu_box_project(sample.pitch, sample.roll);
-		snprintk(pitch, sizeof(pitch), "%+d.%d", pitch_tenths / 10,
-			 pitch_frac < 0 ? -pitch_frac : pitch_frac);
-		snprintk(roll, sizeof(roll), "%+d.%d", roll_tenths / 10,
-			 roll_frac < 0 ? -roll_frac : roll_frac);
+		imu_box_orientation_visible = sample.orientation_valid;
+		if (imu_box_orientation_visible) {
+			imu_box_project(&sample);
+		}
+		if (sample.orientation_valid) {
+			int tilt_tenths = (int)(sample.tilt * 10.0f);
+
+			snprintk(tilt, sizeof(tilt), "%d.%d", tilt_tenths / 10,
+				 tilt_tenths % 10);
+		} else {
+			snprintk(tilt, sizeof(tilt), "--.-");
+		}
+		if (sample.direction_valid) {
+			int direction_tenths = (int)(sample.direction * 10.0f);
+			int direction_frac = direction_tenths % 10;
+
+			snprintk(direction, sizeof(direction), "%+d.%d", direction_tenths / 10,
+				 direction_frac < 0 ? -direction_frac : direction_frac);
+		} else {
+			snprintk(direction, sizeof(direction), "--.-");
+		}
 		snprintk(gyro, sizeof(gyro), "%+d %+d %+d", (int)sample.gyro_x,
 			 (int)sample.gyro_y, (int)sample.gyro_z);
-		lv_label_set_text_fmt(imu_pitch_label, "Pitch %s deg", pitch);
-		lv_label_set_text_fmt(imu_roll_label, "Roll %s deg", roll);
+		lv_label_set_text_fmt(imu_tilt_label, "Tilt %s deg", tilt);
+		lv_label_set_text_fmt(imu_direction_label, "Direction %s deg", direction);
 		lv_label_set_text_fmt(imu_gyro_label, "Gyro %s dps", gyro);
 		lv_obj_invalidate(obj);
 	}
@@ -517,6 +555,7 @@ static void imu_box_delete(lv_event_t *event)
 
 	ui_imu_leave();
 	imu_box_obj = NULL;
+	imu_box_orientation_visible = false;
 }
 
 void ui_imu_leave(void)
@@ -527,14 +566,15 @@ void ui_imu_leave(void)
 		imu_box_timer_handle = NULL;
 	}
 	imu_box_obj = NULL;
-	imu_pitch_label = NULL;
-	imu_roll_label = NULL;
+	imu_tilt_label = NULL;
+	imu_direction_label = NULL;
 	imu_gyro_label = NULL;
+	imu_box_orientation_visible = false;
 }
 
 static void show_imu(void)
 {
-	lv_obj_t *content = ui_page_begin("Gyro", UI_NAVIGATION_BACK);
+	lv_obj_t *content = ui_page_begin("Tilt", UI_NAVIGATION_BACK);
 
 	ui_imu_command(APP_IMU_COMMAND_START);
 
@@ -542,7 +582,7 @@ static void show_imu(void)
 	lv_obj_set_width(imu_detail, LV_PCT(100));
 	lv_obj_set_style_text_color(imu_detail, lv_color_hex(0x929eaa), 0);
 	lv_obj_set_style_text_font(imu_detail, UI_FONT_CAPTION, 0);
-	lv_label_set_text(imu_detail, "Accelerometer and gyroscope");
+	lv_label_set_text(imu_detail, "Gravity-referenced tilt");
 
 	if (imu_box_timer_handle != NULL) {
 		lv_timer_delete(imu_box_timer_handle);
@@ -564,26 +604,20 @@ static void show_imu(void)
 	lv_obj_add_event_cb(imu_box_obj, imu_box_draw, LV_EVENT_DRAW_TASK_ADDED, NULL);
 	lv_obj_add_event_cb(imu_box_obj, imu_box_delete, LV_EVENT_DELETE, NULL);
 
-	struct app_imu_sample sample;
+	imu_box_orientation_visible = false;
 
-	if (zbus_chan_read(&app_imu_sample_chan, &sample, K_NO_WAIT) == 0) {
-		imu_box_project(sample.pitch, sample.roll);
-	} else {
-		imu_box_project(0.0f, 0.0f);
-	}
+	ui_section(content, "GRAVITY");
+	imu_tilt_label = lv_label_create(content);
+	lv_obj_set_width(imu_tilt_label, LV_PCT(100));
+	lv_obj_set_style_text_color(imu_tilt_label, lv_color_hex(0xf2f5f7), 0);
+	lv_obj_set_style_text_font(imu_tilt_label, UI_FONT_BODY, 0);
+	lv_label_set_text(imu_tilt_label, "Tilt --.- deg");
 
-	ui_section(content, "ORIENTATION");
-	imu_pitch_label = lv_label_create(content);
-	lv_obj_set_width(imu_pitch_label, LV_PCT(100));
-	lv_obj_set_style_text_color(imu_pitch_label, lv_color_hex(0xf2f5f7), 0);
-	lv_obj_set_style_text_font(imu_pitch_label, UI_FONT_BODY, 0);
-	lv_label_set_text(imu_pitch_label, "Pitch --.- deg");
-
-	imu_roll_label = lv_label_create(content);
-	lv_obj_set_width(imu_roll_label, LV_PCT(100));
-	lv_obj_set_style_text_color(imu_roll_label, lv_color_hex(0xf2f5f7), 0);
-	lv_obj_set_style_text_font(imu_roll_label, UI_FONT_BODY, 0);
-	lv_label_set_text(imu_roll_label, "Roll --.- deg");
+	imu_direction_label = lv_label_create(content);
+	lv_obj_set_width(imu_direction_label, LV_PCT(100));
+	lv_obj_set_style_text_color(imu_direction_label, lv_color_hex(0xf2f5f7), 0);
+	lv_obj_set_style_text_font(imu_direction_label, UI_FONT_BODY, 0);
+	lv_label_set_text(imu_direction_label, "Direction --.- deg");
 
 	imu_gyro_label = lv_label_create(content);
 	lv_obj_set_width(imu_gyro_label, LV_PCT(100));
@@ -592,7 +626,7 @@ static void show_imu(void)
 	lv_label_set_text(imu_gyro_label, "Gyro -- -- -- dps");
 
 	imu_box_timer_handle =
-		lv_timer_create(imu_box_timer, CONFIG_OSKEY_IMU_SAMPLE_INTERVAL_MS, imu_box_obj);
+		lv_timer_create(imu_box_timer, CONFIG_OSKEY_IMU_RENDER_INTERVAL_MS, imu_box_obj);
 }
 #endif
 

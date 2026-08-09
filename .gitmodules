@@ -4,3 +4,6 @@
 [submodule "lib/quirc"]
 	path = lib/quirc
 	url = https://github.com/dlbeer/quirc.git
+[submodule "lib/zscilib"]
+	path = lib/zscilib
+	url = https://github.com/zephyrproject-rtos/zscilib.git

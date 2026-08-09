@@ -3,19 +3,25 @@
 #include "imu.h"
 
 #include <errno.h>
-#include <math.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/util.h>
 
 #include "bus.h"
+#include "imu_orientation.h"
 
 LOG_MODULE_REGISTER(app_imu);
 
 #define IMU_NODE DT_ALIAS(imu0)
 
-#define IMU_RAD_TO_DEG (180.0f / 3.14159265358979323846f)
+#define IMU_RAD_TO_DEG          (180.0f / 3.14159265358979323846f)
+#define IMU_SAMPLE_FREQUENCY_HZ DT_PROP(IMU_NODE, accel_odr)
+#define IMU_SAMPLE_PERIOD_US    DIV_ROUND_CLOSEST(USEC_PER_SEC, IMU_SAMPLE_FREQUENCY_HZ)
+
+BUILD_ASSERT(DT_PROP(IMU_NODE, accel_odr) == DT_PROP(IMU_NODE, gyro_odr),
+	     "accelerometer and gyroscope ODR must match for fusion");
 
 static const struct device *imu_dev;
 static enum app_imu_state imu_state = APP_IMU_DISABLED;
@@ -32,7 +38,7 @@ static void imu_publish_state(enum app_imu_state state)
 	(void)zbus_chan_pub(&app_imu_state_chan, &state, K_MSEC(100));
 }
 
-static int imu_publish_sample(void)
+static int imu_publish_sample(struct app_imu_orientation *orientation)
 {
 	struct sensor_value accel[3];
 	struct sensor_value gyro[3];
@@ -43,22 +49,38 @@ static int imu_publish_sample(void)
 		return -EIO;
 	}
 
-	float ax = sensor_value_to_float(&accel[0]);
-	float ay = sensor_value_to_float(&accel[1]);
-	float az = sensor_value_to_float(&accel[2]);
+	float accel_sensor[3];
+	float gyro_sensor[3];
 
-	float pitch = -atan2f(ax, sqrtf(ay * ay + az * az)) * IMU_RAD_TO_DEG;
-	float roll = atan2f(ay, sqrtf(ax * ax + az * az)) * IMU_RAD_TO_DEG;
+	for (size_t i = 0; i < 3; i++) {
+		accel_sensor[i] = sensor_value_to_float(&accel[i]);
+		gyro_sensor[i] = sensor_value_to_float(&gyro[i]);
+	}
+
+	struct app_imu_orientation_result fused;
+	int ret = app_imu_orientation_update(orientation, accel_sensor, gyro_sensor, &fused);
+
+	if (ret < 0) {
+		LOG_ERR("IMU fusion failed: %d", ret);
+		return ret;
+	}
 
 	struct app_imu_sample sample = {
-		.pitch = pitch,
-		.roll = roll,
-		.gyro_x = sensor_value_to_float(&gyro[0]) * IMU_RAD_TO_DEG,
-		.gyro_y = sensor_value_to_float(&gyro[1]) * IMU_RAD_TO_DEG,
-		.gyro_z = sensor_value_to_float(&gyro[2]) * IMU_RAD_TO_DEG,
+		.tilt = fused.tilt,
+		.direction = fused.direction,
+		.acceleration_valid = fused.acceleration_valid,
+		.direction_valid = fused.direction_valid,
+		.orientation_valid = fused.orientation_valid,
+		.quaternion_w = fused.orientation_valid ? fused.quaternion_w : 1.0f,
+		.quaternion_x = fused.quaternion_x,
+		.quaternion_y = fused.quaternion_y,
+		.quaternion_z = fused.quaternion_z,
+		.gyro_x = gyro_sensor[0] * IMU_RAD_TO_DEG,
+		.gyro_y = gyro_sensor[1] * IMU_RAD_TO_DEG,
+		.gyro_z = gyro_sensor[2] * IMU_RAD_TO_DEG,
 	};
 
-	int ret = zbus_chan_pub(&app_imu_sample_chan, &sample, K_MSEC(100));
+	ret = zbus_chan_pub(&app_imu_sample_chan, &sample, K_MSEC(100));
 	if (ret < 0) {
 		LOG_ERR("IMU sample publish failed: %d", ret);
 	}
@@ -107,18 +129,33 @@ static void imu_thread(void *first, void *second, void *third)
 	ARG_UNUSED(third);
 
 	int errors = 0;
+	struct k_timer sample_timer;
+
+	k_timer_init(&sample_timer, NULL, NULL);
 
 	imu_publish_state(APP_IMU_IDLE);
 
 	while (true) {
 		k_sem_take(&imu_run_sem, K_FOREVER);
+		struct app_imu_orientation orientation;
+		int ret = app_imu_orientation_init(&orientation, IMU_SAMPLE_FREQUENCY_HZ);
+
 		errors = 0;
+		if (ret < 0) {
+			LOG_ERR("IMU fusion initialization failed: %d", ret);
+			imu_publish_state(APP_IMU_ERROR);
+			atomic_set(&imu_streaming, 0);
+			continue;
+		}
+
+		k_timer_start(&sample_timer, K_USEC(IMU_SAMPLE_PERIOD_US),
+			      K_USEC(IMU_SAMPLE_PERIOD_US));
 
 		while (atomic_get(&imu_streaming)) {
-			int ret = sensor_sample_fetch(imu_dev);
+			ret = sensor_sample_fetch(imu_dev);
 
 			if (ret == 0) {
-				ret = imu_publish_sample();
+				ret = imu_publish_sample(&orientation);
 			}
 			if (ret == 0) {
 				errors = 0;
@@ -131,9 +168,10 @@ static void imu_thread(void *first, void *second, void *third)
 				}
 			}
 
-			k_sleep(K_MSEC(CONFIG_OSKEY_IMU_SAMPLE_INTERVAL_MS));
+			(void)k_timer_status_sync(&sample_timer);
 		}
 
+		k_timer_stop(&sample_timer);
 		imu_publish_state(APP_IMU_IDLE);
 	}
 }

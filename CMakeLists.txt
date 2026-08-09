@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20.0)
 
 # Project-local drivers ship their own devicetree bindings.
 list(APPEND DTS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/drivers)
+list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/lib/zscilib)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oskey)
@@ -74,6 +75,7 @@ endif()
 
 target_sources_ifdef(CONFIG_OSKEY_IMU app PRIVATE
   src/imu/imu.c
+  src/imu/imu_orientation.c
 )
 
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE

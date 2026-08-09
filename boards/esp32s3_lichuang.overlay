@@ -104,9 +104,9 @@
     reg = <0x6a>;
     accel-fs = <4>;
     gyro-fs = <512>;
-    /* The UI samples at 10 Hz; 28 Hz avoids powering the sensor at 224 Hz. */
-    accel-odr = <28>;
-    gyro-odr = <28>;
+    /* Fusion runs at sensor rate; LVGL independently renders at 10 Hz. */
+    accel-odr = <56>;
+    gyro-odr = <56>;
   };
 };
 
