@@ -349,6 +349,12 @@ static const uint8_t imu_box_edges[12][2] = {
 	{0, 4}, {1, 5}, {2, 6}, {3, 7},
 };
 
+static const uint8_t imu_box_edge_faces[12][2] = {
+	{1, 5}, {1, 2}, {1, 4}, {1, 3},
+	{0, 5}, {0, 2}, {0, 4}, {0, 3},
+	{3, 5}, {2, 5}, {2, 4}, {3, 4},
+};
+
 static const uint8_t imu_box_faces[6][4] = {
 	{4, 5, 6, 7}, {0, 1, 2, 3},
 	{1, 2, 6, 5}, {0, 3, 7, 4},
@@ -408,6 +414,11 @@ static lv_color_t imu_box_shade(float light)
 	return lv_color_make((uint8_t)(77.0f * b), (uint8_t)(163.0f * b), (uint8_t)(255.0f * b));
 }
 
+static bool imu_box_face_visible(size_t face)
+{
+	return imu_box_face_light[face] > 0.001f;
+}
+
 static void imu_box_draw(lv_event_t *event)
 {
 	lv_obj_t *obj = lv_event_get_target_obj(event);
@@ -436,7 +447,7 @@ static void imu_box_draw(lv_event_t *event)
 	tri.opa = LV_OPA_COVER;
 
 	for (size_t i = 0; i < ARRAY_SIZE(imu_box_faces); i++) {
-		if (imu_box_face_light[i] <= 0.0f) {
+		if (!imu_box_face_visible(i)) {
 			continue;
 		}
 		uint8_t v0 = imu_box_faces[i][0];
@@ -457,6 +468,12 @@ static void imu_box_draw(lv_event_t *event)
 	}
 
 	for (size_t i = 0; i < ARRAY_SIZE(imu_box_edges); i++) {
+		uint8_t face_a = imu_box_edge_faces[i][0];
+		uint8_t face_b = imu_box_edge_faces[i][1];
+
+		if (!imu_box_face_visible(face_a) && !imu_box_face_visible(face_b)) {
+			continue;
+		}
 		uint8_t a = imu_box_edges[i][0];
 		uint8_t b = imu_box_edges[i][1];
 
