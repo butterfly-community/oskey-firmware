@@ -157,6 +157,16 @@
 };
 
 &pinctrl {
+  sdhc0_default: sdhc0_default {
+    group1 {
+      pinmux = <SDHC0_CLKOUT_GPIO47>,
+               <SDHC0_CMD_GPIO48>,
+               <SDHC0_DATA0_GPIO21>;
+      bias-pull-up;
+      output-high;
+    };
+  };
+
   lcd_cam_default: lcd_cam_default {
     group1 {
       pinmux = <LCD_CAM_CAM_CLK_GPIO5>;
@@ -239,6 +249,20 @@
 
 &dma {
   status = "okay";
+};
+
+&sdhc0 {
+  status = "okay";
+  pinctrl-0 = <&sdhc0_default>;
+  pinctrl-names = "default";
+  max-bus-freq = <DT_FREQ_M(20)>;
+  bus-width = <1>;
+
+  sd_card: mmc {
+    compatible = "zephyr,sdmmc-disk";
+    disk-name = "SD";
+    status = "okay";
+  };
 };
 
 /* ESP32-S3-WROOM-1-N16R8 on the Lichuang board has 8 MiB octal PSRAM. */

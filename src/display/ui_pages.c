@@ -664,6 +664,11 @@ static void show_settings(void)
 {
 	lv_obj_t *content = ui_page_begin("Device settings", UI_NAVIGATION_BACK);
 	ui_clear_sensitive();
+#if defined(CONFIG_OSKEY_SD_CARD)
+	ui_section(content, "STORAGE");
+	ui_list_row(content, &oskey_document, "Files", "Browse the SD card read-only", NULL,
+		    UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_FILES);
+#endif
 #if defined(CONFIG_OSKEY_WIFI) || defined(CONFIG_OSKEY_BLUETOOTH) || defined(CONFIG_OSKEY_USB)
 	ui_section(content, "CONNECTIVITY");
 #endif
@@ -922,6 +927,11 @@ void ui_render(void)
 	case UI_PAGE_SETTINGS:
 		show_settings();
 		break;
+#if defined(CONFIG_OSKEY_SD_CARD)
+	case UI_PAGE_FILES:
+		ui_files_render();
+		break;
+#endif
 	case UI_PAGE_WIFI:
 		ui_wifi_render();
 		break;

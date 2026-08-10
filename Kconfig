@@ -81,6 +81,23 @@ config OSKEY_STORAGE
 	help
 	  Enable the shared ZMS storage and Zephyr settings backend.
 
+config OSKEY_SD_CARD
+	bool "Read-only SD card browser"
+	depends on OSKEY_DISPLAY
+	depends on DT_HAS_ZEPHYR_SDMMC_DISK_ENABLED
+	select DISK_DRIVER_SDMMC
+	select FAT_FILESYSTEM_ELM
+	select FILE_SYSTEM
+	select FS_FATFS_LFN
+	select FS_FATFS_READ_ONLY
+	help
+	  Mount a FAT-formatted SD card read-only and expose its files through
+	  the LVGL file browser. This storage is independent of OSKey's internal
+	  ZMS settings storage.
+
+config FS_FATFS_MOUNT_MKFS
+	default n if OSKEY_SD_CARD
+
 config MPU_ALLOW_FLASH_WRITE
 	default y if OSKEY_STORAGE || OSKEY_XIP
 

@@ -18,6 +18,7 @@ const lichuangFeatures = [
   "QR_SCANNER",
   "AUDIO",
   "IMU",
+  "SD_CARD",
 ];
 const lichuangConfFiles = ["boards/esp32s3_lichuang.conf"];
 const lichuangWestArgs = [
