@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.20.0)
 
 # Project-local drivers ship their own devicetree bindings.
 list(APPEND DTS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/drivers)
-list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/lib/zscilib)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oskey)
@@ -73,7 +72,17 @@ if(CONFIG_OSKEY_AUDIO)
   add_dependencies(app audio-assets)
 endif()
 
-target_sources_ifdef(CONFIG_OSKEY_IMU app PRIVATE src/imu/imu.c)
+if(CONFIG_OSKEY_IMU)
+  add_library(fusion STATIC
+    lib/Fusion/Fusion/FusionAhrs.c
+    lib/Fusion/Fusion/FusionBias.c
+  )
+  target_include_directories(fusion PUBLIC lib/Fusion/Fusion)
+  target_link_libraries(fusion PUBLIC zephyr_interface)
+
+  target_sources(app PRIVATE src/imu/imu.c)
+  target_link_libraries(app PRIVATE fusion)
+endif()
 
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
   src/display/ui.c

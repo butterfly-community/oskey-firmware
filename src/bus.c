@@ -62,10 +62,10 @@ ZBUS_CHAN_DEFINE(app_audio_command_chan, struct app_audio_command, NULL, NULL,
 ZBUS_CHAN_DEFINE(app_imu_state_chan, enum app_imu_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 IS_ENABLED(CONFIG_OSKEY_IMU) ? APP_IMU_INITIALIZING : APP_IMU_DISABLED);
 
-ZBUS_CHAN_DEFINE(app_imu_sample_chan, struct app_imu_sample, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-			 ZBUS_MSG_INIT(.valid = false, .quaternion_w = 1.0f,
-				       .quaternion_x = 0.0f, .quaternion_y = 0.0f,
-				       .quaternion_z = 0.0f));
+ZBUS_CHAN_DEFINE(
+	app_imu_sample_chan, struct app_imu_sample, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+	ZBUS_MSG_INIT(.valid = false,
+		       .rotation = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}));
 
 ZBUS_CHAN_DEFINE(app_imu_command_chan, struct app_imu_command, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(.kind = APP_IMU_COMMAND_NONE));

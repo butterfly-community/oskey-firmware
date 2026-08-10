@@ -129,11 +129,10 @@ config OSKEY_IMU
 	bool "6-axis IMU (accelerometer and gyroscope)"
 	depends on DT_HAS_QST_QMI8658A_ENABLED
 	select SENSOR
-	select ZSL
-	select ZSL_SINGLE_PRECISION
 	help
 	  Enable the on-board QMI8658 accelerometer and gyroscope over I2C,
-	  including zscilib orientation fusion.
+	  including Fusion orientation estimation. The Fusion library is only
+	  compiled and linked when this option is enabled.
 
 config OSKEY_IMU_RENDER_INTERVAL_MS
 	int "IMU page render interval in milliseconds"
@@ -147,7 +146,7 @@ config OSKEY_IMU_RENDER_INTERVAL_MS
 config OSKEY_IMU_THREAD_STACK_SIZE
 	int "IMU thread stack size"
 	depends on OSKEY_IMU
-	default 8192
+	default 4096
 	help
 	  Stack used by the IMU sampling thread.
 

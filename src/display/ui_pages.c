@@ -5,8 +5,6 @@
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
-#include <zsl/matrices.h>
-#include <zsl/orientation/quaternions.h>
 
 #include "assets/assets.h"
 
@@ -340,8 +338,7 @@ static void ui_imu_command(enum app_imu_command_kind kind)
 static lv_point_precise_t imu_box_proj[8];
 static lv_timer_t *imu_box_timer_handle;
 static lv_obj_t *imu_box_obj;
-static lv_obj_t *imu_calibrate_button;
-static lv_obj_t *imu_calibration_label;
+static lv_obj_t *imu_status_label;
 static float imu_box_face_light[6];
 static bool imu_box_orientation_visible;
 static enum app_imu_state imu_page_state = APP_IMU_DISABLED;
@@ -379,23 +376,15 @@ static void imu_box_project(const struct app_imu_sample *sample)
 		{-1.8f, -1.0f, -0.4f}, {1.8f, -1.0f, -0.4f}, {1.8f, 1.0f, -0.4f}, {-1.8f, 1.0f, -0.4f},
 		{-1.8f, -1.0f, 0.4f},  {1.8f, -1.0f, 0.4f},  {1.8f, 1.0f, 0.4f},  {-1.8f, 1.0f, 0.4f},
 	};
-	struct zsl_quat quaternion = {
-		.r = sample->quaternion_w,
-		.i = sample->quaternion_x,
-		.j = sample->quaternion_y,
-		.k = sample->quaternion_z,
-	};
-	ZSL_MATRIX_DEF(rotation, 3, 3);
-
-	(void)zsl_quat_to_rot_mtx(&quaternion, &rotation);
+	const float *rotation = sample->rotation;
 	const int32_t scale = 45;
 
 	for (size_t i = 0; i < ARRAY_SIZE(vertices); i++) {
 		const float x = vertices[i][0];
 		const float y = vertices[i][1];
 		const float z = vertices[i][2];
-		const float rx = rotation.data[0] * x + rotation.data[1] * y + rotation.data[2] * z;
-		const float ry = rotation.data[3] * x + rotation.data[4] * y + rotation.data[5] * z;
+		const float rx = rotation[0] * x + rotation[1] * y + rotation[2] * z;
+		const float ry = rotation[3] * x + rotation[4] * y + rotation[5] * z;
 
 		imu_box_proj[i].x = (int32_t)(rx * scale);
 		imu_box_proj[i].y = (int32_t)(ry * scale);
@@ -406,8 +395,7 @@ static void imu_box_project(const struct app_imu_sample *sample)
 		const float nx = imu_box_normals[i][0];
 		const float ny = imu_box_normals[i][1];
 		const float nz = imu_box_normals[i][2];
-		imu_box_face_light[i] =
-			rotation.data[6] * nx + rotation.data[7] * ny + rotation.data[8] * nz;
+		imu_box_face_light[i] = rotation[6] * nx + rotation[7] * ny + rotation[8] * nz;
 	}
 }
 
@@ -497,21 +485,17 @@ static void imu_page_set_state(enum app_imu_state state)
 	const char *text;
 
 	switch (state) {
-	case APP_IMU_CALIBRATING:
-		text = "Calibrating: keep the device still";
-		break;
 	case APP_IMU_READY:
-		text = "Calibrated";
+		text = "Ready";
 		break;
 	case APP_IMU_ERROR:
 		text = "IMU error";
 		break;
 	case APP_IMU_INITIALIZING:
+		text = "Initialising: keep the device still";
+		break;
 	case APP_IMU_IDLE:
 		text = "Waiting for IMU";
-		break;
-	case APP_IMU_UNCALIBRATED:
-		text = "Calibration required";
 		break;
 	case APP_IMU_DISABLED:
 	default:
@@ -520,15 +504,8 @@ static void imu_page_set_state(enum app_imu_state state)
 	}
 
 	imu_page_state = state;
-	if (imu_calibration_label != NULL) {
-		lv_label_set_text(imu_calibration_label, text);
-	}
-	if (imu_calibrate_button != NULL) {
-		if (state == APP_IMU_CALIBRATING) {
-			lv_obj_add_state(imu_calibrate_button, LV_STATE_DISABLED);
-		} else {
-			lv_obj_remove_state(imu_calibrate_button, LV_STATE_DISABLED);
-		}
+	if (imu_status_label != NULL) {
+		lv_label_set_text(imu_status_label, text);
 	}
 	if (state != APP_IMU_READY && imu_box_orientation_visible) {
 		imu_box_orientation_visible = false;
@@ -558,13 +535,6 @@ static void imu_box_timer(lv_timer_t *timer)
 	}
 }
 
-static void imu_calibrate_clicked(lv_event_t *event)
-{
-	ARG_UNUSED(event);
-
-	ui_imu_command(APP_IMU_COMMAND_CALIBRATE);
-}
-
 static void imu_box_delete(lv_event_t *event)
 {
 	ARG_UNUSED(event);
@@ -580,8 +550,7 @@ void ui_imu_leave(void)
 		imu_box_timer_handle = NULL;
 	}
 	imu_box_obj = NULL;
-	imu_calibrate_button = NULL;
-	imu_calibration_label = NULL;
+	imu_status_label = NULL;
 	imu_box_orientation_visible = false;
 	imu_page_state = APP_IMU_DISABLED;
 }
@@ -617,17 +586,12 @@ static void show_imu(void)
 	imu_box_timer_handle =
 		lv_timer_create(imu_box_timer, CONFIG_OSKEY_IMU_RENDER_INTERVAL_MS, imu_box_obj);
 
-	imu_calibration_label = lv_label_create(content);
-	lv_obj_set_width(imu_calibration_label, LV_PCT(100));
-	lv_obj_set_style_text_color(imu_calibration_label, ui_tone_color(UI_TONE_MUTED), 0);
-	lv_obj_set_style_text_font(imu_calibration_label, UI_FONT_CAPTION, 0);
-	lv_obj_set_style_text_align(imu_calibration_label, LV_TEXT_ALIGN_CENTER, 0);
-	lv_label_set_text(imu_calibration_label, "Calibration required");
-
-	ui_list_row(content, &oskey_refresh, "Calibrate",
-		    "Keep the device still for three seconds", NULL, UI_TONE_ACTIVE,
-		    imu_calibrate_clicked, NULL);
-	imu_calibrate_button = lv_obj_get_child(content, -1);
+	imu_status_label = lv_label_create(content);
+	lv_obj_set_width(imu_status_label, LV_PCT(100));
+	lv_obj_set_style_text_color(imu_status_label, ui_tone_color(UI_TONE_MUTED), 0);
+	lv_obj_set_style_text_font(imu_status_label, UI_FONT_CAPTION, 0);
+	lv_obj_set_style_text_align(imu_status_label, LV_TEXT_ALIGN_CENTER, 0);
+	lv_label_set_text(imu_status_label, "Waiting for IMU");
 
 	enum app_imu_state state;
 	if (zbus_chan_read(&app_imu_state_chan, &state, K_NO_WAIT) < 0) {

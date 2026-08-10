@@ -181,25 +181,19 @@ enum app_imu_state {
 	APP_IMU_DISABLED,
 	APP_IMU_INITIALIZING,
 	APP_IMU_IDLE,
-	APP_IMU_UNCALIBRATED,
-	APP_IMU_CALIBRATING,
 	APP_IMU_READY,
 	APP_IMU_ERROR,
 };
 
 struct app_imu_sample {
 	bool valid;
-	float quaternion_w;
-	float quaternion_x;
-	float quaternion_y;
-	float quaternion_z;
+	float rotation[9];
 };
 
 enum app_imu_command_kind {
 	APP_IMU_COMMAND_NONE,
 	APP_IMU_COMMAND_START,
 	APP_IMU_COMMAND_STOP,
-	APP_IMU_COMMAND_CALIBRATE,
 };
 
 struct app_imu_command {

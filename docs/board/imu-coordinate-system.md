@@ -1,112 +1,119 @@
 # IMU orientation and display convention
 
-The Tilt page uses the QMI8658 six-axis IMU to drive one LVGL cuboid. The fusion
-path and renderer use a complete 3D orientation quaternion, so physical rotation
-about any of the three axes remains visible. Without a magnetometer or another
-external direction reference, yaw is relative to the orientation at
-initialization and may drift slowly over time.
+The Tilt page uses the QMI8658 accelerometer and gyroscope to drive an LVGL
+cuboid. The IMU module estimates a complete 3D orientation, so rotation about
+all three axes remains visible. Without a magnetometer or an external heading
+reference, yaw is relative and may drift over time.
 
 ## Data flow
 
 ```text
-QMI8658 accelerometer + gyroscope at 56 Hz
-        -> sensor-to-fusion coordinate mapping
-        -> subtract the user-triggered stationary gyroscope bias
-        -> Madgwick IMU update using zscilib vector/quaternion primitives
-        -> fusion-to-render coordinate mapping
-        -> valid + quaternion over zbus
+QMI8658 accelerometer + gyroscope configured at 112 Hz
+        -> sensor-to-body coordinate mapping and unit conversion
+        -> FusionBias run-time gyroscope offset correction
+        -> FusionAhrs six-axis update
+        -> renderer coordinate mapping
+        -> Fusion quaternion-to-matrix conversion
+        -> valid + row-major 3x3 rotation matrix over zbus
         -> LVGL renders the newest valid sample every 100 ms
 ```
 
-Sampling, fusion, and rendering are independent. The filter uses the 56 Hz
-sensor output data rate configured in `boards/esp32s3_lichuang.overlay`; the
-page defaults to a 100 ms render interval.
+Sampling, fusion, and rendering are independent. The QMI8658 and `FusionBias`
+use the nominal output data rate configured in
+`boards/esp32s3_lichuang.overlay`; rendering uses
+`CONFIG_OSKEY_IMU_RENDER_INTERVAL_MS`. `FusionAhrs` initially uses the nominal
+period, then receives the measured interval between each pair of successful
+samples through `FusionAhrsSetSamplePeriod()`. Its gyroscope integration
+therefore remains correctly scaled when processing and scheduling make the
+actual sampling rate lower than the nominal rate.
 
-## Gyroscope calibration
+## Fusion initialization and gyroscope offset
 
-The Tilt page requires an explicit calibration before it displays the cuboid.
-Pressing **Calibrate** discards any previous bias and collects 168 consecutive
-samples, approximately three seconds at the configured sensor rate. The device
-must remain still: acceleration must stay within 10 percent of standard gravity
-and angular speed must remain below 5 degrees per second. A sample outside
-either limit resets the collection window.
+The application uses xioTechnologies/Fusion v1.3.2 and does not implement a
+second calibration algorithm. Entering the page restarts `FusionAhrs`. Its
+three-second startup gain ramp quickly aligns the quaternion with gravity, and
+the cuboid remains hidden while the library reports its `startup` flag.
 
-The page publishes `APP_IMU_COMMAND_CALIBRATE` on the IMU command channel. The
-IMU module owns the `UNCALIBRATED -> CALIBRATING -> READY` transition and
-publishes it on the state channel; the page only consumes that state. Neither
-module calls into the other.
+`FusionBias` owns gyroscope offset estimation. It detects gyroscope readings
+below its default stationary threshold for its default three-second stationary
+period, then continuously adjusts the offset with a deliberately slow filter.
+On the first Tilt-page session after boot, allow about 30 seconds at rest for
+the offset to settle. The cuboid becomes visible when the separate three-second
+AHRS startup finishes, so some relative-yaw rotation during this initial bias
+convergence is expected and accepted. The offset is retained in RAM when
+leaving and re-entering the page, but is not stored across a reboot.
 
-The mean of the three mapped gyroscope axes becomes the software bias and is
-subtracted before every fusion update. The result remains in RAM for the rest
-of the boot and may be replaced by pressing **Calibrate** again. It is not
-written to persistent storage and does not provide an absolute yaw reference.
-Leaving the page while calibration is running cancels the partial sample set.
+These are separate library mechanisms: the AHRS startup flag controls when the
+page starts rendering, while bias estimation continues whenever the IMU page
+is sampling. There is no application-defined calibration-complete state or
+calibration button.
 
-## Fusion initialization and update
+## Page lifecycle
 
-Before initialization, `imu.c` waits for an acceleration magnitude within 20
-percent of standard gravity. The first valid acceleration sample directly
-constructs the shortest body-to-earth rotation that aligns measured gravity
-with world +Z, with yaw initialized to zero. The page can therefore start while
-the board is already vertical or tilted without waiting for convergence from
-the identity quaternion.
+The UI publishes START and STOP commands over zbus. The zbus listener only
+copies those commands into an ordered queue; the IMU sampling thread consumes
+the queue and exclusively owns the streaming state, sampling schedule, AHRS
+restart, and state transitions. The thread has one event loop: while idle it
+waits indefinitely for a command; while streaming it waits on the same queue
+for one nominal sample period. A command wakes it immediately; a timeout causes
+one sample to be processed. A rapid STOP followed by START is therefore
+observed as two distinct transitions and always restarts the AHRS for the new
+page session. There is no separate timer, deadline compensation, semaphore,
+polling set, or nested sampling loop.
 
-Subsequent samples run the IMU form of Madgwick with `beta = 0.1`, using zscilib
-vector and quaternion primitives. The pinned zscilib feed function is not used
-because its gravity objective, Jacobian, and angular-velocity multiplication do
-not share one quaternion convention. `imu.c` contains one minimal IMU-only
-update in the body-to-earth convention; there is no alternative fusion branch.
+The AHRS uses the library default gain, NWU convention, a 10-degree acceleration
+rejection threshold, a five-second rejection timeout, and the 512-degree-per-
+second gyroscope range configured in devicetree. Linear movement can still
+cause a brief tilt disturbance because an accelerometer measures total specific
+force rather than gravity alone; acceleration rejection limits this effect.
 
-The update has no magnetometer path, continuous bias estimator, acceleration
-rejection window, or per-sample Euler conversion.
+## Units and coordinate mapping
 
-## Coordinate mapping
+Zephyr exposes acceleration in metres per second squared and angular rate in
+radians per second. The standard Zephyr sensor conversion helpers convert them
+to the units required by Fusion: g and degrees per second.
 
-The QMI8658 package axes do not match the display axes. Accelerometer and
-gyroscope data use the same mapping:
+The QMI8658 package axes do not match the display body axes. Accelerometer and
+gyroscope use the same mapping:
 
 ```text
 fusion = (sensor_y, -sensor_x, sensor_z)
 ```
 
-The internal quaternion is body-to-earth and includes gyro-integrated yaw. The
-complete quaternion is published after the following renderer-axis mapping:
+Fusion publishes a sensor-relative-to-Earth quaternion. `imu.c` applies the
+renderer coordinate mapping internally:
 
 ```text
 render = (fusion_w, fusion_x, -fusion_y, -fusion_z)
 ```
 
-LVGL converts that quaternion with `zsl_quat_to_rot_mtx()` and does not pass
-through Euler pitch or roll. When looking at the display, raising a physical
-edge must raise the same cuboid edge. Horizontal or vertical translation may
-briefly disturb the indicated tilt because an accelerometer measures total
-specific force, not gravity in isolation. Rotation about gravity comes from the
-gyroscope; the three-second bias calibration prevents the large startup drift,
-but cannot create an absolute heading reference.
+`imu.c` immediately converts this quaternion with
+`FusionQuaternionToMatrix()` and publishes the resulting row-major 3x3 rotation
+matrix. The zbus contract and LVGL code therefore do not depend on Fusion types
+or quaternion conventions. LVGL applies the matrix directly to the cuboid
+vertices and face normals; the chain never converts through Euler angles.
+Crossing 90 or 180 degrees therefore does not introduce an Euler singularity.
+When looking at the display, raising a physical edge must raise the same cuboid
+edge.
 
-## Inversion and invalid output
+## Build boundary
 
-The renderer does not reconstruct orientation from gravity, switch formulas, or
-use an inverted dead zone. It consumes the continuous fusion quaternion, so
-crossing 90 or 180 degrees does not introduce an Euler-angle singularity. If
-fusion initializes with the acceleration vector nearly opposite world +Z, it
-deterministically chooses a 180-degree rotation about X; subsequent motion
-continues through normal quaternion integration.
-
-After every update, `imu.c` verifies that all published quaternion components
-are finite. Otherwise the sample is marked invalid, LVGL skips it, and fusion is
-reset so a later valid sample can initialize again.
+Fusion is pinned as the `lib/Fusion` git submodule. `FusionAhrs.c` and
+`FusionBias.c` are compiled into a separate static library and linked to the
+application only when `CONFIG_OSKEY_IMU=y`. Builds without the IMU feature do
+not compile or link Fusion. The IMU sampling thread uses a 4 KiB stack. The
+application no longer depends on zscilib.
 
 ## Hardware validation
 
-1. Open Tilt, keep the board still, and press **Calibrate**. The cuboid remains
-   hidden until the three-second calibration reaches `READY`.
-2. Raise each physical edge separately. The same cuboid edge must rise, with no
-   doubled angle.
-3. Leave the board still for at least 30 seconds. The cuboid must not rotate in
-   its plane rapidly; small jitter and slow long-term yaw drift are possible
-   without an absolute direction reference.
-4. Rotate the board about the display normal. The cuboid must preserve and show
-   that rotation instead of removing it.
-5. Rotate through vertical and inversion. Motion must continue in the same
-   direction without angle doubling, snapping, or switching algorithms.
+1. After boot, open Tilt and keep the board still. Rendering starts after the
+   three-second AHRS initialization; allow about 30 seconds for the first
+   FusionBias convergence before judging relative-yaw stability.
+2. Raise each physical edge separately. The same cuboid edge must rise, without
+   a doubled angle.
+3. Translate the stationary-orientation board horizontally and vertically. A
+   short disturbance is possible, but it should settle without a lasting tilt.
+4. Rotate about the display normal. The cuboid must show that relative yaw; slow
+   long-term drift remains possible without an absolute heading reference.
+5. Rotate through vertical and inversion. Motion must remain continuous without
+   snapping, angle doubling, or switching formulas.

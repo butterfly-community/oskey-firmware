@@ -105,8 +105,8 @@
     accel-fs = <4>;
     gyro-fs = <512>;
     /* Fusion runs at sensor rate; LVGL independently renders at 10 Hz. */
-    accel-odr = <56>;
-    gyro-odr = <56>;
+    accel-odr = <112>;
+    gyro-odr = <112>;
   };
 };
 
