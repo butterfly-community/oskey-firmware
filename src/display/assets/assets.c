@@ -44,6 +44,9 @@ A8_DATA(failure) = {
 A8_DATA(imu) = {
 #include <oskey_imu.a8.inc>
 };
+A8_DATA(microphone) = {
+#include <oskey_microphone.a8.inc>
+};
 A8_DATA(passkey) = {
 #include <oskey_passkey.a8.inc>
 };
@@ -94,6 +97,7 @@ A8_DESCRIPTOR(eye, 24, 24);
 A8_DESCRIPTOR(eye_off, 24, 24);
 A8_DESCRIPTOR(failure, 24, 24);
 A8_DESCRIPTOR(imu, 24, 24);
+A8_DESCRIPTOR(microphone, 24, 24);
 A8_DESCRIPTOR(passkey, 24, 24);
 A8_DESCRIPTOR(refresh, 24, 24);
 A8_DESCRIPTOR(settings, 24, 24);

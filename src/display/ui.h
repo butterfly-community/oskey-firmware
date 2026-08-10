@@ -118,6 +118,7 @@ struct ui_context {
 	lv_obj_t *usb_icon;
 	lv_obj_t *camera_icon;
 	lv_obj_t *audio_icon;
+	lv_obj_t *microphone_icon;
 	lv_obj_t *gyro_icon;
 	lv_obj_t *content;
 	lv_obj_t *notice;

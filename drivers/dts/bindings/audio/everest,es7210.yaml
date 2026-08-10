@@ -1,0 +1,23 @@
+description: Everest ES7210 audio ADC in standard stereo I2S mode
+
+compatible: "everest,es7210"
+
+include: i2c-device.yaml
+
+properties:
+  input-channel-mask:
+    type: int
+    default: 3
+    enum: [1, 2, 3]
+    description: |
+      Enabled analog input channels as a bit mask: bit 0 is MIC1 and bit 1
+      is MIC2. MIC3/MIC4 require TDM and are not exposed by this binding.
+
+  mic-gain:
+    type: int
+    default: 8
+    enum: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    description: |
+      Initial PGA gain code shared by all enabled microphones. Codes 0
+      through 11 select 0 dB through 33 dB in 3 dB steps; codes 12, 13,
+      and 14 select 34.5 dB, 36 dB, and 37.5 dB respectively.

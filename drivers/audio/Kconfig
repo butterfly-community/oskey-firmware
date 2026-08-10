@@ -3,7 +3,6 @@
 
 config AUDIO_ES8311
 	bool "Everest ES8311 audio codec"
-	depends on OSKEY_AUDIO
 	default y
 	depends on DT_HAS_EVEREST_ES8311_ENABLED
 	select I2C
@@ -11,9 +10,25 @@ config AUDIO_ES8311
 	help
 	  Enable driver for the Everest ES8311 low power audio codec. The
 	  NS4150B class-D amplifier enable pin is driven through the
-	  pa-en-gpios devicetree property.
+	  pa-en-gpios devicetree property. The driver is selected by the
+	  devicetree node and does not depend on an application feature.
 
 config AUDIO_ES8311_INIT_PRIORITY
 	int "ES8311 codec initialization priority"
 	depends on AUDIO_ES8311
+	default 60
+
+config AUDIO_ES7210
+	bool "Everest ES7210 audio ADC"
+	depends on DT_HAS_EVEREST_ES7210_ENABLED
+	select I2C
+	help
+	  Enable the Everest ES7210 audio ADC in standard stereo I2S mode.
+	  MIC1/MIC2 selection and initial gain are configured through
+	  devicetree. The driver exposes Zephyr's audio codec API and can be
+	  selected by an application feature or enabled directly.
+
+config AUDIO_ES7210_INIT_PRIORITY
+	int "ES7210 codec initialization priority"
+	depends on AUDIO_ES7210
 	default 60

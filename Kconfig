@@ -106,15 +106,15 @@ config DMA_ESP32_MAX_DESCRIPTOR_NUM
 endif
 
 config OSKEY_AUDIO
-	bool "Audio output"
+	bool "Audio"
 	depends on DT_HAS_ESPRESSIF_ESP32_I2S_ENABLED
 	select I2S
-	select LV_USE_BAR
-	select LV_USE_SLIDER
+	select LV_USE_BAR if OSKEY_DISPLAY
+	select LV_USE_SLIDER if OSKEY_DISPLAY
 	help
-	  Enable speaker output through the board audio codec and the I2S bus.
-	  A board must provide a codec devicetree node and audio-codec /
-	  audio-i2s aliases.
+	  Enable the board audio service and speaker output through I2S. A board
+	  must provide a codec devicetree node and audio-codec / audio-i2s
+	  aliases. USB microphone capture can be enabled separately.
 
 config OSKEY_AUDIO_VOLUME
 	int "Audio output volume (0-100)"
@@ -124,6 +124,8 @@ config OSKEY_AUDIO_VOLUME
 	help
 	  Initial codec output volume in the 0-100 range; adjustable at runtime
 	  from the Audio page.
+
+rsource "src/audio/Kconfig"
 
 config OSKEY_IMU
 	bool "6-axis IMU (accelerometer and gyroscope)"

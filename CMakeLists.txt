@@ -72,6 +72,10 @@ if(CONFIG_OSKEY_AUDIO)
   add_dependencies(app audio-assets)
 endif()
 
+target_sources_ifdef(CONFIG_OSKEY_MICROPHONE app PRIVATE
+  src/audio/microphone.c
+)
+
 if(CONFIG_OSKEY_IMU)
   add_library(fusion STATIC
     lib/Fusion/Fusion/FusionAhrs.c

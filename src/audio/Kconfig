@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+config OSKEY_MICROPHONE
+	bool "USB microphone"
+	default n
+	depends on OSKEY_USB
+	depends on DT_HAS_ESPRESSIF_ESP32_I2S_ENABLED
+	depends on DT_HAS_EVEREST_ES7210_ENABLED
+	select OSKEY_AUDIO
+	select AUDIO_ES7210
+	select USBD_AUDIO2_CLASS
+	select RING_BUFFER
+	help
+	  Expose the board's two ES7210 microphone channels as a USB Audio Class 2
+	  stereo recording device. The interface remains enumerated while runtime
+	  capture is disabled and supplies silence until the status-bar microphone
+	  switch is enabled.
+
+config OSKEY_MICROPHONE_STACK_SIZE
+	int "USB microphone capture thread stack size"
+	depends on OSKEY_MICROPHONE
+	default 2048
+	help
+	  Stack used by the continuous I2S microphone capture thread.

@@ -63,7 +63,7 @@ USBD_DESC_BOS_DEFINE(oskey_usb_extension, sizeof(bos_cap_lpm), &bos_cap_lpm);
 static void fix_device_class(struct usbd_context *uds_ctx, const enum usbd_speed speed)
 {
 	/* Always use class code information from Interface Descriptors */
-	if (IS_ENABLED(CONFIG_USBD_CDC_ACM_CLASS)) {
+	if (IS_ENABLED(CONFIG_USBD_CDC_ACM_CLASS) || IS_ENABLED(CONFIG_USBD_AUDIO2_CLASS)) {
 		/*
 		 * Class with multiple interfaces have an Interface
 		 * Association Descriptor available, use an appropriate triple

@@ -13,6 +13,7 @@ extern const lv_image_dsc_t oskey_eye;
 extern const lv_image_dsc_t oskey_eye_off;
 extern const lv_image_dsc_t oskey_failure;
 extern const lv_image_dsc_t oskey_imu;
+extern const lv_image_dsc_t oskey_microphone;
 extern const lv_image_dsc_t oskey_passkey;
 extern const lv_image_dsc_t oskey_refresh;
 extern const lv_image_dsc_t oskey_settings;

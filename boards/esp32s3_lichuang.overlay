@@ -2,6 +2,7 @@
 #include <zephyr/dt-bindings/gpio/gpio.h>
 #include <zephyr/dt-bindings/display/panel.h>
 #include <zephyr/dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/usb/audio.h>
 
 / {
   chosen {
@@ -13,6 +14,7 @@
   aliases {
     backlight = &lcd_bk;
     audio-codec = &es8311;
+    audio-codec-input = &es7210;
     audio-i2s = &i2s0;
     imu0 = &qmi8658a;
   };
@@ -59,6 +61,43 @@
       gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
     };
   };
+
+  usb_microphone: usb_audio2 {
+    compatible = "zephyr,uac2";
+    status = "okay";
+    full-speed;
+    audio-function = <AUDIO_FUNCTION_MICROPHONE>;
+
+    usb_mic_clock: clock {
+      compatible = "zephyr,uac2-clock-source";
+      clock-type = "internal-programmable";
+      frequency-control = "host-programmable";
+      sampling-frequencies = <16000 32000 48000>;
+    };
+
+    usb_mic_input: microphone {
+      compatible = "zephyr,uac2-input-terminal";
+      clock-source = <&usb_mic_clock>;
+      terminal-type = <INPUT_TERMINAL_MICROPHONE_ARRAY>;
+      front-left;
+      front-right;
+    };
+
+    usb_mic_output: usb_stream {
+      compatible = "zephyr,uac2-output-terminal";
+      data-source = <&usb_mic_input>;
+      clock-source = <&usb_mic_clock>;
+      terminal-type = <USB_TERMINAL_STREAMING>;
+    };
+
+    usb_mic_stream: stream {
+      compatible = "zephyr,uac2-audio-streaming";
+      linked-terminal = <&usb_mic_output>;
+      subslot-size = <2>;
+      bit-resolution = <16>;
+      polling-period-us = <1000>;
+    };
+  };
 };
 
 &i2c0 {
@@ -97,6 +136,13 @@
     compatible = "everest,es8311";
     reg = <0x18>;
     pa-en-gpios = <&pca9557 1 GPIO_ACTIVE_HIGH>;
+  };
+
+  es7210: es7210@41 {
+    compatible = "everest,es7210";
+    reg = <0x41>;
+    input-channel-mask = <0x03>;
+    mic-gain = <6>;
   };
 
   qmi8658a: qst,qmi8658a@6a {
@@ -186,10 +232,16 @@
     pinmux = <I2S0_MCLK_GPIO38>,
              <I2S0_O_BCK_GPIO14>,
              <I2S0_O_WS_GPIO13>,
-             <I2S0_O_SD_GPIO45>;
+             <I2S0_O_SD_GPIO45>,
+             <I2S0_I_SD_GPIO12>;
   };
 };
 
 &dma {
   status = "okay";
+};
+
+/* ESP32-S3-WROOM-1-N16R8 on the Lichuang board has 8 MiB octal PSRAM. */
+&psram0 {
+  size = <DT_SIZE_M(8)>;
 };

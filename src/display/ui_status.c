@@ -11,6 +11,7 @@ enum status_item {
 	STATUS_ITEM_USB,
 	STATUS_ITEM_CAMERA,
 	STATUS_ITEM_AUDIO,
+	STATUS_ITEM_MICROPHONE,
 	STATUS_ITEM_GYRO,
 };
 
@@ -115,6 +116,20 @@ static void status_clicked(lv_event_t *event)
 {
 	enum status_item item = (enum status_item)(uintptr_t)lv_event_get_user_data(event);
 	enum ui_page page;
+
+	if (item == STATUS_ITEM_MICROPHONE) {
+#if defined(CONFIG_OSKEY_MICROPHONE)
+		struct app_audio_command command = {
+			.kind = APP_AUDIO_COMMAND_SET_MICROPHONE,
+			.enabled = !ui.status.audio.microphone_enabled,
+		};
+
+		(void)zbus_chan_pub(&app_audio_command_chan, &command, K_MSEC(100));
+#else
+		ui_error("Microphone support is not enabled");
+#endif
+		return;
+	}
 	if (ui.status.wallet != WalletState_Ready) {
 		return;
 	}
@@ -230,6 +245,7 @@ void ui_status_init(const struct ui_status *status)
 #if defined(CONFIG_OSKEY_AUDIO)
 	ui.audio_icon = status_icon(status_icons, &oskey_audio, STATUS_ITEM_AUDIO);
 #endif
+	ui.microphone_icon = status_icon(status_icons, &oskey_microphone, STATUS_ITEM_MICROPHONE);
 #if defined(CONFIG_OSKEY_IMU)
 	ui.gyro_icon = status_icon(status_icons, &oskey_imu, STATUS_ITEM_GYRO);
 #endif
@@ -262,6 +278,14 @@ void ui_status_update(const struct ui_status *status)
 #if defined(CONFIG_OSKEY_AUDIO)
 	ui_icon_color(ui.audio_icon, ui_tone_color(audio_tone(status->audio.state)));
 #endif
+	if (IS_ENABLED(CONFIG_OSKEY_MICROPHONE)) {
+		enum ui_tone tone =
+			status->audio.microphone_enabled ? UI_TONE_ACTIVE : UI_TONE_MUTED;
+
+		ui_icon_color(ui.microphone_icon, ui_tone_color(tone));
+	} else {
+		ui_icon_color(ui.microphone_icon, ui_tone_color(UI_TONE_MUTED));
+	}
 #if defined(CONFIG_OSKEY_IMU)
 	ui_icon_color(ui.gyro_icon, ui_tone_color(gyro_tone(status->imu)));
 #endif

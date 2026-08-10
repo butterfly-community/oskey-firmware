@@ -9,18 +9,24 @@
 #include <zephyr/drivers/i2s.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/atomic.h>
 #include <zephyr/sys/util.h>
 
 #include "bus.h"
+#if defined(CONFIG_OSKEY_MICROPHONE)
+#include "microphone.h"
+#endif
 
 LOG_MODULE_REGISTER(app_audio);
 
 #define AUDIO_I2S_NODE   DT_ALIAS(audio_i2s)
 #define AUDIO_CODEC_NODE DT_ALIAS(audio_codec)
 
-#define AUDIO_BLOCK_SIZE  1024
-#define AUDIO_BLOCK_COUNT 16
+#define AUDIO_CHANNELS    2U
+#define AUDIO_SAMPLE_BITS 16U
 #define AUDIO_SAMPLE_RATE 48000U
+#define AUDIO_BLOCK_SIZE  1024U
+#define AUDIO_BLOCK_COUNT 16
 
 /* Embedded stereo 16-bit PCM beep (see assets/beep.wav). */
 static const uint8_t beep_wav[] = {
@@ -43,13 +49,18 @@ static uint8_t audio_volume = CONFIG_OSKEY_AUDIO_VOLUME;
 static bool codec_ready;
 static const struct device *audio_codec_dev;
 static const struct device *audio_i2s_dev;
-static struct app_audio_command pending_command;
+static uint8_t pending_volume;
+#if defined(CONFIG_OSKEY_MICROPHONE)
+static atomic_t pending_microphone_enabled;
+#endif
+static bool microphone_enabled;
 
 static void audio_publish_state(enum app_audio_state state)
 {
 	struct app_audio_status status = {
 		.state = state,
 		.volume = audio_volume,
+		.microphone_enabled = microphone_enabled,
 	};
 
 	audio_state = state;
@@ -141,7 +152,7 @@ static int audio_beep(void)
 		return -ENODEV;
 	}
 
-	struct wav_info wav = { 0 };
+	struct wav_info wav = {0};
 	int ret = wav_parse(beep_wav, beep_wav_size, &wav);
 
 	if (ret < 0) {
@@ -180,8 +191,7 @@ static int audio_beep(void)
 	 */
 	const uint8_t *data = wav.data;
 	size_t remaining = wav.data_size;
-	size_t prefill = MAX(1, MIN(remaining / AUDIO_BLOCK_SIZE,
-				    CONFIG_I2S_ESP32_TX_BLOCK_COUNT));
+	size_t prefill = MAX(1, MIN(remaining / AUDIO_BLOCK_SIZE, CONFIG_I2S_ESP32_TX_BLOCK_COUNT));
 
 	for (size_t i = 0; i < prefill; i++) {
 		ret = audio_i2s_write(audio_i2s_dev, data, AUDIO_BLOCK_SIZE);
@@ -215,9 +225,9 @@ static int audio_beep(void)
 		/* Let the queued blocks finish before killing the output. */
 		ret = i2s_trigger(audio_i2s_dev, I2S_DIR_TX, I2S_TRIGGER_DRAIN);
 		if (ret == 0) {
-			uint32_t duration_ms = wav.data_size * 1000U /
-					      (wav.sample_rate * wav.channels *
-					       (wav.bits_per_sample / 8U));
+			uint32_t duration_ms =
+				wav.data_size * 1000U /
+				(wav.sample_rate * wav.channels * (wav.bits_per_sample / 8U));
 
 			k_sleep(K_MSEC(duration_ms + 100));
 		}
@@ -239,11 +249,10 @@ static void audio_set_volume(uint8_t volume)
 	}
 	audio_volume = volume;
 
-	audio_property_value_t value = { .vol = audio_volume };
+	audio_property_value_t value = {.vol = audio_volume};
 
-	if (codec_ready &&
-	    audio_codec_set_property(audio_codec_dev, AUDIO_PROPERTY_OUTPUT_VOLUME,
-				     AUDIO_CHANNEL_ALL, value) < 0) {
+	if (codec_ready && audio_codec_set_property(audio_codec_dev, AUDIO_PROPERTY_OUTPUT_VOLUME,
+						    AUDIO_CHANNEL_ALL, value) < 0) {
 		LOG_ERR("Volume update failed");
 	}
 	audio_publish_state(audio_state);
@@ -253,9 +262,19 @@ static void audio_beep_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
 
+#if defined(CONFIG_OSKEY_MICROPHONE)
+	int ret = app_microphone_pause();
+	if (ret < 0) {
+		LOG_WRN("Beep skipped because microphone capture did not pause: %d", ret);
+		return;
+	}
+#endif
 	audio_publish_state(APP_AUDIO_PLAYING);
 	(void)audio_beep();
 	audio_publish_state(APP_AUDIO_IDLE);
+#if defined(CONFIG_OSKEY_MICROPHONE)
+	app_microphone_resume();
+#endif
 }
 
 K_WORK_DEFINE(audio_beep_work, audio_beep_work_handler);
@@ -264,11 +283,23 @@ static void audio_volume_work_handler(struct k_work *work)
 {
 	ARG_UNUSED(work);
 
-	audio_set_volume(pending_command.volume);
-	pending_command.kind = APP_AUDIO_COMMAND_NONE;
+	audio_set_volume(pending_volume);
 }
 
 K_WORK_DEFINE(audio_volume_work, audio_volume_work_handler);
+
+#if defined(CONFIG_OSKEY_MICROPHONE)
+static void audio_microphone_work_handler(struct k_work *work)
+{
+	ARG_UNUSED(work);
+
+	microphone_enabled = atomic_get(&pending_microphone_enabled);
+	app_microphone_set_enabled(microphone_enabled);
+	audio_publish_state(audio_state);
+}
+
+K_WORK_DEFINE(audio_microphone_work, audio_microphone_work_handler);
+#endif
 
 static void audio_command_listener(const struct zbus_channel *chan)
 {
@@ -279,8 +310,14 @@ static void audio_command_listener(const struct zbus_channel *chan)
 		k_work_submit(&audio_beep_work);
 		break;
 	case APP_AUDIO_COMMAND_SET_VOLUME:
-		pending_command = *command;
+		pending_volume = command->volume;
 		k_work_submit(&audio_volume_work);
+		break;
+	case APP_AUDIO_COMMAND_SET_MICROPHONE:
+#if defined(CONFIG_OSKEY_MICROPHONE)
+		atomic_set(&pending_microphone_enabled, command->enabled);
+		k_work_submit(&audio_microphone_work);
+#endif
 		break;
 	default:
 		break;
@@ -318,21 +355,22 @@ int app_audio_init(void)
 	struct audio_codec_cfg cfg = {
 		.mclk_freq = AUDIO_SAMPLE_RATE * 256U,
 		.dai_type = AUDIO_DAI_TYPE_I2S,
-		.dai_cfg = {
-			.i2s = {
-				.frame_clk_freq = AUDIO_SAMPLE_RATE,
-				.word_size = 16,
-				.channels = 2,
-				.format = I2S_FMT_DATA_FORMAT_I2S,
+		.dai_cfg =
+			{
+				.i2s =
+					{
+						.frame_clk_freq = AUDIO_SAMPLE_RATE,
+						.word_size = AUDIO_SAMPLE_BITS,
+						.channels = AUDIO_CHANNELS,
+						.format = I2S_FMT_DATA_FORMAT_I2S,
+					},
 			},
-		},
 		.dai_route = AUDIO_ROUTE_PLAYBACK,
 	};
 
 	int ret = audio_codec_configure(audio_codec_dev, &cfg);
-
 	if (ret == 0) {
-		audio_property_value_t value = { .vol = audio_volume };
+		audio_property_value_t value = {.vol = audio_volume};
 
 		ret = audio_codec_set_property(audio_codec_dev, AUDIO_PROPERTY_OUTPUT_VOLUME,
 					       AUDIO_CHANNEL_ALL, value);
@@ -343,6 +381,14 @@ int app_audio_init(void)
 	}
 
 	codec_ready = true;
+
+#if defined(CONFIG_OSKEY_MICROPHONE)
+	ret = app_microphone_init();
+	if (ret < 0) {
+		LOG_ERR("Microphone init failed: %d", ret);
+		return ret;
+	}
+#endif
 	audio_publish_state(APP_AUDIO_IDLE);
 	return 0;
 }

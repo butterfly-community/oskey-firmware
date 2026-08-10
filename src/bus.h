@@ -165,16 +165,19 @@ enum app_audio_command_kind {
 	APP_AUDIO_COMMAND_NONE,
 	APP_AUDIO_COMMAND_BEEP,
 	APP_AUDIO_COMMAND_SET_VOLUME,
+	APP_AUDIO_COMMAND_SET_MICROPHONE,
 };
 
 struct app_audio_command {
 	enum app_audio_command_kind kind;
 	uint8_t volume;
+	bool enabled;
 };
 
 struct app_audio_status {
 	enum app_audio_state state;
 	uint8_t volume;
+	bool microphone_enabled;
 };
 
 enum app_imu_state {

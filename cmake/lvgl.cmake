@@ -44,6 +44,7 @@ if(CONFIG_OSKEY_DISPLAY)
       eye_off
       failure
       imu
+      microphone
       passkey
       refresh
       settings

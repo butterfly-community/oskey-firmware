@@ -53,11 +53,11 @@ ZBUS_CHAN_DEFINE(app_camera_state_chan, enum app_camera_state, NULL, NULL,
 ZBUS_CHAN_DEFINE(app_audio_state_chan, struct app_audio_status, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(.state = IS_ENABLED(CONFIG_OSKEY_AUDIO) ? APP_AUDIO_IDLE
 								       : APP_AUDIO_DISABLED,
-			       .volume = 0));
+			       .volume = 0, .microphone_enabled = false));
 
 ZBUS_CHAN_DEFINE(app_audio_command_chan, struct app_audio_command, NULL, NULL,
 		 ZBUS_OBSERVERS_EMPTY,
-		 ZBUS_MSG_INIT(.kind = APP_AUDIO_COMMAND_NONE, .volume = 0));
+		 ZBUS_MSG_INIT(.kind = APP_AUDIO_COMMAND_NONE, .volume = 0, .enabled = false));
 
 ZBUS_CHAN_DEFINE(app_imu_state_chan, enum app_imu_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 IS_ENABLED(CONFIG_OSKEY_IMU) ? APP_IMU_INITIALIZING : APP_IMU_DISABLED);
