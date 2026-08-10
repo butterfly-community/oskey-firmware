@@ -99,6 +99,8 @@ static enum ui_tone gyro_tone(enum app_imu_state state)
 	case APP_IMU_READY:
 		return UI_TONE_SUCCESS;
 	case APP_IMU_INITIALIZING:
+	case APP_IMU_UNCALIBRATED:
+	case APP_IMU_CALIBRATING:
 		return UI_TONE_WARNING;
 	case APP_IMU_IDLE:
 		return UI_TONE_MUTED;
