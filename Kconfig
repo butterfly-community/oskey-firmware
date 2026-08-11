@@ -74,12 +74,14 @@ menu "OSKey features"
 config OSKEY_STORAGE
 	bool "Storage"
 	select ZMS
+	select ZMS_DATA_CRC
 	select SETTINGS
 	select FLASH
 	select FLASH_MAP
 	select FLASH_PAGE_LAYOUT
 	help
-	  Enable the shared ZMS storage and Zephyr settings backend.
+	  Enable the shared CRC-protected ZMS storage and Zephyr settings
+	  backend.
 
 config OSKEY_REMOVABLE_MEDIA
 	bool "Read-only removable media browser"

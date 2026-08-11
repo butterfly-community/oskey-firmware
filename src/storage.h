@@ -16,9 +16,10 @@ extern const struct storage_ids storage_ids;
 int storage_init(void);
 int storage_settings_load(void);
 bool storage_ready(void);
-int storage_general_check(uint16_t id);
-bool storage_general_write(const uint8_t *data, size_t len, uint16_t id);
-int storage_general_read(uint8_t *data, size_t len, uint16_t id);
+int storage_exists(uint16_t id);
+int storage_write(const uint8_t *data, size_t len, uint16_t id);
+int storage_read(uint8_t *data, size_t len, uint16_t id);
+int storage_delete(uint16_t id);
 int storage_erase_flash(void);
 
 #endif

@@ -13,8 +13,7 @@ use oskey_action::WalletPlatform;
 use crate::rs::ffi::{
     app_check_feature, app_check_storage, app_csrand_get, app_display_ready, app_fido_pin_recover,
     app_get_chip_model, app_get_device_id, app_get_eui64, app_restart, app_storage_reset,
-    app_update_request, app_version_get, storage_general_check, storage_general_read,
-    storage_general_write, storage_ids,
+    app_update_request, app_version_get, storage_exists, storage_ids, storage_read, storage_write,
 };
 
 pub(crate) struct Platform;
@@ -75,7 +74,7 @@ impl WalletPlatform for Platform {
     }
 
     fn seed_exists(&self) -> Result<bool> {
-        match unsafe { storage_general_check(storage_ids.seed) } {
+        match unsafe { storage_exists(storage_ids.seed) } {
             0 => Ok(false),
             1 => Ok(true),
             result => Err(anyhow!("Failed to check seed: {result}")),
@@ -91,8 +90,7 @@ impl WalletPlatform for Platform {
     }
 
     fn read_seed(&self, data: &mut [u8]) -> Result<usize> {
-        let result =
-            unsafe { storage_general_read(data.as_mut_ptr(), data.len(), storage_ids.seed) };
+        let result = unsafe { storage_read(data.as_mut_ptr(), data.len(), storage_ids.seed) };
         if result < 0 {
             Err(anyhow!("Failed to read seed: {result}"))
         } else {
@@ -101,15 +99,16 @@ impl WalletPlatform for Platform {
     }
 
     fn write_seed(&self, data: &[u8]) -> Result<()> {
-        if unsafe { storage_general_write(data.as_ptr(), data.len(), storage_ids.seed) } {
+        let result = unsafe { storage_write(data.as_ptr(), data.len(), storage_ids.seed) };
+        if result == 0 {
             Ok(())
         } else {
-            Err(anyhow!("Failed to store seed"))
+            Err(anyhow!("Failed to store seed: {result}"))
         }
     }
 
     fn unlock_failures(&self) -> Result<u8> {
-        match unsafe { storage_general_check(storage_ids.unlock_failures) } {
+        match unsafe { storage_exists(storage_ids.unlock_failures) } {
             0 => return Ok(0),
             1 => {}
             result => return Err(anyhow!("Failed to check unlock counter: {result}")),
@@ -117,7 +116,7 @@ impl WalletPlatform for Platform {
 
         let mut failures = 0;
         let read = unsafe {
-            storage_general_read(
+            storage_read(
                 &mut failures,
                 size_of_val(&failures),
                 storage_ids.unlock_failures,
@@ -131,13 +130,14 @@ impl WalletPlatform for Platform {
     }
 
     fn write_unlock_failures(&self, failures: u8) -> bool {
-        unsafe {
-            storage_general_write(
+        let result = unsafe {
+            storage_write(
                 &failures,
                 size_of_val(&failures),
                 storage_ids.unlock_failures,
             )
-        }
+        };
+        result == 0
     }
 
     fn recover_fido_pin(&self) {

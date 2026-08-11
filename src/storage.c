@@ -40,7 +40,7 @@ static void publish_storage_state(enum app_storage_state state)
 	}
 }
 
-static int storage_result(int result)
+static int storage_init_result(int result)
 {
 	storage_initialized = result >= 0;
 	enum app_storage_state state = result < 0 ? APP_STORAGE_ERROR : APP_STORAGE_READY;
@@ -62,16 +62,16 @@ int storage_init(void)
 	void *settings_storage;
 	int res = settings_subsys_init();
 	if (res < 0) {
-		return storage_result(res);
+		return storage_init_result(res);
 	}
 
 	res = settings_storage_get(&settings_storage);
 	if (res < 0) {
-		return storage_result(res);
+		return storage_init_result(res);
 	}
 
 	if (settings_storage == NULL) {
-		return storage_result(-ENODEV);
+		return storage_init_result(-ENODEV);
 	}
 	fs = settings_storage;
 
@@ -79,7 +79,7 @@ int storage_init(void)
 		(const void *)fs->flash_device, fs->flash_device->name, (unsigned long)fs->offset,
 		fs->sector_size, fs->sector_count, fs->sector_size * fs->sector_count);
 
-	return storage_result(0);
+	return storage_init_result(0);
 }
 
 int storage_settings_load(void)
@@ -87,7 +87,7 @@ int storage_settings_load(void)
 	return storage_runtime_result(settings_load());
 }
 
-int storage_general_check(uint16_t id)
+int storage_exists(uint16_t id)
 {
 	if (!storage_initialized) {
 		return -ENODEV;
@@ -100,27 +100,49 @@ int storage_general_check(uint16_t id)
 	return res == -ENOENT ? 0 : storage_runtime_result((int)res);
 }
 
-bool storage_general_write(const uint8_t *data, size_t len, uint16_t id)
+int storage_write(const uint8_t *data, size_t len, uint16_t id)
 {
 	if (!storage_initialized) {
-		return false;
+		return -ENODEV;
+	}
+	if (data == NULL || len == 0) {
+		return -EINVAL;
 	}
 
-	int res = zms_write(fs, id, data, len);
+	ssize_t res = zms_write(fs, id, data, len);
 	if (res < 0) {
-		storage_runtime_result(res);
-		return false;
+		return storage_runtime_result((int)res);
 	}
-	return true;
+	return 0;
 }
 
-int storage_general_read(uint8_t *data, size_t len, uint16_t id)
+int storage_read(uint8_t *data, size_t len, uint16_t id)
+{
+	if (!storage_initialized) {
+		return -ENODEV;
+	}
+	if (data == NULL || len == 0) {
+		return -EINVAL;
+	}
+
+	ssize_t stored_len = zms_get_data_length(fs, id);
+	if (stored_len < 0) {
+		return storage_runtime_result((int)stored_len);
+	}
+	if ((size_t)stored_len > len) {
+		return -EMSGSIZE;
+	}
+
+	return storage_runtime_result((int)zms_read(fs, id, data, (size_t)stored_len));
+}
+
+int storage_delete(uint16_t id)
 {
 	if (!storage_initialized) {
 		return -ENODEV;
 	}
 
-	return storage_runtime_result(zms_read(fs, id, data, len));
+	return storage_runtime_result(zms_delete(fs, id));
 }
 
 int storage_erase_flash(void)
@@ -156,45 +178,70 @@ int storage_settings_load(void)
 	return 0;
 }
 
-int storage_general_check(uint16_t id)
+int storage_exists(uint16_t id)
 {
 	if (id == storage_ids.seed) {
 		return storage_seed_len > 0;
 	}
 	if (id == storage_ids.unlock_failures) {
-		return true;
+		return storage_unlock_failures > 0;
 	}
 	return false;
 }
 
-bool storage_general_write(const uint8_t *data, size_t len, uint16_t id)
+int storage_write(const uint8_t *data, size_t len, uint16_t id)
 {
+	if (data == NULL || len == 0) {
+		return -EINVAL;
+	}
 	if (id == storage_ids.seed) {
 		if (len > sizeof(storage_seed_buffer)) {
-			return false;
+			return -EMSGSIZE;
 		}
 		memset(storage_seed_buffer, 0, sizeof(storage_seed_buffer));
 		memcpy(storage_seed_buffer, data, len);
 		storage_seed_len = len;
-		return true;
+		return 0;
 	}
 	if (id == storage_ids.unlock_failures && len == sizeof(storage_unlock_failures)) {
 		storage_unlock_failures = *data;
-		return true;
+		return 0;
 	}
-	return false;
+	return -EINVAL;
 }
 
-int storage_general_read(uint8_t *data, size_t len, uint16_t id)
+int storage_read(uint8_t *data, size_t len, uint16_t id)
 {
-	if (id == storage_ids.seed) {
-		size_t read_len = MIN(len, storage_seed_len);
-		memcpy(data, storage_seed_buffer, read_len);
-		return read_len;
+	if (data == NULL || len == 0) {
+		return -EINVAL;
 	}
-	if (id == storage_ids.unlock_failures && len > 0) {
+	if (id == storage_ids.seed) {
+		if (storage_seed_len == 0) {
+			return -ENOENT;
+		}
+		if (len < storage_seed_len) {
+			return -EMSGSIZE;
+		}
+		memcpy(data, storage_seed_buffer, storage_seed_len);
+		return storage_seed_len;
+	}
+	if (id == storage_ids.unlock_failures) {
 		*data = storage_unlock_failures;
 		return sizeof(storage_unlock_failures);
+	}
+	return -ENOENT;
+}
+
+int storage_delete(uint16_t id)
+{
+	if (id == storage_ids.seed) {
+		memset(storage_seed_buffer, 0, sizeof(storage_seed_buffer));
+		storage_seed_len = 0;
+		return 0;
+	}
+	if (id == storage_ids.unlock_failures) {
+		storage_unlock_failures = 0;
+		return 0;
 	}
 	return -ENOENT;
 }

@@ -263,9 +263,9 @@ extern "C" {
     pub(crate) fn app_get_chip_model(buffer: *mut c_char, len: usize);
     pub(crate) fn app_get_eui64(buffer: *mut u8, len: usize) -> c_int;
     pub(crate) fn app_get_device_id(buffer: *mut u8, len: usize) -> c_int;
-    pub(crate) fn storage_general_check(id: u16) -> c_int;
-    pub(crate) fn storage_general_read(data: *mut u8, len: usize, id: u16) -> c_int;
-    pub(crate) fn storage_general_write(data: *const u8, len: usize, id: u16) -> bool;
+    pub(crate) fn storage_exists(id: u16) -> c_int;
+    pub(crate) fn storage_read(data: *mut u8, len: usize, id: u16) -> c_int;
+    pub(crate) fn storage_write(data: *const u8, len: usize, id: u16) -> c_int;
     pub(crate) fn app_storage_reset() -> bool;
     pub(crate) fn app_fido_pin_recover();
     pub(crate) fn app_restart();

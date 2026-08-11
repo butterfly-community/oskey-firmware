@@ -34,11 +34,10 @@ int confirm_mcuboot_img(void)
 bool app_update_mode_take(void)
 {
 	uint8_t enabled;
-	int ret = storage_general_read(&enabled, sizeof(enabled), storage_ids.firmware_update);
+	int ret = storage_read(&enabled, sizeof(enabled), storage_ids.firmware_update);
 
 	if (ret == sizeof(enabled) && enabled != 0) {
-		enabled = 0;
-		if (storage_general_write(&enabled, sizeof(enabled), storage_ids.firmware_update)) {
+		if (storage_delete(storage_ids.firmware_update) == 0) {
 			LOG_INF("Firmware update mode active on UART");
 			return true;
 		}
@@ -53,7 +52,7 @@ bool app_update_request(void)
 {
 	uint8_t enabled = 1;
 
-	if (!storage_general_write(&enabled, sizeof(enabled), storage_ids.firmware_update)) {
+	if (storage_write(&enabled, sizeof(enabled), storage_ids.firmware_update) < 0) {
 		return false;
 	}
 
