@@ -6,22 +6,25 @@
 #include <zephyr/sys/util.h>
 
 #include "assets/assets.h"
-#include "sd_card.h"
+#include "media.h"
 
 #define FILES_PER_PAGE 16
 
-static char current_path[SD_CARD_PATH_MAX] = SD_CARD_MOUNT_POINT;
-static struct sd_card_entry entries[FILES_PER_PAGE];
+static char current_path[MEDIA_PATH_MAX] = MEDIA_MOUNT_POINT;
+static struct media_entry entries[FILES_PER_PAGE];
 static size_t page_offset;
-static size_t entry_count;
-static bool has_more;
+
+static void reset_browser(void)
+{
+	snprintf(current_path, sizeof(current_path), "%s", MEDIA_MOUNT_POINT);
+	page_offset = 0;
+}
 
 static void retry(lv_event_t *event)
 {
 	ARG_UNUSED(event);
-	(void)sd_card_unmount();
-	snprintf(current_path, sizeof(current_path), "%s", SD_CARD_MOUNT_POINT);
-	page_offset = 0;
+	(void)media_unmount();
+	reset_browser();
 	ui_refresh();
 }
 
@@ -37,22 +40,14 @@ static void open_parent(lv_event_t *event)
 {
 	ARG_UNUSED(event);
 	char *separator = strrchr(current_path, '/');
-	if (separator == current_path) {
-		snprintf(current_path, sizeof(current_path), "%s", SD_CARD_MOUNT_POINT);
-	} else if (separator != NULL) {
-		*separator = '\0';
-	}
+	*separator = '\0';
 	page_offset = 0;
 	ui_refresh();
 }
 
 static void open_directory(lv_event_t *event)
 {
-	const struct sd_card_entry *entry = lv_event_get_user_data(event);
-	if (entry == NULL || !entry->directory) {
-		return;
-	}
-
+	const struct media_entry *entry = lv_event_get_user_data(event);
 	size_t length = strlen(current_path);
 	int written =
 		snprintf(current_path + length, sizeof(current_path) - length, "/%s", entry->name);
@@ -68,7 +63,7 @@ static void open_directory(lv_event_t *event)
 static void previous_page(lv_event_t *event)
 {
 	ARG_UNUSED(event);
-	page_offset = page_offset > FILES_PER_PAGE ? page_offset - FILES_PER_PAGE : 0;
+	page_offset -= FILES_PER_PAGE;
 	ui_refresh();
 }
 
@@ -102,31 +97,32 @@ static void format_size(char *buffer, size_t length, size_t bytes)
 void ui_files_render(void)
 {
 	lv_obj_t *content = ui_page_begin("Files", UI_NAVIGATION_BACK);
-	int ret = sd_card_mount();
+	int ret = media_mount();
 	if (ret < 0) {
 		show_error(content, "SD card unavailable",
 			   "Insert a FAT-formatted card, then retry");
 		return;
 	}
 
-	ret = sd_card_list(current_path, page_offset, entries, ARRAY_SIZE(entries), &entry_count,
-			   &has_more);
-	if (ret == 0 && entry_count == 0 && page_offset > 0) {
+	bool has_more;
+	ret = media_list(current_path, page_offset, entries, ARRAY_SIZE(entries), &has_more);
+	if (ret == 0 && page_offset > 0) {
 		page_offset = 0;
-		ret = sd_card_list(current_path, page_offset, entries, ARRAY_SIZE(entries),
-				   &entry_count, &has_more);
+		ret = media_list(current_path, page_offset, entries, ARRAY_SIZE(entries),
+				 &has_more);
 	}
 	if (ret < 0) {
 		show_error(content, "Directory unavailable",
 			   "The card may have been removed or its filesystem is unsupported");
 		return;
 	}
+	size_t entry_count = (size_t)ret;
 
-	const char *display_path = current_path + strlen(SD_CARD_MOUNT_POINT);
+	const char *display_path = current_path + sizeof(MEDIA_MOUNT_POINT) - 1;
 	ui_list_row(content, &oskey_document, display_path[0] == '\0' ? "/" : display_path,
 		    "Read-only FAT filesystem", NULL, UI_TONE_MUTED, NULL, NULL);
 	ui_section(content, "DIRECTORY");
-	if (strcmp(current_path, SD_CARD_MOUNT_POINT) != 0) {
+	if (strcmp(current_path, MEDIA_MOUNT_POINT) != 0) {
 		ui_list_row(content, &oskey_back, "Parent directory", NULL, NULL, UI_TONE_ACTIVE,
 			    open_parent, NULL);
 	}
@@ -163,9 +159,6 @@ void ui_files_render(void)
 
 void ui_files_leave(void)
 {
-	(void)sd_card_unmount();
-	snprintf(current_path, sizeof(current_path), "%s", SD_CARD_MOUNT_POINT);
-	page_offset = 0;
-	entry_count = 0;
-	has_more = false;
+	(void)media_unmount();
+	reset_browser();
 }

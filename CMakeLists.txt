@@ -41,8 +41,8 @@ target_sources_ifdef(CONFIG_OSKEY_TEST_FIRMWARE app PRIVATE
   src/test.c
 )
 
-target_sources_ifdef(CONFIG_OSKEY_SD_CARD app PRIVATE
-  src/sd_card.c
+target_sources_ifdef(CONFIG_OSKEY_REMOVABLE_MEDIA app PRIVATE
+  src/media.c
   src/display/ui_files.c
 )
 

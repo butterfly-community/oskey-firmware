@@ -664,7 +664,7 @@ static void show_settings(void)
 {
 	lv_obj_t *content = ui_page_begin("Device settings", UI_NAVIGATION_BACK);
 	ui_clear_sensitive();
-#if defined(CONFIG_OSKEY_SD_CARD)
+#if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 	ui_section(content, "STORAGE");
 	ui_list_row(content, &oskey_document, "Files", "Browse the SD card read-only", NULL,
 		    UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_FILES);
@@ -927,7 +927,7 @@ void ui_render(void)
 	case UI_PAGE_SETTINGS:
 		show_settings();
 		break;
-#if defined(CONFIG_OSKEY_SD_CARD)
+#if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 	case UI_PAGE_FILES:
 		ui_files_render();
 		break;

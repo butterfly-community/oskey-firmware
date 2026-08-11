@@ -1,4 +1,4 @@
-#include "sd_card.h"
+#include "media.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -7,26 +7,26 @@
 #include <zephyr/fs/fs.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(oskey_sd_card);
+LOG_MODULE_REGISTER(oskey_media);
 
 static FATFS fat_fs;
 static bool mounted;
-static struct fs_mount_t sd_mount = {
+static struct fs_mount_t mount_point = {
 	.type = FS_FATFS,
-	.mnt_point = SD_CARD_MOUNT_POINT,
+	.mnt_point = MEDIA_MOUNT_POINT,
 	.fs_data = &fat_fs,
 	.flags = FS_MOUNT_FLAG_NO_FORMAT | FS_MOUNT_FLAG_READ_ONLY | FS_MOUNT_FLAG_USE_DISK_ACCESS,
 };
 
-int sd_card_mount(void)
+int media_mount(void)
 {
 	if (mounted) {
 		return 0;
 	}
 
-	int ret = fs_mount(&sd_mount);
+	int ret = fs_mount(&mount_point);
 	if (ret < 0) {
-		LOG_WRN("SD card mount failed: %d", ret);
+		LOG_WRN("Media mount failed: %d", ret);
 		return ret;
 	}
 
@@ -34,15 +34,15 @@ int sd_card_mount(void)
 	return 0;
 }
 
-int sd_card_unmount(void)
+int media_unmount(void)
 {
 	if (!mounted) {
 		return 0;
 	}
 
-	int ret = fs_unmount(&sd_mount);
+	int ret = fs_unmount(&mount_point);
 	if (ret < 0) {
-		LOG_WRN("SD card unmount failed: %d", ret);
+		LOG_WRN("Media unmount failed: %d", ret);
 		return ret;
 	}
 
@@ -50,19 +50,18 @@ int sd_card_unmount(void)
 	return 0;
 }
 
-int sd_card_list(const char *path, size_t offset, struct sd_card_entry *entries, size_t capacity,
-		 size_t *count, bool *has_more)
+int media_list(const char *path, size_t offset, struct media_entry *entries, size_t capacity,
+	       bool *has_more)
 {
-	if (!mounted || path == NULL || entries == NULL || capacity == 0 || count == NULL ||
-	    has_more == NULL ||
-	    strncmp(path, SD_CARD_MOUNT_POINT, strlen(SD_CARD_MOUNT_POINT)) != 0) {
+	if (!mounted || path == NULL || entries == NULL || capacity == 0 || has_more == NULL ||
+	    strncmp(path, MEDIA_MOUNT_POINT, sizeof(MEDIA_MOUNT_POINT) - 1) != 0) {
 		return -EINVAL;
 	}
 
 	struct fs_dir_t directory;
 	struct fs_dirent item;
 	size_t skipped = 0;
-	*count = 0;
+	size_t count = 0;
 	*has_more = false;
 	fs_dir_t_init(&directory);
 
@@ -82,17 +81,20 @@ int sd_card_list(const char *path, size_t offset, struct sd_card_entry *entries,
 		if (skipped++ < offset) {
 			continue;
 		}
-		if (*count == capacity) {
+		if (count == capacity) {
 			*has_more = true;
 			break;
 		}
 
-		struct sd_card_entry *entry = &entries[(*count)++];
+		struct media_entry *entry = &entries[count++];
 		snprintf(entry->name, sizeof(entry->name), "%s", item.name);
 		entry->size = item.size;
 		entry->directory = item.type == FS_DIR_ENTRY_DIR;
 	}
 
 	int close_ret = fs_closedir(&directory);
-	return ret < 0 ? ret : close_ret;
+	if (ret < 0) {
+		return ret;
+	}
+	return close_ret < 0 ? close_ret : (int)count;
 }

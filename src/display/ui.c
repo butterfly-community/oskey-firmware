@@ -642,7 +642,7 @@ void ui_refresh(void)
 
 static void ui_page_leave(enum ui_page page)
 {
-#if defined(CONFIG_OSKEY_SD_CARD)
+#if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 	if (page == UI_PAGE_FILES) {
 		ui_files_leave();
 	}

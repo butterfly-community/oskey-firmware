@@ -6,18 +6,18 @@ Enable the SD card together with the display:
 
 ```conf
 CONFIG_OSKEY_DISPLAY=y
-CONFIG_OSKEY_SD_CARD=y
+CONFIG_OSKEY_REMOVABLE_MEDIA=y
 ```
 
 The standard Lichuang build profiles in `build.ts` enable both options. When
-`CONFIG_OSKEY_SD_CARD` is disabled, the SD card application module and LVGL
+`CONFIG_OSKEY_REMOVABLE_MEDIA` is disabled, the removable-media module and LVGL
 file-browser page are not compiled and the **Files** item is absent from Device
 settings.
 
-`CONFIG_OSKEY_SD_CARD` selects Zephyr's ESP32 SDHC stack, SDMMC disk layer and
-FatFs implementation. It also enables long filenames and compiles FatFs in
-read-only mode. Automatic formatting is disabled, so the firmware never
-creates, modifies or repairs a filesystem.
+`CONFIG_OSKEY_REMOVABLE_MEDIA` selects Zephyr's ESP32 SDHC stack, SDMMC disk
+layer and FatFs implementation with FAT16, FAT32, exFAT, and long-filename
+support. FatFs is compiled in read-only mode. Automatic formatting is disabled,
+so the firmware never creates, modifies or repairs a filesystem.
 
 ## Hardware
 
@@ -38,7 +38,7 @@ FatFs drivers; the project does not carry a board-specific SD driver.
 
 Open **Device settings > Files** to mount the card. The browser supports:
 
-- FAT16 and FAT32 filesystems with long filenames;
+- FAT16, FAT32, and exFAT filesystems with long filenames;
 - root and nested directory navigation;
 - file-size display;
 - 16 entries per page to bound LVGL memory use;
@@ -49,9 +49,8 @@ the page is closed. The socket has no card-detect signal available to the
 application, so insertion and removal are detected by filesystem operations.
 Use **Retry** after changing the card.
 
-The browser does not open, create, rename, copy or delete files. exFAT is not
-enabled in the initial implementation. Format cards as FAT32 on a computer
-before use.
+The browser does not open, create, rename, copy or delete files. Format cards
+on a computer before use.
 
 The SD card is independent of the internal ZMS settings storage. Removing or
 reformatting it cannot erase the wallet or application settings.

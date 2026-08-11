@@ -45,7 +45,7 @@ enum ui_page {
 	UI_PAGE_QR_SCANNER,
 #endif
 	UI_PAGE_SETTINGS,
-#if defined(CONFIG_OSKEY_SD_CARD)
+#if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 	UI_PAGE_FILES,
 #endif
 	UI_PAGE_WIFI,
@@ -183,7 +183,7 @@ void ui_wifi_password_submit(const char *password);
 void ui_bluetooth_render(void);
 void ui_usb_render(void);
 
-#if defined(CONFIG_OSKEY_SD_CARD)
+#if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 void ui_files_render(void);
 void ui_files_leave(void);
 #endif
