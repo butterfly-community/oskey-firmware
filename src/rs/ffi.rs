@@ -456,6 +456,10 @@ fn local_request<'a>(
             words: command.value,
             entropy: data,
         }),
+        LocalRequestKind::GenerateMnemonicMixed => Some(LocalRequest::GenerateMnemonicMixed {
+            words: command.value,
+            transcript: data,
+        }),
         LocalRequestKind::Restart => Some(LocalRequest::Restart),
         LocalRequestKind::ResetStorage => Some(LocalRequest::ResetStorage),
     }

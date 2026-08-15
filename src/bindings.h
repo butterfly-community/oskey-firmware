@@ -30,6 +30,7 @@ typedef enum LocalRequestKind {
   LocalRequestKind_Unlock,
   LocalRequestKind_InitCustom,
   LocalRequestKind_GenerateMnemonic,
+  LocalRequestKind_GenerateMnemonicMixed,
   LocalRequestKind_Restart,
   LocalRequestKind_ResetStorage,
 } LocalRequestKind;
