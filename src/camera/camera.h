@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-License-Identifier: MPL-2.0 */
 
 #ifndef OSKEY_CAMERA_CAMERA_H_
 #define OSKEY_CAMERA_CAMERA_H_

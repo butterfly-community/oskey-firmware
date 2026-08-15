@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 
 / {

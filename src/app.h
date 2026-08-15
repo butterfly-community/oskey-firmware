@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #ifndef APP_H
 #define APP_H
 

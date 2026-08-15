@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 description: Everest ES8311 low power mono audio codec (DAC output)
 
 compatible: "everest,es8311"

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 find_program(SVG_RENDERER gdk-pixbuf-thumbnailer)
 find_program(MAGICK_EXECUTABLE magick)
 if(NOT SVG_RENDERER OR NOT MAGICK_EXECUTABLE)

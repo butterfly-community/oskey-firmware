@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #ifndef STORAGE_H
 #define STORAGE_H
 

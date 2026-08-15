@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 // Platform calls pass live Rust buffers to C only for the duration of each call.
 #![allow(clippy::undocumented_unsafe_blocks)]
 

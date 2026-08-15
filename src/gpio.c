@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/devicetree.h>
 #include <errno.h>

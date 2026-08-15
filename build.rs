@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #[allow(clippy::field_reassign_with_default)]
 fn main() {
     println!("cargo:rerun-if-changed=src/rs/ffi.rs");
@@ -7,6 +9,7 @@ fn main() {
     println!("cargo:rerun-if-changed=lib/core/protocol/src/proto/oskey.proto");
 
     let mut config = cbindgen::Config::default();
+    config.header = Some("/* SPDX-License-Identifier: MPL-2.0 */".into());
     config.language = cbindgen::Language::C;
     config.include_guard = Some("OSKEY_BINDINGS_H".into());
     config.enumeration.prefix_with_name = true;

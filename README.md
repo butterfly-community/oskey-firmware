@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 [中文点这里](./README_zh.md)
 
 ## What is OSKey?
@@ -102,3 +104,9 @@ Each chip model has its own specific locking protocol that varies by manufacture
 
 | <a href="https://www.gccofficial.org/" target="_blank"><img src="docs/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="docs/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
+## License
+
+Original OSKey files are licensed under the Mozilla Public License 2.0. Files
+derived from Zephyr, Espressif, and other third-party projects retain their own
+license notices. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.

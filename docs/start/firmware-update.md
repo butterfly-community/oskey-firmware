@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 # Firmware Update
 
 OSKey uses MCUboot test swaps with signed P-256 images. A new image is confirmed only after the

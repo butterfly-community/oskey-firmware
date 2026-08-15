@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
 

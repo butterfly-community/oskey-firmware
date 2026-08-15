@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 # IMU orientation and display convention
 
 The Tilt page uses the QMI8658 accelerometer and gyroscope to drive an LVGL

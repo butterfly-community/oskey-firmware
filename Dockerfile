@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 FROM docker.io/zephyrprojectrtos/ci:v0.29.2
 
 WORKDIR /workdir

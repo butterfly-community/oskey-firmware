@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #ifndef OSKEY_BUS_H
 #define OSKEY_BUS_H
 

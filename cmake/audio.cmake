@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 # Audio asset generation, mirroring the display asset pipeline
 # (see cmake/display_assets.cmake). The WAV asset is converted into a C
 # byte-array include under src/audio/assets/generated/.

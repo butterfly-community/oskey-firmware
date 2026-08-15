@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 | WeChat                          | Telegram                    |
 | ------------------------------- | --------------------------- |
 | <img src="../image/start/wechat.jpg" alt="wechat" width="150" style="max-width:100%; height:auto;"> | <img src="../image/start/tg.png" alt="wechat" width="200" style="max-width:100%; height:auto;">

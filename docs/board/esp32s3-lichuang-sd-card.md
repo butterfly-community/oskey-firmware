@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 # Lichuang ESP32-S3 SD card
 
 ## Build configuration

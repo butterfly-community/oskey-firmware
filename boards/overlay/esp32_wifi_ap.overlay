@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 / {
 	wifi_ap: wifi_ap {
 		compatible = "espressif,esp32-wifi";

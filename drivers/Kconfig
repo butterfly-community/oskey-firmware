@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 # Project-local Zephyr drivers (hardware stays out of the application).
 
 rsource "audio/Kconfig"

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #ifndef OSKEY_BLUETOOTH_H
 #define OSKEY_BLUETOOTH_H
 

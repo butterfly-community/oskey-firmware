@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #ifndef OSKEY_DISPLAY_ASSETS_H
 #define OSKEY_DISPLAY_ASSETS_H
 

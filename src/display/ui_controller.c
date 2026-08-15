@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #include "ui.h"
 
 #ifndef CONFIG_OSKEY_LVGL_BENCHMARK

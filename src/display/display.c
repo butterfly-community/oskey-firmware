@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #include "display.h"
 
 #ifdef CONFIG_OSKEY_DISPLAY

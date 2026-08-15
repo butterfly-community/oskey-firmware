@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 您可以直接使用 Dockerfile，这是经过测试的编译和调试环境。本项目不建议使用 Windows 原生编译，Windows 用户请使用 WSL。
 
 ## 环境配置

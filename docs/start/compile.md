@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 You can directly use the Dockerfile, which provides a tested compilation and debugging environment. This project does not recommend native compilation on Windows. Windows users are advised to use WSL.
 
 ## Getting Started

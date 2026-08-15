@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 [submodule "lib/core"]
 	path = lib/core
 	url = https://github.com/butterfly-community/oskey-lib-core.git

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 # Internal storage
 
 OSKey uses Zephyr Memory Storage (ZMS) for persistent internal state. The same

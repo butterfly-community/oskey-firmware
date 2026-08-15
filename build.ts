@@ -1,4 +1,5 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write --allow-run=west
+// SPDX-License-Identifier: MPL-2.0
 
 interface Board {
   name: string;

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #include "bluetooth/bluetooth.h"
 
 #include <zephyr/logging/log.h>

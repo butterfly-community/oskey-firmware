@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 #ifndef OSKEY_USB_INIT_H
 #define OSKEY_USB_INIT_H
 

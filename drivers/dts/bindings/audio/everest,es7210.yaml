@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 description: Everest ES7210 audio ADC in standard stereo I2S mode
 
 compatible: "everest,es7210"

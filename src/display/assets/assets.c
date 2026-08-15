@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #include "assets.h"
 
 #define A8_DATA(name)                                                                              \

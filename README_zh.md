@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 ## OSKey 是什么？
 
 OSkey (Open Source Key) 是一个完全开源的非商业产品的硬件钱包项目。我们的首要使命是帮助您创建并使用自己的无需信任的硬件钱包，并最终成为您在数字世界管理身份的关键设施。
@@ -92,3 +94,9 @@ OSKey 支持多种硬件架构，针对资源受限设备进行了优化，并�
 
 | <a href="https://www.gccofficial.org/" target="_blank"><img src="docs/image/GCC_logo.png" alt="gcc" width="200" style="max-width:100%; height:auto;"></a> | <a href="https://openbuild.xyz/" target="_blank"><img src="docs/image/OpenBuild_logo.png" alt="OpenBuild" width="200" style="max-width:100%; height:auto;"></a> |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
+## 许可证
+
+OSKey 原创文件使用 Mozilla Public License 2.0。来自 Zephyr、Espressif
+及其他第三方项目的文件继续保留各自的许可证声明。详情请参阅
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

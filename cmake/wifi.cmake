@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 if(CONFIG_OSKEY_WIFI)
   set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated)
   configure_file(

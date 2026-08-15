@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 # Generates a C byte-array include from the raw WAV asset, mirroring the
 # display asset pipeline (see cmake/display_assets.cmake).
 

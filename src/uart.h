@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #ifndef UART_CONSOLE_H
 #define UART_CONSOLE_H
 

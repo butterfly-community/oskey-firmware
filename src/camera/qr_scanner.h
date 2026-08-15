@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-License-Identifier: MPL-2.0 */
 
 #ifndef OSKEY_QR_SCANNER_H_
 #define OSKEY_QR_SCANNER_H_

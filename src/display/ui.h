@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #ifndef OSKEY_UI_H
 #define OSKEY_UI_H
 

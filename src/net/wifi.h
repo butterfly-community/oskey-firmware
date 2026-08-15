@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 #ifndef WIFI_H
 #define WIFI_H
 

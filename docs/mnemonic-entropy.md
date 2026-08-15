@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 # Multi-Source Entropy for Mnemonic Generation
 
 ## Goals and Security Boundary

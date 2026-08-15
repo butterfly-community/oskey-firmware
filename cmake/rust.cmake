@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 if(CONFIG_OSKEY_RUST)
   add_subdirectory(lib/core/wallet/psa)
 

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #define _DEFAULT_SOURCE
 
 #include "bus.h"

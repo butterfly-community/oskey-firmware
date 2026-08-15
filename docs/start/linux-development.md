@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+
 # Linux Native Development
 
 Use Zephyr's `native_sim` target to develop OSKey on a Linux host. SDL2, `socat`, and `usbip`

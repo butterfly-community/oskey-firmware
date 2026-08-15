@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+
 set(LVGL_DIR ${ZEPHYR_LVGL_MODULE_DIR})
 
 if(CONFIG_LV_USE_DEMO_BENCHMARK)

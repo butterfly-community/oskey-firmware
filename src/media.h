@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+
 #ifndef OSKEY_MEDIA_H
 #define OSKEY_MEDIA_H
 
