@@ -7,11 +7,14 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/util.h>
+#if defined(CONFIG_OSKEY_RUST)
 #include "bus.h"
+#endif
 
 #define SW0_NODE DT_ALIAS(sw0)
 
-#if defined(CONFIG_GPIO) && DT_HAS_ALIAS(sw0) && DT_NODE_HAS_STATUS(SW0_NODE, okay)
+#if defined(CONFIG_OSKEY_RUST) && defined(CONFIG_GPIO) && DT_HAS_ALIAS(sw0) &&                     \
+	DT_NODE_HAS_STATUS(SW0_NODE, okay)
 
 LOG_MODULE_REGISTER(app_gpio);
 

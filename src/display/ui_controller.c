@@ -23,6 +23,7 @@ enum ui_pending_event {
 #endif
 };
 
+#if defined(CONFIG_OSKEY_WIFI)
 struct ui_pending_network {
 	uint32_t kinds;
 	struct app_wifi_state wifi;
@@ -30,29 +31,51 @@ struct ui_pending_network {
 	struct app_wifi_scan scan;
 	struct app_public_ip public_ip;
 };
+#endif
 
 static lv_timer_t *startup_timer;
+#if defined(CONFIG_OSKEY_MESSAGE_BUS)
 static atomic_t ui_initialized;
 static atomic_t pending_events;
-static struct ui_pending_network pending_network;
 K_SEM_DEFINE(event_sem, 0, 1);
+#endif
+#if defined(CONFIG_OSKEY_WIFI)
+static struct ui_pending_network pending_network;
 K_MUTEX_DEFINE(network_pending_lock);
+#endif
 #if defined(CONFIG_OSKEY_QR_SCANNER)
 static struct app_qr_scanner_event pending_qr_event;
 K_MUTEX_DEFINE(qr_pending_lock);
 #endif
 
+#if defined(CONFIG_OSKEY_MESSAGE_BUS)
 static void read_device_status(struct ui_status *status)
 {
+#if defined(CONFIG_OSKEY_BLUETOOTH)
 	(void)zbus_chan_read(&app_bluetooth_state_chan, &status->bluetooth, K_FOREVER);
+#endif
+#if defined(CONFIG_OSKEY_USB)
 	(void)zbus_chan_read(&app_usb_state_chan, &status->usb, K_FOREVER);
+#endif
+#if defined(CONFIG_OSKEY_STORAGE)
 	(void)zbus_chan_read(&app_storage_state_chan, &status->storage, K_FOREVER);
+#endif
+#if defined(CONFIG_OSKEY_CAMERA)
 	(void)zbus_chan_read(&app_camera_state_chan, &status->camera, K_FOREVER);
+#endif
+#if defined(CONFIG_OSKEY_AUDIO)
 	(void)zbus_chan_read(&app_audio_state_chan, &status->audio, K_FOREVER);
+#endif
+#if defined(CONFIG_OSKEY_IMU)
 	(void)zbus_chan_read(&app_imu_state_chan, &status->imu, K_FOREVER);
+#endif
+#if defined(CONFIG_OSKEY_RUST)
 	(void)zbus_chan_read(&app_wallet_state_chan, &status->wallet, K_FOREVER);
+#endif
 }
+#endif
 
+#if defined(CONFIG_OSKEY_RUST)
 static void cancel_startup(void)
 {
 	if (startup_timer != NULL) {
@@ -89,7 +112,9 @@ static const char *error_text(AppError error, uint32_t value, char *buffer, size
 		return "Operation failed";
 	}
 }
+#endif
 
+#if defined(CONFIG_OSKEY_MESSAGE_BUS)
 static bool active_status_page(void)
 {
 	switch (ui.page) {
@@ -128,7 +153,9 @@ static void apply_status(const struct ui_status *next)
 		ui_open(UI_PAGE_LOCKED);
 	}
 }
+#endif
 
+#if defined(CONFIG_OSKEY_WIFI)
 static void apply_wifi_scan(const struct app_wifi_scan *scan)
 {
 	ui.wifi_scan = *scan;
@@ -174,7 +201,9 @@ static void process_network_events(void)
 		apply_wifi_scan(&events.scan);
 	}
 }
+#endif
 
+#if defined(CONFIG_OSKEY_RUST)
 static void apply_confirmation(const struct app_confirmation_state *state)
 {
 	if (state->phase == APP_CONFIRMATION_REQUIRED) {
@@ -253,7 +282,9 @@ static void process_local_results(void)
 		app_payload_release(result.payload);
 	}
 }
+#endif
 
+#if defined(CONFIG_OSKEY_WIFI)
 static bool network_event_store(const struct app_network_event *event)
 {
 	if (event->kind <= APP_NETWORK_EVENT_NONE || event->kind > APP_NETWORK_EVENT_PUBLIC_IP) {
@@ -282,35 +313,72 @@ static bool network_event_store(const struct app_network_event *event)
 	k_mutex_unlock(&network_pending_lock);
 	return true;
 }
+#endif
 
+#if defined(CONFIG_OSKEY_MESSAGE_BUS)
 static void ui_bus_changed(const struct zbus_channel *channel)
 {
 	atomic_val_t events = 0;
 
+#if defined(CONFIG_OSKEY_WIFI)
 	if (channel == &app_network_event_chan) {
 		const struct app_network_event *network = zbus_chan_const_msg(channel);
 
 		if (network_event_store(network)) {
-			events = UI_EVENT_NETWORK;
+			events |= UI_EVENT_NETWORK;
 		}
-	} else if (channel == &app_bluetooth_state_chan || channel == &app_usb_state_chan ||
-		   channel == &app_storage_state_chan || channel == &app_camera_state_chan ||
-		   channel == &app_audio_state_chan || channel == &app_imu_state_chan ||
-		   channel == &app_wallet_state_chan) {
-		events = UI_EVENT_STATUS;
-	} else if (channel == &app_local_result_event_chan) {
-		events = UI_EVENT_LOCAL_RESULT;
-	} else if (channel == &app_confirmation_state_chan) {
-		events = UI_EVENT_CONFIRMATION;
+	}
+#endif
+#if defined(CONFIG_OSKEY_BLUETOOTH)
+	if (channel == &app_bluetooth_state_chan) {
+		events |= UI_EVENT_STATUS;
+	}
+#endif
+#if defined(CONFIG_OSKEY_USB)
+	if (channel == &app_usb_state_chan) {
+		events |= UI_EVENT_STATUS;
+	}
+#endif
+#if defined(CONFIG_OSKEY_STORAGE)
+	if (channel == &app_storage_state_chan) {
+		events |= UI_EVENT_STATUS;
+	}
+#endif
+#if defined(CONFIG_OSKEY_CAMERA)
+	if (channel == &app_camera_state_chan) {
+		events |= UI_EVENT_STATUS;
+	}
+#endif
+#if defined(CONFIG_OSKEY_AUDIO)
+	if (channel == &app_audio_state_chan) {
+		events |= UI_EVENT_STATUS;
+	}
+#endif
+#if defined(CONFIG_OSKEY_IMU)
+	if (channel == &app_imu_state_chan) {
+		events |= UI_EVENT_STATUS;
+	}
+#endif
+#if defined(CONFIG_OSKEY_RUST)
+	if (channel == &app_wallet_state_chan) {
+		events |= UI_EVENT_STATUS;
+	}
+	if (channel == &app_local_result_event_chan) {
+		events |= UI_EVENT_LOCAL_RESULT;
+	}
+	if (channel == &app_confirmation_state_chan) {
+		events |= UI_EVENT_CONFIRMATION;
+	}
+#endif
 #if defined(CONFIG_OSKEY_QR_SCANNER)
-	} else if (channel == &app_qr_scanner_event_chan) {
+	if (channel == &app_qr_scanner_event_chan) {
 		k_mutex_lock(&qr_pending_lock, K_FOREVER);
 		pending_qr_event =
 			*(const struct app_qr_scanner_event *)zbus_chan_const_msg(channel);
 		k_mutex_unlock(&qr_pending_lock);
-		events = UI_EVENT_QR_SCANNER;
-#endif
+		events |= UI_EVENT_QR_SCANNER;
 	}
+#endif
 
 	if (events != 0) {
 		atomic_or(&pending_events, events);
@@ -319,16 +387,32 @@ static void ui_bus_changed(const struct zbus_channel *channel)
 }
 
 ZBUS_LISTENER_DEFINE(ui_bus_listener, ui_bus_changed);
+#if defined(CONFIG_OSKEY_WIFI)
 ZBUS_CHAN_ADD_OBS(app_network_event_chan, ui_bus_listener, 0);
+#endif
+#if defined(CONFIG_OSKEY_BLUETOOTH)
 ZBUS_CHAN_ADD_OBS(app_bluetooth_state_chan, ui_bus_listener, 0);
+#endif
+#if defined(CONFIG_OSKEY_USB)
 ZBUS_CHAN_ADD_OBS(app_usb_state_chan, ui_bus_listener, 0);
+#endif
+#if defined(CONFIG_OSKEY_STORAGE)
 ZBUS_CHAN_ADD_OBS(app_storage_state_chan, ui_bus_listener, 0);
+#endif
+#if defined(CONFIG_OSKEY_CAMERA)
 ZBUS_CHAN_ADD_OBS(app_camera_state_chan, ui_bus_listener, 0);
+#endif
+#if defined(CONFIG_OSKEY_AUDIO)
 ZBUS_CHAN_ADD_OBS(app_audio_state_chan, ui_bus_listener, 0);
+#endif
+#if defined(CONFIG_OSKEY_IMU)
 ZBUS_CHAN_ADD_OBS(app_imu_state_chan, ui_bus_listener, 0);
+#endif
+#if defined(CONFIG_OSKEY_RUST)
 ZBUS_CHAN_ADD_OBS(app_wallet_state_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_local_result_event_chan, ui_bus_listener, 0);
 ZBUS_CHAN_ADD_OBS(app_confirmation_state_chan, ui_bus_listener, 0);
+#endif
 #if defined(CONFIG_OSKEY_QR_SCANNER)
 ZBUS_CHAN_ADD_OBS(app_qr_scanner_event_chan, ui_bus_listener, 0);
 #endif
@@ -354,9 +438,12 @@ static void ui_event_thread(void *first, void *second, void *third)
 				read_device_status(&next_status);
 				apply_status(&next_status);
 			}
+#if defined(CONFIG_OSKEY_WIFI)
 			if ((events & UI_EVENT_NETWORK) != 0) {
 				process_network_events();
 			}
+#endif
+#if defined(CONFIG_OSKEY_RUST)
 			if ((events & UI_EVENT_LOCAL_RESULT) != 0) {
 				process_local_results();
 			}
@@ -367,6 +454,7 @@ static void ui_event_thread(void *first, void *second, void *third)
 						     &next_confirmation, K_FOREVER);
 				apply_confirmation(&next_confirmation);
 			}
+#endif
 #if defined(CONFIG_OSKEY_QR_SCANNER)
 			if ((events & UI_EVENT_QR_SCANNER) != 0) {
 				struct app_qr_scanner_event event;
@@ -384,6 +472,7 @@ static void ui_event_thread(void *first, void *second, void *third)
 
 K_THREAD_DEFINE(ui_event_thread_id, CONFIG_OSKEY_DISPLAY_EVENT_STACK_SIZE, ui_event_thread, NULL,
 		NULL, NULL, K_PRIO_PREEMPT(5), 0, 0);
+#endif /* CONFIG_OSKEY_MESSAGE_BUS */
 
 static void startup_expired(lv_timer_t *timer)
 {
@@ -408,10 +497,16 @@ void ui_controller_init(const uint8_t features[APP_FEATURE_COUNT])
 		.state =
 			IS_ENABLED(CONFIG_OSKEY_WIFI) ? APP_WIFI_SCAN_IDLE : APP_WIFI_SCAN_DISABLED,
 	};
+#if defined(CONFIG_OSKEY_RUST)
 	struct app_confirmation_state initial_confirmation;
+#endif
 
+#if defined(CONFIG_OSKEY_MESSAGE_BUS)
 	read_device_status(&initial_status);
+#endif
+#if defined(CONFIG_OSKEY_RUST)
 	(void)zbus_chan_read(&app_confirmation_state_chan, &initial_confirmation, K_FOREVER);
+#endif
 
 	ui_init(features, &initial_status, &initial_config, &initial_scan);
 	ui_status_init(&initial_status);
@@ -422,9 +517,13 @@ void ui_controller_init(const uint8_t features[APP_FEATURE_COUNT])
 	} else {
 		lv_timer_set_repeat_count(startup_timer, 1);
 	}
+#if defined(CONFIG_OSKEY_RUST)
 	apply_confirmation(&initial_confirmation);
+#endif
+#if defined(CONFIG_OSKEY_MESSAGE_BUS)
 	atomic_set(&ui_initialized, 1);
 	k_sem_give(&event_sem);
+#endif
 }
 
 #endif

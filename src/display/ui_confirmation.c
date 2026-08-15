@@ -23,11 +23,15 @@ static void wipe_value(lv_event_t *event)
 
 static void submit_choice(enum ConfirmationChoice choice)
 {
+#if defined(CONFIG_OSKEY_RUST)
 	if (app_core_submit_confirmation(ui.confirmation_id, choice, K_NO_WAIT) == 0) {
 		ui_set_busy(true);
 	} else {
 		ui_error("Unable to submit decision");
 	}
+#else
+	ARG_UNUSED(choice);
+#endif
 }
 
 static void allow_private_key(void)
@@ -172,8 +176,10 @@ static bool render_confirmation(const struct AppConfirmation *confirmation)
 	if (confirmation->kind != AppConfirmationKind_EthMessage &&
 	    confirmation->kind != AppConfirmationKind_EthTransaction &&
 	    confirmation->kind != AppConfirmationKind_Fido) {
+#if defined(CONFIG_OSKEY_RUST)
 		app_core_submit_confirmation(confirmation->id, ConfirmationChoice_Reject,
 					     K_NO_WAIT);
+#endif
 		return false;
 	}
 

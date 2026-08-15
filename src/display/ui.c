@@ -624,6 +624,7 @@ void ui_input_page(const struct ui_input_config *config, ui_input_submit_t submi
 int ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
 	      const void *auxiliary, size_t auxiliary_len)
 {
+#if defined(CONFIG_OSKEY_RUST)
 	int ret =
 		app_core_submit_local(kind, value, data, len, auxiliary, auxiliary_len, K_NO_WAIT);
 
@@ -633,6 +634,15 @@ int ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size
 	}
 	ui_set_busy(true);
 	return 0;
+#else
+	ARG_UNUSED(kind);
+	ARG_UNUSED(value);
+	ARG_UNUSED(data);
+	ARG_UNUSED(len);
+	ARG_UNUSED(auxiliary);
+	ARG_UNUSED(auxiliary_len);
+	return -ENOTSUP;
+#endif
 }
 
 void ui_refresh(void)
