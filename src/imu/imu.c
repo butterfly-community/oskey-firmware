@@ -77,6 +77,12 @@ static void imu_fusion_initialize(struct imu_runtime *runtime)
 	FusionBiasSetSettings(&runtime->bias, &bias_settings);
 }
 
+static void imu_fusion_reset_sample_timing(struct imu_runtime *runtime)
+{
+	runtime->last_sample_ticks = 0;
+	FusionAhrsSetSamplePeriod(&runtime->ahrs, 1.0f / (float)IMU_SAMPLE_FREQUENCY_HZ);
+}
+
 static FusionVector imu_accel_to_fusion(const struct sensor_value sensor[3])
 {
 	return (FusionVector){.axis = {
@@ -113,12 +119,14 @@ static int imu_process_sample(struct imu_runtime *runtime)
 
 	if (ret < 0) {
 		LOG_ERR("IMU sample fetch failed: %d", ret);
+		imu_fusion_reset_sample_timing(runtime);
 		return ret;
 	}
 
 	if (sensor_channel_get(imu_dev, SENSOR_CHAN_ACCEL_XYZ, accel_sensor) < 0 ||
 	    sensor_channel_get(imu_dev, SENSOR_CHAN_GYRO_XYZ, gyro_sensor) < 0) {
 		LOG_ERR("IMU channel read failed");
+		imu_fusion_reset_sample_timing(runtime);
 		return -EIO;
 	}
 
@@ -174,7 +182,7 @@ static void imu_handle_command(const struct app_imu_command *command, struct imu
 	case APP_IMU_COMMAND_START:
 		if (!runtime->streaming) {
 			FusionAhrsRestart(&runtime->ahrs);
-			runtime->last_sample_ticks = 0;
+			imu_fusion_reset_sample_timing(runtime);
 			runtime->errors = 0;
 			runtime->streaming = true;
 			imu_publish_state(APP_IMU_INITIALIZING);
