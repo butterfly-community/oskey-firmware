@@ -59,6 +59,9 @@ enum ui_page {
 	UI_PAGE_FIDO_PIN_RECOVER,
 	UI_PAGE_SOURCE,
 	UI_PAGE_LENGTH,
+	UI_PAGE_ENTROPY_METHOD,
+	UI_PAGE_ENTROPY_SOURCES,
+	UI_PAGE_ENTROPY_COLLECT,
 	UI_PAGE_IMPORT,
 	UI_PAGE_MNEMONIC,
 	UI_PAGE_VERIFY,
@@ -103,8 +106,10 @@ struct ui_context {
 	enum ui_page page;
 	enum ui_page history[UI_NAVIGATION_DEPTH];
 	uint32_t confirmation_id;
+	uint32_t entropy_session;
 	uint8_t history_len;
-	bool custom_entropy;
+	uint8_t mnemonic_words;
+	uint8_t entropy_sources;
 	char pin[UI_PIN_SIZE];
 	char mnemonic[UI_MNEMONIC_SIZE];
 	char passphrase[UI_PASSPHRASE_SIZE];
@@ -167,8 +172,8 @@ void ui_input_page(const struct ui_input_config *config, ui_input_submit_t submi
 void ui_dialog_show(const void *icon, const char *title, const char *message, const char *confirm,
 		    enum ui_tone tone, ui_dialog_action_t action);
 void ui_dialog_close(void);
-void ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
-	       const void *auxiliary, size_t auxiliary_len);
+int ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
+	      const void *auxiliary, size_t auxiliary_len);
 
 void ui_show_confirmation(uint32_t id);
 bool ui_render_confirmation(void);
@@ -182,6 +187,10 @@ void ui_wifi_password_render(void);
 void ui_wifi_password_submit(const char *password);
 void ui_bluetooth_render(void);
 void ui_usb_render(void);
+void ui_entropy_method_render(void);
+void ui_entropy_sources_render(void);
+void ui_entropy_collect_render(void);
+void ui_entropy_collect_leave(void);
 
 #if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 void ui_files_render(void);

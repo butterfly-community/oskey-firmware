@@ -190,7 +190,6 @@ static void navigate(lv_event_t *event)
 
 static void open_mnemonic_length(void)
 {
-	ui.custom_entropy = false;
 	ui_push(UI_PAGE_LENGTH);
 }
 
@@ -207,25 +206,14 @@ static void generate_mnemonic(lv_event_t *event)
 	open_mnemonic_length();
 }
 
-static void enable_custom_entropy(lv_event_t *event)
-{
-	ARG_UNUSED(event);
-	ui.custom_entropy = true;
-	ui_render();
-}
-
 static void select_mnemonic_length(lv_event_t *event)
 {
 	uint32_t words = (uint32_t)(uintptr_t)lv_event_get_user_data(event);
 
-	ui_submit(LocalRequestKind_GenerateMnemonic, words, NULL, 0, NULL, 0);
-}
-
-static void select_entropy_size(lv_event_t *event)
-{
-	ui.entropy_bits = (uint16_t)(uintptr_t)lv_event_get_user_data(event);
+	ui.mnemonic_words = (uint8_t)words;
+	ui.entropy_bits = (uint16_t)(words / 3U * 32U);
 	ui_wipe(ui.entropy, sizeof(ui.entropy));
-	ui_push(UI_PAGE_ENTROPY);
+	ui_push(UI_PAGE_ENTROPY_METHOD);
 }
 
 static void restart_device(void)
@@ -708,21 +696,9 @@ static void show_source(void)
 
 static void show_length(void)
 {
-	lv_obj_t *content = ui_page_begin(ui.custom_entropy ? "Custom entropy" : "Recovery phrase",
-					  UI_NAVIGATION_BACK);
-	ui_list_row(content, ui.custom_entropy ? &oskey_shuffle : &oskey_document,
-		    ui.custom_entropy ? "Choose entropy size" : "Choose recovery length",
-		    ui.custom_entropy ? "Every bit can be entered on screen"
-				      : "Longer phrases provide more entropy",
-		    NULL, UI_TONE_ACTIVE, NULL, NULL);
-	if (ui.custom_entropy) {
-		ui_section(content, "ENTROPY SIZE");
-		ui_list_row(content, NULL, "12 words", "128-bit entropy", NULL, UI_TONE_DEFAULT,
-			    select_entropy_size, (void *)(uintptr_t)128);
-		ui_list_row(content, NULL, "24 words", "256-bit entropy", NULL, UI_TONE_DEFAULT,
-			    select_entropy_size, (void *)(uintptr_t)256);
-		return;
-	}
+	lv_obj_t *content = ui_page_begin("Recovery phrase", UI_NAVIGATION_BACK);
+	ui_list_row(content, &oskey_document, "Choose recovery length",
+		    "Longer phrases provide more entropy", NULL, UI_TONE_ACTIVE, NULL, NULL);
 
 	ui_section(content, "WORD COUNT");
 	ui_list_row(content, NULL, "12 words", "128-bit entropy", NULL, UI_TONE_DEFAULT,
@@ -731,9 +707,6 @@ static void show_length(void)
 		    select_mnemonic_length, (void *)(uintptr_t)18);
 	ui_list_row(content, NULL, "24 words", "256-bit entropy", NULL, UI_TONE_DEFAULT,
 		    select_mnemonic_length, (void *)(uintptr_t)24);
-	ui_section(content, "ADVANCED");
-	ui_list_row(content, &oskey_shuffle, "Enter custom entropy", NULL, NULL, UI_TONE_ACTIVE,
-		    enable_custom_entropy, NULL);
 }
 
 static void mnemonic_saved(lv_event_t *event)
@@ -964,6 +937,15 @@ void ui_render(void)
 		break;
 	case UI_PAGE_LENGTH:
 		show_length();
+		break;
+	case UI_PAGE_ENTROPY_METHOD:
+		ui_entropy_method_render();
+		break;
+	case UI_PAGE_ENTROPY_SOURCES:
+		ui_entropy_sources_render();
+		break;
+	case UI_PAGE_ENTROPY_COLLECT:
+		ui_entropy_collect_render();
 		break;
 	case UI_PAGE_MNEMONIC:
 		show_mnemonic();

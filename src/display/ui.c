@@ -619,17 +619,18 @@ void ui_input_page(const struct ui_input_config *config, ui_input_submit_t submi
 	ui.input_handler = submit;
 }
 
-void ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
-	       const void *auxiliary, size_t auxiliary_len)
+int ui_submit(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
+	      const void *auxiliary, size_t auxiliary_len)
 {
 	int ret =
 		app_core_submit_local(kind, value, data, len, auxiliary, auxiliary_len, K_NO_WAIT);
 
 	if (ret < 0) {
 		ui_error(ret == -ENOTSUP ? "Wallet unavailable" : "Device busy");
-		return;
+		return ret;
 	}
 	ui_set_busy(true);
+	return 0;
 }
 
 void ui_refresh(void)
@@ -652,6 +653,9 @@ static void ui_page_leave(enum ui_page page)
 		ui_imu_leave();
 	}
 #endif
+	if (page == UI_PAGE_ENTROPY_COLLECT) {
+		ui_entropy_collect_leave();
+	}
 #if defined(CONFIG_OSKEY_QR_SCANNER)
 	if (page == UI_PAGE_QR_SCANNER) {
 		ui_qr_leave();
@@ -673,11 +677,11 @@ void ui_replace(enum ui_page page)
 
 void ui_open(enum ui_page page)
 {
-	if (page == UI_PAGE_LOCKED || page == UI_PAGE_STORAGE_ERROR) {
-		ui_clear_sensitive();
-	}
 	if (ui.page != page) {
 		ui_page_leave(ui.page);
+	}
+	if (page == UI_PAGE_LOCKED || page == UI_PAGE_STORAGE_ERROR) {
+		ui_clear_sensitive();
 	}
 	ui.history_len = 0;
 	ui.page = page;
@@ -722,7 +726,9 @@ void ui_clear_sensitive(void)
 	ui_wipe(ui.passphrase, sizeof(ui.passphrase));
 	ui_wipe(ui.entropy, sizeof(ui.entropy));
 	ui.entropy_bits = 0;
-	ui.custom_entropy = false;
+	ui.entropy_session = 0;
+	ui.entropy_sources = 0;
+	ui.mnemonic_words = 0;
 }
 
 void ui_wipe(void *buffer, size_t len)

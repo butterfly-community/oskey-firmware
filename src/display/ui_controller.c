@@ -210,6 +210,7 @@ static void handle_local_result(struct app_local_result *result)
 		ui_open(UI_PAGE_HOME);
 		break;
 	case LocalAction_Mnemonic: {
+		bool mixed_entropy = ui.page == UI_PAGE_ENTROPY_COLLECT;
 		ui_wipe(ui.mnemonic, sizeof(ui.mnemonic));
 		size_t len = MIN(app_payload_length(result->payload), sizeof(ui.mnemonic) - 1);
 		if (app_payload_read(result->payload, 0, ui.mnemonic, len) != len) {
@@ -218,13 +219,19 @@ static void handle_local_result(struct app_local_result *result)
 		ui.mnemonic[len] = '\0';
 		ui_wipe(ui.entropy, sizeof(ui.entropy));
 		ui.entropy_bits = 0;
-		ui.custom_entropy = false;
-		ui_push(UI_PAGE_MNEMONIC);
+		if (mixed_entropy) {
+			ui_replace(UI_PAGE_MNEMONIC);
+		} else {
+			ui_push(UI_PAGE_MNEMONIC);
+		}
 		break;
 	}
 	case LocalAction_Error: {
 		char buffer[32];
 		const char *text = error_text(result->error, result->value, buffer, sizeof(buffer));
+		if (ui.page == UI_PAGE_ENTROPY_COLLECT) {
+			ui_back();
+		}
 		if (result->error == AppError_UnlockFailed &&
 		    (ui.page == UI_PAGE_LOCKED || ui.page == UI_PAGE_FIDO_PIN_RECOVER)) {
 			ui_input_error(text);

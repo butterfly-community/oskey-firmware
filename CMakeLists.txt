@@ -100,6 +100,7 @@ target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
   src/display/ui_dialog.c
   src/display/ui_pages.c
   src/display/ui_hw.c
+  src/display/ui_entropy.c
   src/display/ui_confirmation.c
   src/display/assets/assets.c
 )
