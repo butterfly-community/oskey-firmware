@@ -10,4 +10,4 @@ target
 kconfig.json
 *.log
 AGENTS.md
-/tests*/
+/test*/
