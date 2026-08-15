@@ -34,5 +34,8 @@ included only for identification:
 
 They are not covered by the repository's MPL-2.0 license. Product, project,
 board manufacturer, Telegram, and WeChat marks remain the property of their
-respective owners. No additional right to reuse those photographs, renderings,
-or marks is granted by this repository.
+respective owners. Some of these historical files predate the project's current
+source tracking, so OSKey may not know their original source or licensing
+details. This classification records that limitation without claiming ownership
+of the third-party material. No additional right to reuse those photographs,
+renderings, or marks is granted by this repository.

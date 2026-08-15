@@ -57,7 +57,8 @@ included for identification and documentation. In particular, GCC, OpenBuild,
 board manufacturer, Telegram, and WeChat names and marks remain the property of
 their respective owners. The repository's MPL-2.0 license does not grant rights
 to those third-party marks. See `docs/image/README.md` for the file-level media
-classification.
+classification, including historical files whose original source or licensing
+details may no longer be known to OSKey.
 
 Demo captures, setup screenshots, OSKey community QR codes, and other original
 OSKey documentation media remain covered by the repository license.
