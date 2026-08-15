@@ -324,6 +324,7 @@ static void audio_command_listener(const struct zbus_channel *chan)
 	}
 }
 
+#if defined(CONFIG_OSKEY_QR_SCANNER)
 static void audio_notification_listener(const struct zbus_channel *chan)
 {
 	const struct app_notification *notification = zbus_chan_const_msg(chan);
@@ -338,6 +339,7 @@ ZBUS_CHAN_ADD_OBS(app_audio_command_chan, audio_command_listener_ob, 0);
 
 ZBUS_LISTENER_DEFINE(audio_notification_listener_ob, audio_notification_listener);
 ZBUS_CHAN_ADD_OBS(app_notification_event_chan, audio_notification_listener_ob, 0);
+#endif
 
 int app_audio_init(void)
 {

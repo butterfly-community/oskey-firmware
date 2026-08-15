@@ -74,8 +74,10 @@ static void scanner_qr_found(const struct app_qr_code *code, uint32_t session, v
 	atomic_set(&scanner_requested, 0);
 	k_mutex_unlock(&result_lock);
 
-	struct app_notification notification = { .kind = APP_NOTIFICATION_SUCCESS };
+#if defined(CONFIG_OSKEY_AUDIO)
+	struct app_notification notification = {.kind = APP_NOTIFICATION_SUCCESS};
 	(void)zbus_chan_pub(&app_notification_event_chan, &notification, K_MSEC(100));
+#endif
 }
 
 static int scanner_prepare(const struct video_format *format)
