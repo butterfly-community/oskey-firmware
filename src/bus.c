@@ -5,12 +5,79 @@
 #include "bus.h"
 
 #include <errno.h>
+#if defined(CONFIG_OSKEY_RUST)
 #include <string.h>
 #include <strings.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
-#include <zephyr/sys/util.h>
+#endif
 
+#if defined(CONFIG_OSKEY_RUST) && defined(CONFIG_OSKEY_DISPLAY)
+ZBUS_CHAN_DEFINE(app_local_result_event_chan, bool, NULL, NULL, ZBUS_OBSERVERS_EMPTY, false);
+#endif
+
+#if defined(CONFIG_OSKEY_WIFI)
+ZBUS_CHAN_DEFINE(app_wifi_command_chan, struct app_wifi_command, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.kind = APP_WIFI_COMMAND_NONE));
+ZBUS_CHAN_DEFINE(app_network_event_chan, struct app_network_event, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.kind = APP_NETWORK_EVENT_NONE));
+#endif
+
+#if defined(CONFIG_OSKEY_BLUETOOTH)
+ZBUS_CHAN_DEFINE(app_bluetooth_state_chan, enum app_bluetooth_state, NULL, NULL,
+		 ZBUS_OBSERVERS_EMPTY, APP_BLUETOOTH_IDLE);
+#endif
+
+#if defined(CONFIG_OSKEY_USB)
+ZBUS_CHAN_DEFINE(app_usb_state_chan, enum app_usb_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 APP_USB_DISCONNECTED);
+#endif
+
+#if defined(CONFIG_OSKEY_STORAGE)
+ZBUS_CHAN_DEFINE(app_storage_state_chan, enum app_storage_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 APP_STORAGE_INITIALIZING);
+#endif
+
+#if defined(CONFIG_OSKEY_CAMERA)
+ZBUS_CHAN_DEFINE(app_camera_state_chan, enum app_camera_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 APP_CAMERA_INITIALIZING);
+#endif
+
+#if defined(CONFIG_OSKEY_AUDIO)
+ZBUS_CHAN_DEFINE(app_audio_state_chan, struct app_audio_status, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.state = APP_AUDIO_IDLE, .volume = 0, .microphone_enabled = false));
+ZBUS_CHAN_DEFINE(app_audio_command_chan, struct app_audio_command, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.kind = APP_AUDIO_COMMAND_NONE, .volume = 0, .enabled = false));
+#endif
+
+#if defined(CONFIG_OSKEY_IMU)
+ZBUS_CHAN_DEFINE(app_imu_state_chan, enum app_imu_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 APP_IMU_INITIALIZING);
+ZBUS_CHAN_DEFINE(app_imu_sample_chan, struct app_imu_sample, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.valid = false,
+			       .rotation = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}));
+ZBUS_CHAN_DEFINE(app_imu_command_chan, struct app_imu_command, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(.kind = APP_IMU_COMMAND_NONE));
+#endif
+
+#if defined(CONFIG_OSKEY_AUDIO) && defined(CONFIG_OSKEY_QR_SCANNER)
+ZBUS_CHAN_DEFINE(app_notification_event_chan, struct app_notification, NULL, NULL,
+		 ZBUS_OBSERVERS_EMPTY, ZBUS_MSG_INIT(.kind = APP_NOTIFICATION_NONE));
+#endif
+
+#if !defined(CONFIG_OSKEY_RUST)
+int app_core_submit_protocol(struct TransportRoute route, const void *data, size_t len,
+			     k_timeout_t timeout)
+{
+	(void)route;
+	(void)data;
+	(void)len;
+	(void)timeout;
+	return -ENOTSUP;
+}
+#endif
+
+#if defined(CONFIG_OSKEY_RUST)
 LOG_MODULE_REGISTER(app_bus);
 
 #define APP_BUS_QUEUE_DEPTH 4
@@ -19,65 +86,26 @@ static atomic_t core_ready;
 
 NET_BUF_POOL_FIXED_DEFINE(app_command_payload_pool, CONFIG_OSKEY_BUS_PAYLOAD_COUNT,
 			  CONFIG_OSKEY_BUS_PAYLOAD_SIZE, 0, NULL);
-NET_BUF_POOL_FIXED_DEFINE(app_result_payload_pool, CONFIG_OSKEY_BUS_PAYLOAD_COUNT,
-			  CONFIG_OSKEY_BUS_PAYLOAD_SIZE, 0, NULL);
-
 K_MSGQ_DEFINE(app_core_command_queue, sizeof(struct app_core_command), APP_BUS_QUEUE_DEPTH,
 	      __alignof__(struct app_core_command));
+
+#if defined(CONFIG_OSKEY_DISPLAY) || defined(CONFIG_OSKEY_FIDO2)
+NET_BUF_POOL_FIXED_DEFINE(app_result_payload_pool, CONFIG_OSKEY_BUS_PAYLOAD_COUNT,
+			  CONFIG_OSKEY_BUS_PAYLOAD_SIZE, 0, NULL);
+#endif
+
+#if defined(CONFIG_OSKEY_DISPLAY)
 K_MSGQ_DEFINE(app_local_result_queue, sizeof(struct app_local_result), APP_BUS_QUEUE_DEPTH,
 	      __alignof__(struct app_local_result));
+#endif
+
+#if defined(CONFIG_OSKEY_FIDO2)
 K_MSGQ_DEFINE(app_fido_result_queue, sizeof(struct app_fido_result), APP_BUS_QUEUE_DEPTH,
 	      __alignof__(struct app_fido_result));
-
-ZBUS_CHAN_DEFINE(app_local_result_event_chan, bool, NULL, NULL, ZBUS_OBSERVERS_EMPTY, false);
-
-ZBUS_CHAN_DEFINE(app_wifi_command_chan, struct app_wifi_command, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 ZBUS_MSG_INIT(.kind = APP_WIFI_COMMAND_NONE));
-
-ZBUS_CHAN_DEFINE(app_network_event_chan, struct app_network_event, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 ZBUS_MSG_INIT(.kind = APP_NETWORK_EVENT_NONE));
-
-ZBUS_CHAN_DEFINE(app_bluetooth_state_chan, enum app_bluetooth_state, NULL, NULL,
-		 ZBUS_OBSERVERS_EMPTY,
-		 IS_ENABLED(CONFIG_OSKEY_BLUETOOTH) ? APP_BLUETOOTH_IDLE : APP_BLUETOOTH_DISABLED);
-
-ZBUS_CHAN_DEFINE(app_usb_state_chan, enum app_usb_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 IS_ENABLED(CONFIG_OSKEY_USB) ? APP_USB_DISCONNECTED : APP_USB_DISABLED);
-
-ZBUS_CHAN_DEFINE(app_storage_state_chan, enum app_storage_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 IS_ENABLED(CONFIG_OSKEY_STORAGE) ? APP_STORAGE_INITIALIZING
-						  : APP_STORAGE_DISABLED);
-
-ZBUS_CHAN_DEFINE(app_camera_state_chan, enum app_camera_state, NULL, NULL,
-		 ZBUS_OBSERVERS_EMPTY,
-		 IS_ENABLED(CONFIG_OSKEY_CAMERA) ? APP_CAMERA_INITIALIZING : APP_CAMERA_DISABLED);
-
-ZBUS_CHAN_DEFINE(app_audio_state_chan, struct app_audio_status, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 ZBUS_MSG_INIT(.state = IS_ENABLED(CONFIG_OSKEY_AUDIO) ? APP_AUDIO_IDLE
-								       : APP_AUDIO_DISABLED,
-			       .volume = 0, .microphone_enabled = false));
-
-ZBUS_CHAN_DEFINE(app_audio_command_chan, struct app_audio_command, NULL, NULL,
-		 ZBUS_OBSERVERS_EMPTY,
-		 ZBUS_MSG_INIT(.kind = APP_AUDIO_COMMAND_NONE, .volume = 0, .enabled = false));
-
-ZBUS_CHAN_DEFINE(app_imu_state_chan, enum app_imu_state, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 IS_ENABLED(CONFIG_OSKEY_IMU) ? APP_IMU_INITIALIZING : APP_IMU_DISABLED);
-
-ZBUS_CHAN_DEFINE(
-	app_imu_sample_chan, struct app_imu_sample, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-	ZBUS_MSG_INIT(.valid = false,
-		       .rotation = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}));
-
-ZBUS_CHAN_DEFINE(app_imu_command_chan, struct app_imu_command, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 ZBUS_MSG_INIT(.kind = APP_IMU_COMMAND_NONE));
-
-ZBUS_CHAN_DEFINE(app_notification_event_chan, struct app_notification, NULL, NULL,
-		 ZBUS_OBSERVERS_EMPTY, ZBUS_MSG_INIT(.kind = APP_NOTIFICATION_NONE));
+#endif
 
 ZBUS_CHAN_DEFINE(app_wallet_state_chan, enum WalletState, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		 IS_ENABLED(CONFIG_OSKEY_RUST) ? WalletState_Setup : WalletState_Disabled);
-
+		 WalletState_Setup);
 ZBUS_CHAN_DEFINE(app_confirmation_state_chan, struct app_confirmation_state, NULL, NULL,
 		 ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(.id = 0, .phase = APP_CONFIRMATION_IDLE,
@@ -197,7 +225,7 @@ static int queue_get(struct k_msgq *queue, void *message, k_timeout_t timeout)
 
 static bool core_accepts_commands(void)
 {
-	return IS_ENABLED(CONFIG_OSKEY_RUST) && atomic_get(&core_ready) != 0;
+	return atomic_get(&core_ready) != 0;
 }
 
 void app_bus_core_ready(void)
@@ -223,10 +251,11 @@ int app_core_submit_protocol(struct TransportRoute route, const void *data, size
 		       : queue_put(&app_core_command_queue, &command, command.payload, timeout);
 }
 
+#if defined(CONFIG_OSKEY_DISPLAY)
 int app_core_submit_local(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
 			  const void *auxiliary, size_t auxiliary_len, k_timeout_t timeout)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_DISPLAY) || !core_accepts_commands()) {
+	if (!core_accepts_commands()) {
 		return -ENOTSUP;
 	}
 
@@ -242,12 +271,14 @@ int app_core_submit_local(enum LocalRequestKind kind, uint32_t value, const void
 	return ret < 0 ? ret
 		       : queue_put(&app_core_command_queue, &command, command.payload, timeout);
 }
+#endif
 
+#if defined(CONFIG_OSKEY_FIDO2)
 int app_core_submit_fido(enum FidoRequestKind kind, uint32_t request_id, uint32_t value,
 			 const void *data, size_t len, const void *auxiliary, size_t auxiliary_len,
 			 k_timeout_t timeout)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_FIDO2) || !core_accepts_commands()) {
+	if (!core_accepts_commands()) {
 		return -ENOTSUP;
 	}
 
@@ -264,6 +295,7 @@ int app_core_submit_fido(enum FidoRequestKind kind, uint32_t request_id, uint32_
 	return ret < 0 ? ret
 		       : queue_put(&app_core_command_queue, &command, command.payload, timeout);
 }
+#endif
 
 int app_core_submit_confirmation(uint32_t id, enum ConfirmationChoice choice, k_timeout_t timeout)
 {
@@ -285,19 +317,13 @@ int app_core_submit_confirmation(uint32_t id, enum ConfirmationChoice choice, k_
 
 int app_core_command_get(struct app_core_command *command, k_timeout_t timeout)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_RUST)) {
-		return -ENOTSUP;
-	}
 	return queue_get(&app_core_command_queue, command, timeout);
 }
 
+#if defined(CONFIG_OSKEY_DISPLAY)
 int app_local_result_submit(enum LocalAction action, AppError error, uint32_t value,
 			    const void *data, size_t len, k_timeout_t timeout)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_DISPLAY)) {
-		return -ENOTSUP;
-	}
-
 	struct app_local_result result = {
 		.action = action,
 		.error = error,
@@ -324,20 +350,15 @@ int app_local_result_submit(enum LocalAction action, AppError error, uint32_t va
 
 int app_local_result_get(struct app_local_result *result, k_timeout_t timeout)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_DISPLAY)) {
-		return -ENOTSUP;
-	}
 	return queue_get(&app_local_result_queue, result, timeout);
 }
+#endif
 
+#if defined(CONFIG_OSKEY_FIDO2)
 int app_fido_result_submit(uint32_t request_id, enum FidoStatus status, const void *credential_id,
 			   size_t credential_id_len, const void *data, size_t len,
 			   k_timeout_t timeout)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_FIDO2)) {
-		return -ENOTSUP;
-	}
-
 	struct app_fido_result result = {
 		.request_id = request_id,
 		.credential_id_len = credential_id_len,
@@ -351,8 +372,8 @@ int app_fido_result_submit(uint32_t request_id, enum FidoStatus status, const vo
 
 int app_fido_result_get(struct app_fido_result *result, k_timeout_t timeout)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_FIDO2)) {
-		return -ENOTSUP;
-	}
 	return queue_get(&app_fido_result_queue, result, timeout);
 }
+#endif
+
+#endif /* CONFIG_OSKEY_RUST */

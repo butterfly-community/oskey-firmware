@@ -7,8 +7,12 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <zephyr/kernel.h>
+#if defined(CONFIG_OSKEY_RUST)
 #include <zephyr/net_buf.h>
+#endif
+#if defined(CONFIG_OSKEY_MESSAGE_BUS)
 #include <zephyr/zbus/zbus.h>
+#endif
 
 #include "bindings.h"
 
@@ -252,35 +256,72 @@ struct app_fido_result {
 	enum FidoStatus status;
 };
 
-ZBUS_CHAN_DECLARE(app_local_result_event_chan, app_wifi_command_chan, app_network_event_chan,
-		  app_bluetooth_state_chan, app_usb_state_chan, app_storage_state_chan,
-		  app_camera_state_chan, app_audio_state_chan, app_audio_command_chan,
-		  app_imu_state_chan, app_imu_sample_chan, app_imu_command_chan,
-		  app_notification_event_chan, app_wallet_state_chan, app_confirmation_state_chan);
+#if defined(CONFIG_OSKEY_RUST) && defined(CONFIG_OSKEY_DISPLAY)
+ZBUS_CHAN_DECLARE(app_local_result_event_chan);
+#endif
+#if defined(CONFIG_OSKEY_WIFI)
+ZBUS_CHAN_DECLARE(app_wifi_command_chan, app_network_event_chan);
+#endif
+#if defined(CONFIG_OSKEY_BLUETOOTH)
+ZBUS_CHAN_DECLARE(app_bluetooth_state_chan);
+#endif
+#if defined(CONFIG_OSKEY_USB)
+ZBUS_CHAN_DECLARE(app_usb_state_chan);
+#endif
+#if defined(CONFIG_OSKEY_STORAGE)
+ZBUS_CHAN_DECLARE(app_storage_state_chan);
+#endif
+#if defined(CONFIG_OSKEY_CAMERA)
+ZBUS_CHAN_DECLARE(app_camera_state_chan);
+#endif
+#if defined(CONFIG_OSKEY_AUDIO)
+ZBUS_CHAN_DECLARE(app_audio_state_chan, app_audio_command_chan);
+#endif
+#if defined(CONFIG_OSKEY_IMU)
+ZBUS_CHAN_DECLARE(app_imu_state_chan, app_imu_sample_chan, app_imu_command_chan);
+#endif
+#if defined(CONFIG_OSKEY_AUDIO) && defined(CONFIG_OSKEY_QR_SCANNER)
+ZBUS_CHAN_DECLARE(app_notification_event_chan);
+#endif
+
+#if defined(CONFIG_OSKEY_MESSAGE_BUS)
+int app_core_submit_protocol(struct TransportRoute route, const void *data, size_t len,
+			     k_timeout_t timeout);
+#endif
+
+#if defined(CONFIG_OSKEY_RUST)
+ZBUS_CHAN_DECLARE(app_wallet_state_chan, app_confirmation_state_chan);
 
 size_t app_payload_length(const app_payload *payload);
 size_t app_payload_read(const app_payload *payload, size_t offset, void *data, size_t len);
 size_t app_payload_slices(const app_payload *payload, struct AppSlice *slices, size_t capacity);
 void app_payload_release(app_payload *payload);
 
-int app_core_submit_protocol(struct TransportRoute route, const void *data, size_t len,
-			     k_timeout_t timeout);
+#if defined(CONFIG_OSKEY_DISPLAY)
 int app_core_submit_local(enum LocalRequestKind kind, uint32_t value, const void *data, size_t len,
 			  const void *auxiliary, size_t auxiliary_len, k_timeout_t timeout);
+#endif
+#if defined(CONFIG_OSKEY_FIDO2)
 int app_core_submit_fido(enum FidoRequestKind kind, uint32_t request_id, uint32_t value,
 			 const void *data, size_t len, const void *auxiliary, size_t auxiliary_len,
 			 k_timeout_t timeout);
+#endif
 int app_core_submit_confirmation(uint32_t id, enum ConfirmationChoice choice, k_timeout_t timeout);
 int app_core_command_get(struct app_core_command *command, k_timeout_t timeout);
 void app_bus_core_ready(void);
 
+#if defined(CONFIG_OSKEY_DISPLAY)
 int app_local_result_submit(enum LocalAction action, AppError error, uint32_t value,
 			    const void *data, size_t len, k_timeout_t timeout);
 int app_local_result_get(struct app_local_result *result, k_timeout_t timeout);
+#endif
 
+#if defined(CONFIG_OSKEY_FIDO2)
 int app_fido_result_submit(uint32_t request_id, enum FidoStatus status, const void *credential_id,
 			   size_t credential_id_len, const void *data, size_t len,
 			   k_timeout_t timeout);
 int app_fido_result_get(struct app_fido_result *result, k_timeout_t timeout);
+#endif
+#endif /* CONFIG_OSKEY_RUST */
 
 #endif

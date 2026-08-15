@@ -104,14 +104,22 @@ static int route_effect(const struct AppCoreEffectView *effect)
 			return -EINVAL;
 		}
 	case AppCoreEffectKind_Local:
+#if defined(CONFIG_OSKEY_DISPLAY)
 		return app_local_result_submit(effect->local_action, effect->error, effect->value,
 					       effect->data.data, effect->data.len,
 					       APP_CORE_ROUTE_TIMEOUT);
+#else
+		return -ENOTSUP;
+#endif
 	case AppCoreEffectKind_Fido:
+#if defined(CONFIG_OSKEY_FIDO2)
 		return app_fido_result_submit(effect->request_id, effect->fido_status,
 					      effect->data.data, effect->data.len,
 					      effect->auxiliary.data, effect->auxiliary.len,
 					      APP_CORE_ROUTE_TIMEOUT);
+#else
+		return -ENOTSUP;
+#endif
 	case AppCoreEffectKind_ConfirmationRequired:
 		if (!confirmation_store(effect->id)) {
 			return -EMSGSIZE;
@@ -199,11 +207,15 @@ static void execute(const struct app_core_command *command)
 		int ret = 0;
 
 		if (command->kind == AppCoreCommandKind_Local) {
+#if defined(CONFIG_OSKEY_DISPLAY)
 			ret = app_local_result_submit(LocalAction_Error, AppError_Failed, 0, NULL,
 						      0, K_NO_WAIT);
+#endif
 		} else if (command->kind == AppCoreCommandKind_Fido) {
+#if defined(CONFIG_OSKEY_FIDO2)
 			ret = app_fido_result_submit(command->request_id, FidoStatus_Failed, NULL,
 						     0, NULL, 0, K_NO_WAIT);
+#endif
 		}
 		if (ret < 0) {
 			LOG_ERR("Failed to route rejected command: %d", ret);

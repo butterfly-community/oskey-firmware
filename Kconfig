@@ -4,13 +4,12 @@ menu "OSKey core"
 
 config OSKEY_MESSAGE_BUS
 	bool
-	default y
-	select NET_BUF
 	select ZBUS
 
 config HEAP_MEM_POOL_ADD_SIZE_OSKEY
 	int
-	default 8192
+	default 8192 if OSKEY_RUST
+	default 0
 
 config OSKEY_TEST_FIRMWARE
 	bool "Test firmware"
@@ -22,20 +21,22 @@ config OSKEY_TEST_FIRMWARE
 
 config OSKEY_BUS_PAYLOAD_COUNT
 	int
-	default 8 if OSKEY_RUST
-	default 1
+	depends on OSKEY_RUST
+	default 8
 	range 1 64
 
 config OSKEY_BUS_PAYLOAD_SIZE
 	int
-	default 512 if OSKEY_RUST
-	default 1
+	depends on OSKEY_RUST
+	default 512
 	range 1 65535
 
 config OSKEY_RUST
 	bool "OSKey Rust application"
 	default y
 	depends on RUST_SUPPORTED
+	select OSKEY_MESSAGE_BUS
+	select NET_BUF
 	select RUST
 	select RUST_ALLOC
 	select PSA_CRYPTO
@@ -62,8 +63,8 @@ config OSKEY_RUST
 
 config OSKEY_CORE_STACK_SIZE
 	int "OSKey core stack size"
-	default 20480 if OSKEY_RUST
-	default 2048
+	depends on OSKEY_RUST
+	default 20480
 	help
 	  Stack size for the thread that owns and executes the Rust core.
 
@@ -73,6 +74,7 @@ menu "OSKey features"
 
 config OSKEY_STORAGE
 	bool "Storage"
+	select OSKEY_MESSAGE_BUS
 	select ZMS
 	select ZMS_DATA_CRC
 	select SETTINGS
@@ -105,6 +107,7 @@ config MPU_ALLOW_FLASH_WRITE
 
 config OSKEY_CAMERA
 	bool "Camera capture"
+	select OSKEY_MESSAGE_BUS
 	select VIDEO
 	help
 	  Enable the generic camera capture service. A board must provide a
@@ -127,6 +130,7 @@ endif
 config OSKEY_AUDIO
 	bool "Audio"
 	depends on DT_HAS_ESPRESSIF_ESP32_I2S_ENABLED
+	select OSKEY_MESSAGE_BUS
 	select I2S
 	select LV_USE_BAR if OSKEY_DISPLAY
 	select LV_USE_SLIDER if OSKEY_DISPLAY
@@ -149,6 +153,7 @@ rsource "src/audio/Kconfig"
 config OSKEY_IMU
 	bool "6-axis IMU (accelerometer and gyroscope)"
 	depends on DT_HAS_QST_QMI8658A_ENABLED
+	select OSKEY_MESSAGE_BUS
 	select SENSOR
 	help
 	  Enable the on-board QMI8658 accelerometer and gyroscope over I2C,
@@ -237,6 +242,7 @@ config LV_Z_LVGL_WORKQUEUE_STACK_SIZE
 
 config OSKEY_DISPLAY_EVENT_STACK_SIZE
 	int "Display event thread stack size"
+	depends on OSKEY_MESSAGE_BUS
 	default 4096
 	help
 	  Stack used by the event-driven display state consumer.
@@ -337,6 +343,7 @@ endif
 
 config OSKEY_BLUETOOTH
 	bool "Bluetooth"
+	select OSKEY_MESSAGE_BUS
 	select OSKEY_STORAGE
 	select BT
 	select BT_PERIPHERAL
@@ -386,6 +393,7 @@ endif
 
 menuconfig OSKEY_WIFI
 	bool "Wi-Fi provisioning"
+	select OSKEY_MESSAGE_BUS
 	select OSKEY_STORAGE
 	select WIFI
 	select WIFI_NM
@@ -492,6 +500,7 @@ config SYSTEM_WORKQUEUE_STACK_SIZE
 
 menuconfig OSKEY_USB
 	bool "USB"
+	select OSKEY_MESSAGE_BUS
 	select USB_DEVICE_STACK_NEXT
 
 if OSKEY_USB

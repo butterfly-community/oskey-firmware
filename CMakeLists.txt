@@ -19,8 +19,6 @@ include(cmake/audio.cmake)
 
 target_sources(app PRIVATE
   src/main.c
-  src/bus.c
-  src/uart.c
   src/bluetooth/bluetooth.c
   src/storage.c
   src/net/mqtt.c
@@ -28,6 +26,14 @@ target_sources(app PRIVATE
   src/usb/webusb.c
   src/app.c
   src/display/display.c
+)
+
+target_sources_ifdef(CONFIG_OSKEY_MESSAGE_BUS app PRIVATE
+  src/bus.c
+)
+
+target_sources_ifdef(CONFIG_OSKEY_RUST app PRIVATE
+  src/uart.c
 )
 
 target_sources_ifdef(CONFIG_OSKEY_MCUBOOT app PRIVATE

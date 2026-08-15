@@ -2,7 +2,9 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#if defined(CONFIG_OSKEY_RUST)
 #include "uart.h"
+#endif
 #include "bluetooth/bluetooth.h"
 #include "storage.h"
 #include "boot.h"
@@ -19,7 +21,6 @@
 #if defined(CONFIG_OSKEY_IMU)
 #include "imu/imu.h"
 #endif
-#include "bus.h"
 #include "core.h"
 #include "gpio.h"
 #include "usb/webusb.h"
@@ -103,13 +104,15 @@ int main(void)
 		healthy = false;
 	}
 
-	if (IS_ENABLED(CONFIG_OSKEY_RUST) && core_status == 0) {
+#if defined(CONFIG_OSKEY_RUST)
+	if (core_status == 0) {
 		ret = app_uart_irq_register();
 		if (ret < 0) {
 			LOG_ERR("UART startup failed: %d", ret);
 			healthy = false;
 		}
 	}
+#endif
 
 	if (bluetooth_status == 0) {
 		ret = oskey_bt_start();
