@@ -20,9 +20,6 @@ LOG_MODULE_REGISTER(wifi);
 
 static int wifi_command_publish(struct app_wifi_command *command)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_WIFI)) {
-		return -ENOTSUP;
-	}
 	if (command == NULL || command->kind <= APP_WIFI_COMMAND_NONE ||
 	    command->kind > APP_WIFI_COMMAND_FORGET_NETWORK) {
 		return -EINVAL;
@@ -69,9 +66,6 @@ int app_wifi_forget_network_publish(void)
 int app_wifi_save_network_publish(const char *ssid, size_t ssid_len, const char *password,
 				  size_t password_len, enum app_wifi_security security)
 {
-	if (!IS_ENABLED(CONFIG_OSKEY_WIFI)) {
-		return -ENOTSUP;
-	}
 	if (ssid == NULL || ssid_len == 0 || ssid_len > APP_WIFI_SSID_MAX_LEN ||
 	    password_len > APP_WIFI_PASSWORD_MAX_LEN || (password_len > 0 && password == NULL) ||
 	    security < APP_WIFI_SECURITY_OPEN || security > APP_WIFI_SECURITY_SAE) {
@@ -93,8 +87,6 @@ int app_wifi_save_network_publish(const char *ssid, size_t ssid_len, const char 
 	}
 	return wifi_command_publish(&command);
 }
-
-#ifdef CONFIG_OSKEY_WIFI
 
 #include <zephyr/net/conn_mgr_monitor.h>
 #include <zephyr/net/dhcpv4_server.h>
@@ -799,12 +791,3 @@ int wifi_start(void)
 	}
 	return 0;
 }
-
-#else
-
-int wifi_start(void)
-{
-	return 0;
-}
-
-#endif /* CONFIG_OSKEY_WIFI */

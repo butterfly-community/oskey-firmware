@@ -23,7 +23,6 @@ target_sources(app PRIVATE
   src/uart.c
   src/bluetooth/bluetooth.c
   src/storage.c
-  src/net/wifi.c
   src/net/mqtt.c
   src/gpio.c
   src/usb/webusb.c
@@ -114,6 +113,7 @@ if(CONFIG_OSKEY_DISPLAY AND CONFIG_OSKEY_RUST)
 endif()
 
 target_sources_ifdef(CONFIG_OSKEY_WIFI app PRIVATE
+  src/net/wifi.c
   src/net/http.c
   src/net/wifi_portal.c
 )
