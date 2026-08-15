@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #![no_std]
 
 #[cfg(not(target_has_atomic = "ptr"))]

@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2024 Nordic Semiconductor ASA
+ * Copyright (c) 2026 OSKey contributors
  *
+ * Modified by OSKey contributors in 2026.
  * SPDX-License-Identifier: Apache-2.0
  */
 

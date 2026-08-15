@@ -1,9 +1,12 @@
 /*
+ * SPDX-FileCopyrightText: 2022 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2026 OSKey contributors
+ *
  * SPDX-License-Identifier: Apache-2.0
  *
- * Everest ES7210 audio ADC driver. The register programming model and
- * power sequence follow the ES7210 data sheet and Espressif's ES7210
- * driver. All board wiring and channel policy are supplied by devicetree.
+ * Adapted for Zephyr from Espressif's es7210 component version 1.0.0.
+ * Modified by OSKey contributors in 2026 to use Zephyr's audio codec API,
+ * devicetree configuration, and project-specific channel policy.
  */
 
 #define DT_DRV_COMPAT everest_es7210

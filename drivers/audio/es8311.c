@@ -1,10 +1,12 @@
 /*
+ * SPDX-FileCopyrightText: 2015-2021 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2026 OSKey contributors
+ *
  * SPDX-License-Identifier: Apache-2.0
  *
- * Everest ES8311 audio codec driver (DAC output path). The register
- * sequence is ported from the Espressif ESP-ADF es8311 driver
- * (Apache-2.0). The NS4150B class-D amplifier enable pin is controlled
- * through the pa-en-gpios devicetree property.
+ * Adapted for Zephyr from Espressif's es8311 component version 0.0.2.
+ * Modified by OSKey contributors in 2026 to use Zephyr's audio codec API,
+ * devicetree configuration, and NS4150B amplifier control.
  */
 
 #define DT_DRV_COMPAT everest_es8311

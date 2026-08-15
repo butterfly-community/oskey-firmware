@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #![allow(clippy::undocumented_unsafe_blocks)]
 
 use alloc::boxed::Box;
