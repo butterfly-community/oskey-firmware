@@ -104,6 +104,12 @@ target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
   src/display/assets/assets.c
 )
 
+if(CONFIG_OSKEY_DISPLAY AND CONFIG_OSKEY_RUST)
+  target_sources(app PRIVATE
+    src/entropy/entropy.c
+  )
+endif()
+
 target_sources_ifdef(CONFIG_OSKEY_WIFI app PRIVATE
   src/net/http.c
   src/net/wifi_portal.c

@@ -20,6 +20,12 @@ bool app_csrand_get(void *dst, size_t len)
 	return sys_csrand_get(dst, len) == 0;
 }
 
+bool app_hardware_rng_available(void)
+{
+	return IS_ENABLED(CONFIG_CSPRNG_ENABLED) && !IS_ENABLED(CONFIG_TEST_RANDOM_GENERATOR) &&
+	       !IS_ENABLED(CONFIG_FAKE_ENTROPY_NATIVE_SIM);
+}
+
 void app_version_get(void *ver, size_t len)
 {
 	snprintf(ver, len, "%s", APP_VERSION_STRING);
@@ -55,9 +61,7 @@ bool app_check_feature(uint8_t *buffer, size_t len)
 	buffer[APP_FEATURE_STORAGE] = true;
 #endif
 
-	buffer[APP_FEATURE_HARDWARE_RNG] = IS_ENABLED(CONFIG_CSPRNG_ENABLED) &&
-					   !IS_ENABLED(CONFIG_TEST_RANDOM_GENERATOR) &&
-					   !IS_ENABLED(CONFIG_FAKE_ENTROPY_NATIVE_SIM);
+	buffer[APP_FEATURE_HARDWARE_RNG] = app_hardware_rng_available();
 
 	buffer[APP_FEATURE_DISPLAY_INPUT] = app_display_ready();
 

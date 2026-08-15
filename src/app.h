@@ -17,6 +17,7 @@ enum app_feature {
 };
 
 bool app_csrand_get(void *dst, size_t len);
+bool app_hardware_rng_available(void);
 void app_version_get(void *ver, size_t len);
 bool app_check_feature(uint8_t *buffer, size_t len);
 bool app_check_storage(void);

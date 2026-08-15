@@ -9,9 +9,13 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
 
 #include "bus.h"
+#if defined(CONFIG_OSKEY_DISPLAY) && defined(CONFIG_OSKEY_RUST)
+#include "entropy/entropy.h"
+#endif
 
 LOG_MODULE_REGISTER(app_imu);
 
@@ -117,6 +121,24 @@ static int imu_process_sample(struct imu_runtime *runtime)
 		LOG_ERR("IMU channel read failed");
 		return -EIO;
 	}
+
+#if defined(CONFIG_OSKEY_DISPLAY) && defined(CONFIG_OSKEY_RUST)
+	struct app_entropy_snapshot entropy_snapshot;
+	if (app_entropy_snapshot_get(&entropy_snapshot) == 0 &&
+	    entropy_snapshot.state == APP_ENTROPY_CAPTURING &&
+	    entropy_snapshot.current == APP_ENTROPY_SOURCE_IMU) {
+		uint8_t raw[6 * sizeof(uint32_t)];
+
+		for (size_t axis = 0; axis < 3; axis++) {
+			sys_put_le32((uint32_t)sensor_ms2_to_ug(&accel_sensor[axis]),
+				     &raw[axis * sizeof(uint32_t)]);
+			sys_put_le32((uint32_t)sensor_rad_to_10udegrees(&gyro_sensor[axis]),
+				     &raw[(axis + 3U) * sizeof(uint32_t)]);
+		}
+		(void)app_entropy_feed(entropy_snapshot.session, APP_ENTROPY_SOURCE_IMU, raw,
+				       sizeof(raw), 1U);
+	}
+#endif
 	const int64_t sample_ticks = k_uptime_ticks();
 
 	const FusionVector accel = imu_accel_to_fusion(accel_sensor);
@@ -214,6 +236,16 @@ static void imu_thread(void *first, void *second, void *third)
 			runtime.errors++;
 			if (runtime.errors >= 5) {
 				imu_publish_state(APP_IMU_ERROR);
+#if defined(CONFIG_OSKEY_DISPLAY) && defined(CONFIG_OSKEY_RUST)
+				struct app_entropy_snapshot entropy_snapshot;
+
+				if (app_entropy_snapshot_get(&entropy_snapshot) == 0 &&
+				    entropy_snapshot.state == APP_ENTROPY_CAPTURING &&
+				    entropy_snapshot.current == APP_ENTROPY_SOURCE_IMU) {
+					(void)app_entropy_fail(entropy_snapshot.session,
+							       APP_ENTROPY_SOURCE_IMU, ret);
+				}
+#endif
 			}
 		}
 	}

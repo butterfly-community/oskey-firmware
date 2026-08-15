@@ -7,6 +7,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/video.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/atomic.h>
 #include <zephyr/sys/util.h>
 
 #include "../bus.h"
@@ -17,7 +18,7 @@ LOG_MODULE_REGISTER(app_camera, CONFIG_VIDEO_LOG_LEVEL);
 
 static const struct device *const camera = DEVICE_DT_GET(DT_CHOSEN(zephyr_camera));
 static struct video_buffer *camera_buffers[CAMERA_BUFFER_COUNT];
-static bool camera_streaming;
+static atomic_t camera_in_use;
 
 static void app_camera_publish(enum app_camera_state state)
 {
@@ -38,17 +39,53 @@ int app_camera_init(void)
 	return 0;
 }
 
-int app_camera_get_caps(struct video_caps *caps)
+static bool app_camera_dimension_supported(uint32_t value, uint32_t minimum, uint32_t maximum,
+					   uint32_t step)
 {
-	if (caps == NULL) {
+	if (value < minimum || value > maximum) {
+		return false;
+	}
+	if (step == 0U) {
+		return minimum == maximum;
+	}
+	return (value - minimum) % step == 0U;
+}
+
+int app_camera_select_rgb565_format(uint32_t width, uint32_t height, struct video_format *format)
+{
+	struct video_caps caps = {.type = VIDEO_BUF_TYPE_OUTPUT};
+
+	if (format == NULL || width == 0U || height == 0U) {
 		return -EINVAL;
 	}
 	if (!device_is_ready(camera)) {
 		return -ENODEV;
 	}
 
-	*caps = (struct video_caps){.type = VIDEO_BUF_TYPE_OUTPUT};
-	return video_get_caps(camera, caps);
+	int ret = video_get_caps(camera, &caps);
+	if (ret < 0 || caps.format_caps == NULL) {
+		return ret < 0 ? ret : -ENOTSUP;
+	}
+
+	for (const struct video_format_cap *cap = caps.format_caps; cap->pixelformat != 0U; cap++) {
+		if ((cap->pixelformat != VIDEO_PIX_FMT_RGB565X &&
+		     cap->pixelformat != VIDEO_PIX_FMT_RGB565) ||
+		    !app_camera_dimension_supported(width, cap->width_min, cap->width_max,
+						    cap->width_step) ||
+		    !app_camera_dimension_supported(height, cap->height_min, cap->height_max,
+						    cap->height_step)) {
+			continue;
+		}
+
+		*format = (struct video_format){
+			.type = VIDEO_BUF_TYPE_OUTPUT,
+			.pixelformat = cap->pixelformat,
+			.width = width,
+			.height = height,
+		};
+		return 0;
+	}
+	return -ENOTSUP;
 }
 
 static void app_camera_release_buffers(void)
@@ -83,37 +120,36 @@ int app_camera_start(struct video_format *format)
 	if (format == NULL) {
 		return -EINVAL;
 	}
-	if (camera_streaming) {
-		return -EALREADY;
+	if (!atomic_cas(&camera_in_use, 0, 1)) {
+		return -EBUSY;
 	}
 	for (size_t i = 0; i < ARRAY_SIZE(camera_buffers); i++) {
 		if (camera_buffers[i] != NULL) {
 			LOG_ERR("Camera buffers are still owned by the driver");
-			return -EBUSY;
+			ret = -EBUSY;
+			goto error;
 		}
 	}
 	app_camera_publish(APP_CAMERA_STARTING);
 	if (!device_is_ready(camera)) {
 		LOG_ERR("Camera capture device is not ready");
-		app_camera_publish(APP_CAMERA_ERROR);
-		return -ENODEV;
+		ret = -ENODEV;
+		goto error;
 	}
 
 	ret = video_get_caps(camera, &caps);
 	if (ret < 0) {
-		app_camera_publish(APP_CAMERA_ERROR);
-		return ret;
+		goto error;
 	}
 	if (caps.min_vbuf_count > CAMERA_BUFFER_COUNT) {
-		app_camera_publish(APP_CAMERA_ERROR);
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto error;
 	}
 
 	ret = video_set_format(camera, format);
 	if (ret < 0) {
 		LOG_ERR("Unable to set camera format: %d", ret);
-		app_camera_publish(APP_CAMERA_ERROR);
-		return ret;
+		goto error;
 	}
 
 	for (size_t i = 0; i < ARRAY_SIZE(camera_buffers); i++) {
@@ -140,13 +176,11 @@ int app_camera_start(struct video_format *format)
 
 		if (stop_ret < 0) {
 			LOG_ERR("Unable to stop camera after start failure: %d", stop_ret);
-			app_camera_publish(APP_CAMERA_ERROR);
-			return ret;
+			goto error;
 		}
 		goto release_buffers;
 	}
 
-	camera_streaming = true;
 	app_camera_publish(APP_CAMERA_ACTIVE);
 	return 0;
 
@@ -157,7 +191,9 @@ release_buffers:
 	} else {
 		app_camera_release_buffers();
 	}
+error:
 	app_camera_publish(APP_CAMERA_ERROR);
+	atomic_clear(&camera_in_use);
 	return ret;
 }
 
@@ -166,7 +202,7 @@ int app_camera_frame_get(struct video_buffer **buffer, k_timeout_t timeout)
 	if (buffer == NULL) {
 		return -EINVAL;
 	}
-	if (!camera_streaming) {
+	if (!atomic_get(&camera_in_use)) {
 		return -EACCES;
 	}
 
@@ -175,7 +211,7 @@ int app_camera_frame_get(struct video_buffer **buffer, k_timeout_t timeout)
 
 int app_camera_frame_release(struct video_buffer *buffer)
 {
-	if (!camera_streaming || buffer == NULL) {
+	if (!atomic_get(&camera_in_use) || buffer == NULL) {
 		return -EINVAL;
 	}
 
@@ -186,7 +222,7 @@ int app_camera_stop(void)
 {
 	int ret;
 
-	if (!camera_streaming) {
+	if (!atomic_get(&camera_in_use)) {
 		return 0;
 	}
 
@@ -195,7 +231,6 @@ int app_camera_stop(void)
 		app_camera_publish(APP_CAMERA_ERROR);
 		return ret;
 	}
-	camera_streaming = false;
 
 	ret = video_driver_flush(camera, true);
 	if (ret < 0) {
@@ -204,6 +239,7 @@ int app_camera_stop(void)
 		return ret;
 	}
 	app_camera_release_buffers();
+	atomic_clear(&camera_in_use);
 	app_camera_publish(APP_CAMERA_READY);
 	return 0;
 }

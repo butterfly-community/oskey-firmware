@@ -16,6 +16,10 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/usb/class/usbd_uac2.h>
 
+#if defined(CONFIG_OSKEY_DISPLAY) && defined(CONFIG_OSKEY_RUST)
+#include "entropy/entropy.h"
+#endif
+
 LOG_MODULE_REGISTER(app_microphone);
 
 #define MICROPHONE_I2S_NODE        DT_ALIAS(audio_i2s)
@@ -64,10 +68,12 @@ static atomic_t microphone_enabled = ATOMIC_INIT(0);
 static atomic_t microphone_usb_active;
 static atomic_t microphone_paused;
 static atomic_t microphone_running;
+static atomic_t microphone_entropy_active;
 static atomic_t microphone_sample_rate = ATOMIC_INIT(MICROPHONE_DEFAULT_SAMPLE_RATE);
 static atomic_t microphone_active_sample_rate;
 static struct k_spinlock microphone_ring_lock;
 static bool microphone_stream_ready;
+static bool microphone_devices_ready;
 
 static bool microphone_sample_rate_supported(uint32_t sample_rate)
 {
@@ -93,9 +99,49 @@ static size_t microphone_usb_packet_size(uint32_t sample_rate, int frame_adjustm
 
 static bool microphone_should_run(void)
 {
-	return atomic_get(&microphone_enabled) && atomic_get(&microphone_usb_active) &&
+	bool usb_requested = atomic_get(&microphone_enabled) && atomic_get(&microphone_usb_active);
+
+	return (usb_requested || atomic_get(&microphone_entropy_active)) &&
 	       !atomic_get(&microphone_paused);
 }
+
+#if defined(CONFIG_OSKEY_DISPLAY) && defined(CONFIG_OSKEY_RUST)
+static void microphone_entropy_feed(const void *block, size_t size)
+{
+	if (!atomic_get(&microphone_entropy_active)) {
+		return;
+	}
+
+	struct app_entropy_snapshot snapshot;
+	if (app_entropy_snapshot_get(&snapshot) == 0 && snapshot.state == APP_ENTROPY_CAPTURING &&
+	    snapshot.current == APP_ENTROPY_SOURCE_MICROPHONE) {
+		(void)app_entropy_feed(snapshot.session, APP_ENTROPY_SOURCE_MICROPHONE, block, size,
+				       size / MICROPHONE_BYTES_PER_FRAME);
+	}
+}
+
+static void microphone_entropy_fail(int error)
+{
+	struct app_entropy_snapshot snapshot;
+
+	if (atomic_get(&microphone_entropy_active) && app_entropy_snapshot_get(&snapshot) == 0 &&
+	    snapshot.state == APP_ENTROPY_CAPTURING &&
+	    snapshot.current == APP_ENTROPY_SOURCE_MICROPHONE) {
+		(void)app_entropy_fail(snapshot.session, APP_ENTROPY_SOURCE_MICROPHONE, error);
+	}
+}
+#else
+static void microphone_entropy_feed(const void *block, size_t size)
+{
+	ARG_UNUSED(block);
+	ARG_UNUSED(size);
+}
+
+static void microphone_entropy_fail(int error)
+{
+	ARG_UNUSED(error);
+}
+#endif
 
 static void microphone_ring_reset(void)
 {
@@ -227,6 +273,7 @@ static void microphone_capture_thread(void *arg1, void *arg2, void *arg3)
 
 			if (ret < 0) {
 				LOG_ERR("USB microphone start failed: %d", ret);
+				microphone_entropy_fail(ret);
 				k_sleep(K_MSEC(100));
 				k_sem_give(&microphone_state_changed);
 				continue;
@@ -241,6 +288,7 @@ static void microphone_capture_thread(void *arg1, void *arg2, void *arg3)
 		if (ret == 0) {
 			if (size == microphone_block_size(active_sample_rate)) {
 				microphone_ring_write(block, size);
+				microphone_entropy_feed(block, size);
 			}
 			k_mem_slab_free(&microphone_i2s_slab, block);
 		}
@@ -252,6 +300,7 @@ static void microphone_capture_thread(void *arg1, void *arg2, void *arg3)
 		if (!capture_requested || capture_failed || reconfigure) {
 			if (capture_failed) {
 				LOG_ERR("I2S microphone read failed: %d", ret);
+				microphone_entropy_fail(ret);
 			}
 			microphone_capture_stop();
 			running = false;
@@ -370,6 +419,7 @@ int app_microphone_init(void)
 	}
 
 	usbd_uac2_set_ops(usb_dev, &microphone_usb_ops, NULL);
+	microphone_devices_ready = true;
 	return 0;
 }
 
@@ -397,5 +447,27 @@ int app_microphone_pause(void)
 void app_microphone_resume(void)
 {
 	atomic_clear(&microphone_paused);
+	k_sem_give(&microphone_state_changed);
+}
+
+bool app_microphone_ready(void)
+{
+	return microphone_devices_ready;
+}
+
+int app_microphone_entropy_start(void)
+{
+	if (!microphone_devices_ready) {
+		return -ENODEV;
+	}
+
+	atomic_set(&microphone_entropy_active, 1);
+	k_sem_give(&microphone_state_changed);
+	return 0;
+}
+
+void app_microphone_entropy_stop(void)
+{
+	atomic_clear(&microphone_entropy_active);
 	k_sem_give(&microphone_state_changed);
 }
