@@ -19,8 +19,7 @@ changes in their file headers. A copy of the license is available at
 - `src/net/wifi.c`
 - `src/usb/bulk.c`, `src/usb/init.c`, `src/usb/msosv2.h`, and
   `src/usb/webusb.c`
-- Zephyr-targeting patches under `patch/`, except for the LVGL patch identified
-  below
+- Zephyr-targeting patches under `patch/`
 - `docs/image/board/disco_l475_iot1.jpg`,
   `docs/image/board/frdm_k64f.jpg`,
   `docs/image/board/nucleo_f401re.jpg`, and
@@ -37,12 +36,6 @@ changes in their file headers. A copy of the license is available at
 
 `patch/tf-psa-threading.patch` modifies Apache-2.0 material from the Mbed TLS
 and TF-PSA-Crypto integration.
-
-## LVGL
-
-`patch/lvgl-native-sim-benchmark.patch` modifies LVGL source and retains LVGL's
-MIT terms. The applicable copyright notice and license text are in
-`LICENSES/LVGL-MIT.txt`.
 
 ## Tabler Icons
 

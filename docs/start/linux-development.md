@@ -33,7 +33,7 @@ The simulator uses `/tmp/ttyOSKey`; host tools use `/tmp/ttyOSKeyC`.
 
 ## Zephyr Patches
 
-The current patches are tested with Zephyr `af17c0c8aa2a82a0b714a423915ad3610063ee68`.
+The current patches are tested with Zephyr `5058917ea61b9d075f24c0dfeb89fdb95a405d52`.
 Apply them in this order from the OSKey source directory:
 
 ```sh
@@ -44,11 +44,11 @@ git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/oskey.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/usb-busy.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/keepalive.patch"
 git -C "$ZEPHYR_BASE" apply "$PWD/patch/usb-dwc2-zlp-cache.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/video-rgb565x-bpp.patch"
 ```
 
 `change-pin.patch` mirrors upstream Zephyr PR #115238 and can be removed once that change is
-present in the Zephyr tree.
+present in the Zephyr tree. See [`patch/README.md`](../../patch/README.md) for the audit status and
+removal condition of every patch.
 
 ## Build
 
@@ -73,13 +73,6 @@ available.
 
 LVGL benchmark:
 
-Apply the Native Simulator timing fix once from the OSKey source directory:
-
-```sh
-git -C "$ZEPHYR_WORKSPACE/modules/lib/gui/lvgl" apply \
-  "$(pwd)/patch/lvgl-native-sim-benchmark.patch"
-```
-
 ```sh
 west build -p always \
   -b native_sim/native/64 \
@@ -87,6 +80,9 @@ west build -p always \
   -DCONFIG_OSKEY_DISPLAY=y \
   -DCONFIG_OSKEY_LVGL_BENCHMARK=y
 ```
+
+The application selects Native Simulator's pseudo-host real-time clock as the LVGL tick source
+for this benchmark, so no LVGL source patch is required.
 
 Display and FIDO2 over USB/IP:
 

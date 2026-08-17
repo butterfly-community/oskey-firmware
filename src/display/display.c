@@ -16,9 +16,19 @@
 
 #ifdef CONFIG_OSKEY_LVGL_BENCHMARK
 #include <lv_demos.h>
+#ifdef CONFIG_BOARD_NATIVE_SIM
+#include "native_rtc.h"
+#endif
 #endif
 
 static bool display_ready;
+
+#if defined(CONFIG_OSKEY_LVGL_BENCHMARK) && defined(CONFIG_BOARD_NATIVE_SIM)
+static uint32_t native_sim_tick_get(void)
+{
+	return (uint32_t)(native_rtc_gettime_us(RTC_CLOCK_PSEUDOHOSTREALTIME) / 1000U);
+}
+#endif
 
 int app_init_display(void)
 {
@@ -57,6 +67,12 @@ int app_init_display(void)
 
 	lvgl_lock();
 #ifdef CONFIG_OSKEY_LVGL_BENCHMARK
+#ifdef CONFIG_BOARD_NATIVE_SIM
+	/* Benchmark loops do not yield, so use a clock that advances while the
+	 * simulated CPU runs.
+	 */
+	lv_tick_set_cb(native_sim_tick_get);
+#endif
 	lv_demo_benchmark();
 #else
 	uint8_t features[APP_FEATURE_COUNT];
