@@ -8,7 +8,7 @@
 
 如果您的开发板属于 ESP32 系列芯片，则适用这个使用指南。开发板适用于多种用途，适合 [butterfly-community](https://github.com/butterfly-community) 开源的绝大多数项目。开发板写入对应固件就可以执行对应的功能，比如写入 [OSKey](https://github.com/butterfly-community/oskey-firmware) 就可以变为数字货币硬件钱包，写入 [water-heater](https://github.com/butterfly-community/water-heater) 就可以变为一个热水器控制器。
 
-默认情况下除非特殊说明，自带的固件为测试固件，非硬件钱包 [OSKey](https://github.com/butterfly-community/ohw-elf-firmware) 固件。
+默认情况下除非特殊说明，自带的固件为测试固件，非硬件钱包 [OSKey](https://github.com/butterfly-community/oskey-firmware) 固件。
 
 ## 硬件钱包
 
@@ -22,7 +22,7 @@
 
 这里有一个演示视频，是下方文字图片的视频版本。
 
-[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
+[![OSKey - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "OSKey - Task 3")
 
 ### 下载固件
 
@@ -59,7 +59,7 @@
 
 ---
 
-5. 等待写入完成，写入完成后点击 **Disconnect** 并关闭这个标签页，回到 [硬件钱包测试页](https://ohw-app.vercel.app)。🔴⚠️另外需要您**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
+5. 等待写入完成，写入完成后点击 **Disconnect** 并关闭这个标签页，回到 [硬件钱包测试页](https://www.oskey.xyz)。🔴⚠️另外需要您**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
 
 <br />
 

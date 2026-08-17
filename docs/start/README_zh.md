@@ -14,7 +14,7 @@
 
 这里有一个演示视频，是下方文字图片的视频版本。
 
-[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
+[![OSKey - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "OSKey - Task 3")
 
 ## 检查版本
 
@@ -165,4 +165,3 @@ OSKey 设置页收到签名请求，**确认**。
 直接连接或者客户端连接使用的 WalletConnect 服务在中国境内连接不稳定，如果出现断联请重新连接。
 
 **OSKey 和 OneKey 没有合作关系**。
-

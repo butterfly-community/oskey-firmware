@@ -14,7 +14,7 @@ First, click to open the OSKey official website [https://www.oskey.xyz/settings]
 
 Here is a demo video, which is the video version of the text and images below.
 
-[![Open Hardware Wallet - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "Open Hardware Wallet - Task 3")
+[![OSKey - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "OSKey - Task 3")
 
 ## Check Version
 
@@ -165,4 +165,3 @@ You can also choose to use various Apps through OneKey, which will provide a bet
 The WalletConnect service used for direct connection or client connection is unstable within mainland China. If disconnection occurs, please reconnect.
 
 **OSKey and OneKey have no partnership relationship**.
-

@@ -12,7 +12,7 @@ We don't restrict users to specific chip manufacturers or models. Users have the
 
 Users can also create their own development boards based on our reference designs, which we will soon release.
 
-The Open Hardware Wallet supports multiple hardware architectures and is optimized for resource-constrained devices with security built-in. The cheapest supported MCU costs only $0.3, with optional support for Bluetooth, WiFi, and display capabilities.
+OSKey supports multiple hardware architectures and is optimized for resource-constrained devices with security built-in. The cheapest supported MCU costs only $0.3, with optional support for Bluetooth, WiFi, and display capabilities.
 
 ## What can this product do?
 
