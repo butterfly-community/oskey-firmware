@@ -154,6 +154,8 @@ config OSKEY_IMU
 	bool "6-axis IMU (accelerometer and gyroscope)"
 	depends on DT_HAS_QST_QMI8658A_ENABLED
 	select OSKEY_MESSAGE_BUS
+	select SMF
+	select SMF_ANCESTOR_SUPPORT
 	select SENSOR
 	help
 	  Enable the on-board QMI8658 accelerometer and gyroscope over I2C,

@@ -9,6 +9,7 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/smf.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
 
@@ -33,13 +34,34 @@ BUILD_ASSERT(DT_PROP(IMU_NODE, accel_odr) == DT_PROP(IMU_NODE, gyro_odr),
 static const struct device *const imu_dev = DEVICE_DT_GET(IMU_NODE);
 static enum app_imu_state imu_state = APP_IMU_DISABLED;
 
+enum imu_event {
+	IMU_EVENT_NONE,
+	IMU_EVENT_START,
+	IMU_EVENT_STOP,
+	IMU_EVENT_SAMPLE,
+};
+
+enum imu_smf_state {
+	IMU_SMF_IDLE,
+	IMU_SMF_STREAMING,
+	IMU_SMF_INITIALIZING,
+	IMU_SMF_READY,
+	IMU_SMF_ERROR,
+};
+
 struct imu_runtime {
+	/* The SMF context must be the first member. */
+	struct smf_ctx ctx;
 	FusionAhrs ahrs;
 	FusionBias bias;
 	int64_t last_sample_ticks;
+	enum imu_event event;
+	enum app_imu_state public_state;
+	int last_error;
 	int errors;
-	bool streaming;
 };
+
+static const struct smf_state imu_states[];
 
 K_MSGQ_DEFINE(imu_command_queue, sizeof(struct app_imu_command), IMU_COMMAND_QUEUE_DEPTH,
 	      __alignof__(struct app_imu_command));
@@ -81,6 +103,12 @@ static void imu_fusion_reset_sample_timing(struct imu_runtime *runtime)
 {
 	runtime->last_sample_ticks = 0;
 	FusionAhrsSetSamplePeriod(&runtime->ahrs, 1.0f / (float)IMU_SAMPLE_FREQUENCY_HZ);
+}
+
+static void imu_set_public_state(struct imu_runtime *runtime, enum app_imu_state state)
+{
+	runtime->public_state = state;
+	imu_publish_state(state);
 }
 
 static FusionVector imu_accel_to_fusion(const struct sensor_value sensor[3])
@@ -176,28 +204,119 @@ static int imu_process_sample(struct imu_runtime *runtime)
 	return ret;
 }
 
-static void imu_handle_command(const struct app_imu_command *command, struct imu_runtime *runtime)
+static bool imu_runtime_streaming(const struct imu_runtime *runtime)
 {
-	switch (command->kind) {
-	case APP_IMU_COMMAND_START:
-		if (!runtime->streaming) {
-			FusionAhrsRestart(&runtime->ahrs);
-			imu_fusion_reset_sample_timing(runtime);
-			runtime->errors = 0;
-			runtime->streaming = true;
-			imu_publish_state(APP_IMU_INITIALIZING);
-		}
-		break;
-	case APP_IMU_COMMAND_STOP:
-		if (runtime->streaming) {
-			runtime->streaming = false;
-			imu_publish_state(APP_IMU_IDLE);
-		}
-		break;
-	default:
-		break;
-	}
+	return smf_get_current_leaf_state(SMF_CTX(runtime)) != &imu_states[IMU_SMF_IDLE];
 }
+
+static void imu_idle_entry(void *object)
+{
+	struct imu_runtime *runtime = object;
+
+	imu_set_public_state(runtime, APP_IMU_IDLE);
+}
+
+static enum smf_state_result imu_idle_run(void *object)
+{
+	struct imu_runtime *runtime = object;
+
+	if (runtime->event == IMU_EVENT_START) {
+		smf_set_state(SMF_CTX(runtime), &imu_states[IMU_SMF_INITIALIZING]);
+	}
+	return SMF_EVENT_HANDLED;
+}
+
+static void imu_streaming_entry(void *object)
+{
+	struct imu_runtime *runtime = object;
+
+	FusionAhrsRestart(&runtime->ahrs);
+	imu_fusion_reset_sample_timing(runtime);
+	runtime->errors = 0;
+}
+
+static enum smf_state_result imu_streaming_run(void *object)
+{
+	struct imu_runtime *runtime = object;
+
+	if (runtime->event == IMU_EVENT_STOP) {
+		smf_set_state(SMF_CTX(runtime), &imu_states[IMU_SMF_IDLE]);
+		return SMF_EVENT_HANDLED;
+	}
+	/* START is idempotent while the sensor is already streaming. */
+	return runtime->event == IMU_EVENT_START ? SMF_EVENT_HANDLED : SMF_EVENT_PROPAGATE;
+}
+
+static void imu_initializing_entry(void *object)
+{
+	imu_set_public_state(object, APP_IMU_INITIALIZING);
+}
+
+static void imu_ready_entry(void *object)
+{
+	imu_set_public_state(object, APP_IMU_READY);
+}
+
+static void imu_error_entry(void *object)
+{
+	struct imu_runtime *runtime = object;
+
+	imu_set_public_state(runtime, APP_IMU_ERROR);
+#if defined(CONFIG_OSKEY_DISPLAY) && defined(CONFIG_OSKEY_RUST)
+	struct app_entropy_snapshot entropy_snapshot;
+
+	if (app_entropy_snapshot_get(&entropy_snapshot) == 0 &&
+	    entropy_snapshot.state == APP_ENTROPY_CAPTURING &&
+	    entropy_snapshot.current == APP_ENTROPY_SOURCE_IMU) {
+		(void)app_entropy_fail(entropy_snapshot.session, APP_ENTROPY_SOURCE_IMU,
+				       runtime->last_error);
+	}
+#endif
+}
+
+static enum smf_state_result imu_sampling_run(void *object)
+{
+	struct imu_runtime *runtime = object;
+
+	if (runtime->event != IMU_EVENT_SAMPLE) {
+		return SMF_EVENT_PROPAGATE;
+	}
+
+	int ret = imu_process_sample(runtime);
+
+	if (ret == 0) {
+		runtime->errors = 0;
+		const struct smf_state *next = FusionAhrsGetFlags(&runtime->ahrs).startup
+						       ? &imu_states[IMU_SMF_INITIALIZING]
+						       : &imu_states[IMU_SMF_READY];
+
+		if (smf_get_current_leaf_state(SMF_CTX(runtime)) != next) {
+			smf_set_state(SMF_CTX(runtime), next);
+		}
+		return SMF_EVENT_HANDLED;
+	}
+
+	LOG_ERR("IMU sample processing failed: %d", ret);
+	runtime->last_error = ret;
+	runtime->errors++;
+	if (runtime->errors >= 5 &&
+	    smf_get_current_leaf_state(SMF_CTX(runtime)) != &imu_states[IMU_SMF_ERROR]) {
+		smf_set_state(SMF_CTX(runtime), &imu_states[IMU_SMF_ERROR]);
+	}
+	return SMF_EVENT_HANDLED;
+}
+
+static const struct smf_state imu_states[] = {
+	[IMU_SMF_IDLE] = SMF_CREATE_STATE(imu_idle_entry, imu_idle_run, NULL, NULL, NULL),
+	[IMU_SMF_STREAMING] =
+		SMF_CREATE_STATE(imu_streaming_entry, imu_streaming_run, NULL, NULL, NULL),
+	[IMU_SMF_INITIALIZING] = SMF_CREATE_STATE(imu_initializing_entry, imu_sampling_run, NULL,
+						  &imu_states[IMU_SMF_STREAMING], NULL),
+	[IMU_SMF_READY] = SMF_CREATE_STATE(imu_ready_entry, imu_sampling_run, NULL,
+					   &imu_states[IMU_SMF_STREAMING], NULL),
+	[IMU_SMF_ERROR] = SMF_CREATE_STATE(imu_error_entry, imu_sampling_run, NULL,
+					   &imu_states[IMU_SMF_STREAMING], NULL),
+};
 
 static void imu_command_listener(const struct zbus_channel *chan)
 {
@@ -220,42 +339,33 @@ static void imu_thread(void *first, void *second, void *third)
 	struct imu_runtime runtime = {0};
 
 	imu_fusion_initialize(&runtime);
-	imu_publish_state(APP_IMU_IDLE);
+	smf_set_initial(SMF_CTX(&runtime), &imu_states[IMU_SMF_IDLE]);
 
 	while (true) {
 		struct app_imu_command command;
 		const k_timeout_t timeout =
-			runtime.streaming ? K_USEC(IMU_SAMPLE_PERIOD_US) : K_FOREVER;
+			imu_runtime_streaming(&runtime) ? K_USEC(IMU_SAMPLE_PERIOD_US) : K_FOREVER;
 
 		if (k_msgq_get(&imu_command_queue, &command, timeout) == 0) {
-			imu_handle_command(&command, &runtime);
-			continue;
-		}
-
-		int ret = imu_process_sample(&runtime);
-
-		if (ret == 0) {
-			runtime.errors = 0;
-			imu_publish_state(FusionAhrsGetFlags(&runtime.ahrs).startup
-						  ? APP_IMU_INITIALIZING
-						  : APP_IMU_READY);
-		} else {
-			LOG_ERR("IMU sample processing failed: %d", ret);
-			runtime.errors++;
-			if (runtime.errors >= 5) {
-				imu_publish_state(APP_IMU_ERROR);
-#if defined(CONFIG_OSKEY_DISPLAY) && defined(CONFIG_OSKEY_RUST)
-				struct app_entropy_snapshot entropy_snapshot;
-
-				if (app_entropy_snapshot_get(&entropy_snapshot) == 0 &&
-				    entropy_snapshot.state == APP_ENTROPY_CAPTURING &&
-				    entropy_snapshot.current == APP_ENTROPY_SOURCE_IMU) {
-					(void)app_entropy_fail(entropy_snapshot.session,
-							       APP_ENTROPY_SOURCE_IMU, ret);
-				}
-#endif
+			switch (command.kind) {
+			case APP_IMU_COMMAND_START:
+				runtime.event = IMU_EVENT_START;
+				break;
+			case APP_IMU_COMMAND_STOP:
+				runtime.event = IMU_EVENT_STOP;
+				break;
+			default:
+				runtime.event = IMU_EVENT_NONE;
+				break;
 			}
+		} else {
+			runtime.event = IMU_EVENT_SAMPLE;
 		}
+
+		(void)smf_run_state(SMF_CTX(&runtime));
+		runtime.event = IMU_EVENT_NONE;
+		/* Retry a failed zbus publication on the next state-machine iteration. */
+		imu_publish_state(runtime.public_state);
 	}
 }
 
