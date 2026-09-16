@@ -3,6 +3,9 @@
 // Platform calls pass live Rust buffers to C only for the duration of each call.
 #![allow(clippy::undocumented_unsafe_blocks)]
 
+use crate::rs::ffi::{
+    app_nxp_enabled, app_nxp_initialize, app_nxp_refresh, app_nxp_seed_exists, app_nxp_unlock,
+};
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -10,7 +13,7 @@ use anyhow::{anyhow, Result};
 use core::ffi::{c_char, CStr};
 use core::fmt::Write;
 use core::mem::size_of_val;
-use oskey_action::WalletPlatform;
+use oskey_action::{SeedError, WalletPlatform};
 
 use crate::rs::ffi::{
     app_check_feature, app_check_storage, app_csrand_get, app_display_ready, app_fido_pin_recover,
@@ -21,6 +24,35 @@ use crate::rs::ffi::{
 pub(crate) struct Platform;
 
 impl WalletPlatform for Platform {
+    fn secure_seed_enabled(&self) -> bool {
+        unsafe { app_nxp_enabled() }
+    }
+
+    fn secure_seed_refresh(&self) -> bool {
+        unsafe { app_nxp_refresh() == 0 && storage_exists(storage_ids.seed) == 0 }
+    }
+
+    fn secure_seed_initialize(&self, pin: &[u8; 32], seed: &[u8; 64]) -> Result<()> {
+        if unsafe {
+            storage_exists(storage_ids.seed) != 0
+                || app_nxp_initialize(pin.as_ptr(), seed.as_ptr()) != 0
+        } {
+            return Err(anyhow!("Failed to initialize secure seed"));
+        }
+        Ok(())
+    }
+
+    fn secure_seed_unlock(
+        &self,
+        pin: &[u8; 32],
+        seed: &mut [u8; 64],
+    ) -> core::result::Result<(), SeedError> {
+        match unsafe { app_nxp_unlock(pin.as_ptr(), seed.as_mut_ptr()) } {
+            0 => Ok(()),
+            -2 => Err(SeedError::Credentials),
+            _ => Err(SeedError::Storage),
+        }
+    }
     fn version(&self) -> String {
         let mut buffer = [0; 32];
         unsafe { app_version_get(buffer.as_mut_ptr(), buffer.len()) };
@@ -72,10 +104,26 @@ impl WalletPlatform for Platform {
     }
 
     fn storage_ready(&self) -> bool {
+        if self.secure_seed_enabled() {
+            return unsafe { app_check_storage() } && self.seed_exists().is_ok();
+        }
         unsafe { app_check_storage() }
     }
 
     fn seed_exists(&self) -> Result<bool> {
+        if self.secure_seed_enabled() {
+            // Changing firmware configuration must not silently leave a second seed backend.
+            if unsafe { storage_exists(storage_ids.seed) } != 0 {
+                return Err(anyhow!(
+                    "Back up and erase the software wallet before enabling secure storage"
+                ));
+            }
+            return match unsafe { app_nxp_seed_exists() } {
+                0 => Ok(false),
+                1 => Ok(true),
+                _ => Err(anyhow!("Secure storage unavailable")),
+            };
+        }
         match unsafe { storage_exists(storage_ids.seed) } {
             0 => Ok(false),
             1 => Ok(true),
@@ -92,6 +140,9 @@ impl WalletPlatform for Platform {
     }
 
     fn read_seed(&self, data: &mut [u8]) -> Result<usize> {
+        if self.secure_seed_enabled() {
+            return Err(anyhow!("Software seed backend disabled"));
+        }
         let result = unsafe { storage_read(data.as_mut_ptr(), data.len(), storage_ids.seed) };
         if result < 0 {
             Err(anyhow!("Failed to read seed: {result}"))
@@ -101,6 +152,9 @@ impl WalletPlatform for Platform {
     }
 
     fn write_seed(&self, data: &[u8]) -> Result<()> {
+        if self.secure_seed_enabled() {
+            return Err(anyhow!("Software seed backend disabled"));
+        }
         let result = unsafe { storage_write(data.as_ptr(), data.len(), storage_ids.seed) };
         if result == 0 {
             Ok(())

@@ -255,6 +255,11 @@ impl AppConfirmation {
 #[allow(unused_doc_comments)]
 /// cbindgen:ignore
 extern "C" {
+    pub(crate) fn app_nxp_enabled() -> bool;
+    pub(crate) fn app_nxp_refresh() -> c_int;
+    pub(crate) fn app_nxp_seed_exists() -> c_int;
+    pub(crate) fn app_nxp_initialize(pin: *const u8, seed: *const u8) -> c_int;
+    pub(crate) fn app_nxp_unlock(pin: *const u8, seed: *mut u8) -> c_int;
     pub(crate) static storage_ids: StorageIds;
 
     pub(crate) fn app_csrand_get(dst: *mut u8, len: usize) -> bool;
@@ -464,6 +469,8 @@ fn local_request<'a>(
         }),
         LocalRequestKind::Restart => Some(LocalRequest::Restart),
         LocalRequestKind::ResetStorage => Some(LocalRequest::ResetStorage),
+        LocalRequestKind::Lock => Some(LocalRequest::Lock),
+        LocalRequestKind::RefreshSecureStorage => Some(LocalRequest::RefreshSecureStorage),
     }
 }
 

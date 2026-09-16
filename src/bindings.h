@@ -35,6 +35,8 @@ typedef enum LocalRequestKind {
   LocalRequestKind_GenerateMnemonicMixed,
   LocalRequestKind_Restart,
   LocalRequestKind_ResetStorage,
+  LocalRequestKind_Lock,
+  LocalRequestKind_RefreshSecureStorage,
 } LocalRequestKind;
 
 typedef enum FidoRequestKind {
@@ -63,6 +65,7 @@ typedef enum LocalAction {
   LocalAction_Ready,
   LocalAction_Mnemonic,
   LocalAction_Error,
+  LocalAction_Updated,
 } LocalAction;
 
 enum AppError

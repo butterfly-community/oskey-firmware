@@ -12,6 +12,7 @@
 #include "app.h"
 #include "display/display.h"
 #include "storage.h"
+#include "security/nxp/nxp.h"
 
 #if defined(CONFIG_OSKEY_FIDO2)
 #include <zephyr/authentication/fido2/fido2_storage.h>
@@ -102,6 +103,9 @@ bool app_check_storage(void)
 
 bool app_storage_reset(void)
 {
+	if (app_nxp_enabled() && app_nxp_erase() != NXP_OK) {
+		return false;
+	}
 	if (storage_erase_flash() < 0) {
 		return false;
 	}
