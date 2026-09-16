@@ -205,8 +205,15 @@ enum app_imu_command_kind {
 	APP_IMU_COMMAND_STOP,
 };
 
+enum app_imu_client {
+	APP_IMU_CLIENT_UI,
+	APP_IMU_CLIENT_ENTROPY,
+	APP_IMU_CLIENT_COUNT,
+};
+
 struct app_imu_command {
 	enum app_imu_command_kind kind;
+	enum app_imu_client client;
 };
 
 enum app_notification_kind {

@@ -665,11 +665,6 @@ static void ui_page_leave(enum ui_page page)
 		ui_files_leave();
 	}
 #endif
-#if defined(CONFIG_OSKEY_IMU)
-	if (page == UI_PAGE_IMU) {
-		ui_imu_leave();
-	}
-#endif
 	if (page == UI_PAGE_ENTROPY_COLLECT) {
 		ui_entropy_collect_leave();
 	}

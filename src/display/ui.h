@@ -215,8 +215,4 @@ void ui_qr_leave(void);
 void ui_qr_event(const struct app_qr_scanner_event *event);
 #endif
 
-#if defined(CONFIG_OSKEY_IMU)
-void ui_imu_leave(void);
-#endif
-
 #endif

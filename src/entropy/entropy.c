@@ -118,7 +118,10 @@ static const struct smf_state entropy_states[];
 static int entropy_imu_start(void)
 {
 #if defined(CONFIG_OSKEY_IMU)
-	struct app_imu_command command = {.kind = APP_IMU_COMMAND_START};
+	struct app_imu_command command = {
+		.kind = APP_IMU_COMMAND_START,
+		.client = APP_IMU_CLIENT_ENTROPY,
+	};
 
 	return zbus_chan_pub(&app_imu_command_chan, &command, K_MSEC(100));
 #else
@@ -129,7 +132,10 @@ static int entropy_imu_start(void)
 static void entropy_imu_stop(void)
 {
 #if defined(CONFIG_OSKEY_IMU)
-	struct app_imu_command command = {.kind = APP_IMU_COMMAND_STOP};
+	struct app_imu_command command = {
+		.kind = APP_IMU_COMMAND_STOP,
+		.client = APP_IMU_CLIENT_ENTROPY,
+	};
 
 	(void)zbus_chan_pub(&app_imu_command_chan, &command, K_MSEC(100));
 #endif

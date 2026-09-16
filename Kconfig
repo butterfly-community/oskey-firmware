@@ -174,15 +174,13 @@ rsource "src/audio/Kconfig"
 
 config OSKEY_IMU
 	bool "6-axis IMU (accelerometer and gyroscope)"
-	depends on DT_HAS_QST_QMI8658A_ENABLED
+	depends on DT_HAS_OSKEY_QMI8658A_FIFO_ENABLED
 	select OSKEY_MESSAGE_BUS
-	select SMF
-	select SMF_ANCESTOR_SUPPORT
-	select SENSOR
+	select OSKEY_QMI8658A_FIFO
 	help
-	  Enable the on-board QMI8658 accelerometer and gyroscope over I2C,
-	  including Fusion orientation estimation. The Fusion library is only
-	  compiled and linked when this option is enabled.
+	  Enable the portable IMU acquisition and Fusion pipeline. A dedicated
+	  thread directly drains the devicetree-selected FIFO source; the wakeup
+	  can come from a software timer or a future DRDY GPIO interrupt.
 
 config OSKEY_IMU_RENDER_INTERVAL_MS
 	int "IMU page render interval in milliseconds"
@@ -198,7 +196,14 @@ config OSKEY_IMU_THREAD_STACK_SIZE
 	depends on OSKEY_IMU
 	default 4096
 	help
-	  Stack used by the IMU sampling thread.
+	  Stack used by the direct FIFO acquisition and Fusion thread.
+
+config OSKEY_IMU_THREAD_PRIORITY
+	int "IMU thread priority"
+	depends on OSKEY_IMU
+	default 3
+	help
+	  Portable Zephyr preemptive priority for acquisition and Fusion.
 
 source "$(APPLICATION_SOURCE_DIR)/drivers/Kconfig"
 

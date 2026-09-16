@@ -324,7 +324,10 @@ static void show_audio(void)
 #if defined(CONFIG_OSKEY_IMU)
 static void ui_imu_command(enum app_imu_command_kind kind)
 {
-	struct app_imu_command command = {.kind = kind};
+	struct app_imu_command command = {
+		.kind = kind,
+		.client = APP_IMU_CLIENT_UI,
+	};
 
 	(void)zbus_chan_pub(&app_imu_command_chan, &command, K_MSEC(100));
 }
@@ -533,11 +536,6 @@ static void imu_box_delete(lv_event_t *event)
 {
 	ARG_UNUSED(event);
 
-	ui_imu_leave();
-}
-
-void ui_imu_leave(void)
-{
 	ui_imu_command(APP_IMU_COMMAND_STOP);
 	if (imu_box_timer_handle != NULL) {
 		lv_timer_delete(imu_box_timer_handle);
