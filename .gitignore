@@ -3,12 +3,12 @@
 .vscode
 .cache
 .cargo
-/build*/
+/build/
 /boards/build/
 /src/audio/assets/generated/
 *.bin
 target
-/temp*/
+/temp/
 kconfig.json
 *.log
 AGENTS.md
