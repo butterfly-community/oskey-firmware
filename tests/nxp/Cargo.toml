@@ -1,0 +1,13 @@
+[package]
+name = "oskey-nxp-platform-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "platform.rs"
+
+[dependencies]
+oskey-action = { path = "../../lib/core/action", default-features = false, features = ["crypto-psa", "crypto-link"] }
+anyhow = "1"
+zeroize = { version = "1.9", features = ["alloc"] }

@@ -13,3 +13,6 @@ kconfig.json
 *.log
 AGENTS.md
 /test*/
+!/tests/
+/tests/*
+!/tests/nxp/
