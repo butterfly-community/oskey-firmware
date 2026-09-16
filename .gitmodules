@@ -9,3 +9,6 @@
 [submodule "lib/Fusion"]
 	path = lib/Fusion
 	url = https://github.com/xioTechnologies/Fusion.git
+[submodule "lib/nano-package"]
+	path = lib/nano-package
+	url = https://github.com/NXPPlugNTrust/nano-package.git
