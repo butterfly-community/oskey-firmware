@@ -1,0 +1,16 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+/* The board overlay supplies I2C0 pin routing and bus speed. */
+/ {
+	chosen {
+		oskey,secure-element = &oskey_a5000;
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	oskey_a5000: secure-element@48 {
+		compatible = "nxp,a5000";
+		reg = <0x48>;
+		status = "okay";
+	};
+};

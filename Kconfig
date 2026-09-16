@@ -2,6 +2,28 @@
 
 menu "OSKey core"
 
+config OSKEY_NXP_SE
+	bool "NXP A5000 seed storage"
+	depends on OSKEY_RUST
+	select I2C
+	select PSA_WANT_KEY_TYPE_AES
+	select PSA_WANT_ALG_CMAC
+	select PSA_WANT_ALG_CBC_NO_PADDING
+	help
+	  Store the wallet seed in A5000 and enforce ten PIN attempts in the chip.
+	  Disabled by default; the existing software wallet backend is then used.
+
+config OSKEY_NXP_CREDENTIALS_HEADER
+	string "Private A5000 credential header"
+	depends on OSKEY_NXP_SE
+	default ""
+	help
+	  Absolute path to a board provisioning header defining OSKEY_NXP_CREDENTIALS.
+	  An empty path leaves the secure backend unconfigured and unable to store seed.
+
+config MAIN_STACK_SIZE
+	default 8192 if OSKEY_NXP_SE
+
 config OSKEY_MESSAGE_BUS
 	bool
 	select ZBUS

@@ -138,3 +138,4 @@ target_sources_ifdef(CONFIG_OSKEY_FIDO2 app PRIVATE
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 include(cmake/rust.cmake)
+include(cmake/nxp.cmake)

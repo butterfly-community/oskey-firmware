@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MPL-2.0
+description: NXP A5000 secure element using the nano-package T=1 over I2C transport
+compatible: "nxp,a5000"
+include: i2c-device.yaml
+properties:
+  enable-gpios:
+    type: phandle-array
+    description: Optional chip enable, active level supplied by GPIO flags
