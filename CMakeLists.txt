@@ -8,6 +8,8 @@ list(APPEND DTS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/drivers)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oskey)
 
+zephyr_include_directories(include)
+
 add_subdirectory(drivers)
 
 if(CONFIG_OSKEY_FIDO2 AND CONFIG_NATIVE_LIBC)

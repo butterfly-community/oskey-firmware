@@ -4,3 +4,4 @@
 
 rsource "audio/Kconfig"
 rsource "video/Kconfig"
+rsource "sensor/qmi8658a_fifo/Kconfig"

@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: MPL-2.0
+
+description: QST QMI8658A FIFO-backed OSKey IMU source
+
+compatible: "oskey,qmi8658a-fifo"
+
+include: [sensor-device.yaml, i2c-device.yaml]
+
+properties:
+  accel-fs:
+    type: int
+    default: 4
+    enum: [2, 4, 8, 16]
+    description: Accelerometer full-scale range in g.
+
+  gyro-fs:
+    type: int
+    default: 512
+    enum: [16, 32, 64, 128, 256, 512, 1024, 2048]
+    description: Gyroscope full-scale range in degrees per second.
+
+  accel-odr:
+    type: int
+    default: 112
+    description: Requested accelerometer output data rate in Hz.
+
+  gyro-odr:
+    type: int
+    default: 112
+    description: Requested gyroscope output data rate in Hz.
+
+  poll-interval-us:
+    type: int
+    default: 4000
+    description: |
+      Period of the software timer used to inspect and drain the FIFO when no
+      interrupt line is available. This controls retrieval latency, not the
+      physical sensor output data rate.

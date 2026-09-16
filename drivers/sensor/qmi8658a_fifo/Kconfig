@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MPL-2.0
+
+config OSKEY_QMI8658A_FIFO
+	bool
+	depends on DT_HAS_OSKEY_QMI8658A_FIFO_ENABLED
+	select I2C
+	help
+	  Enable the synchronous QMI8658A FIFO backend. The portable IMU thread
+	  owns scheduling and calls this backend directly, so no RTIO context or
+	  driver work queue is required.
+
+config OSKEY_QMI8658A_FIFO_INIT_PRIORITY
+	int
+	depends on OSKEY_QMI8658A_FIFO
+	default 90
+	help
+	  Device initialization priority. This must run after the I2C controller.
