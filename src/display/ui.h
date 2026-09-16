@@ -47,6 +47,9 @@ enum ui_page {
 	UI_PAGE_QR_SCANNER,
 #endif
 	UI_PAGE_SETTINGS,
+#if defined(CONFIG_OSKEY_NXP_SE)
+	UI_PAGE_NXP,
+#endif
 #if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 	UI_PAGE_FILES,
 #endif
@@ -150,6 +153,9 @@ void ui_init(const uint8_t features[APP_FEATURE_COUNT], const struct ui_status *
 	     const struct app_wifi_config *wifi_config, const struct app_wifi_scan *wifi_scan);
 void ui_controller_init(const uint8_t features[APP_FEATURE_COUNT]);
 void ui_show_startup(void);
+#if defined(CONFIG_OSKEY_NXP_SE)
+void ui_nxp_entry(lv_obj_t *content);
+#endif
 void ui_open(enum ui_page page);
 void ui_push(enum ui_page page);
 void ui_replace(enum ui_page page);

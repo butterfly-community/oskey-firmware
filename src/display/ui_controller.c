@@ -104,8 +104,12 @@ static const char *error_text(AppError error, uint32_t value, char *buffer, size
 	case AppError_InvalidAction:
 		return "Invalid action";
 	case AppError_UnlockFailed:
+#if defined(CONFIG_OSKEY_NXP_SE)
+		return "PIN rejected or wallet locked; see NXP management";
+#else
 		snprintk(buffer, size, "Unlock failed (%u/10)", value);
 		return buffer;
+#endif
 	case AppError_Unspecified:
 	case AppError_Failed:
 	default:
@@ -138,6 +142,14 @@ static void apply_status(const struct ui_status *next)
 
 	ui.status = *next;
 	ui_status_update(next);
+#if defined(CONFIG_OSKEY_NXP_SE)
+	if (ui.page == UI_PAGE_NXP) {
+		if (previous.wallet != next->wallet) {
+			ui_refresh();
+		}
+		return;
+	}
+#endif
 	if (active_status_page()) {
 		ui_refresh();
 	}
@@ -227,6 +239,9 @@ static void handle_local_result(struct app_local_result *result)
 	ui_set_busy(false);
 
 	switch (result->action) {
+	case LocalAction_Updated:
+		ui_refresh();
+		break;
 	case LocalAction_Ready:
 #if defined(CONFIG_OSKEY_FIDO2)
 		if (ui.page == UI_PAGE_FIDO_PIN_RECOVER) {

@@ -9,6 +9,10 @@
 #include <zephyr/sys/util.h>
 
 #include "assets/assets.h"
+#include "security/nxp/nxp.h"
+#if defined(CONFIG_OSKEY_NXP_SE)
+#include "storage.h"
+#endif
 
 static bool valid_pin(const char *pin)
 {
@@ -622,6 +626,9 @@ static void show_capabilities(void)
 
 	ui_clear_sensitive();
 	lv_obj_t *content = ui_page_begin("OSKey capabilities", UI_NAVIGATION_NONE);
+#if defined(CONFIG_OSKEY_NXP_SE)
+	ui_nxp_entry(content);
+#endif
 	ui_section(content, "CAPABILITIES");
 	for (size_t i = 0; i < ARRAY_SIZE(names); ++i) {
 		bool enabled = ui.features[i];
@@ -650,10 +657,87 @@ static void show_home(void)
 		    navigate, (void *)(uintptr_t)UI_PAGE_SETTINGS);
 }
 
+#if defined(CONFIG_OSKEY_NXP_SE)
+void ui_nxp_entry(lv_obj_t *content)
+{
+	ui_list_row(content, &oskey_wallet, "NXP secure element", "Seed storage and wallet recovery",
+		    NULL, UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_NXP);
+}
+
+static void nxp_refresh(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	ui_submit(LocalRequestKind_RefreshSecureStorage, 0, NULL, 0, NULL, 0);
+}
+
+static void nxp_lock(lv_event_t *event)
+{
+	ARG_UNUSED(event);
+	ui_submit(LocalRequestKind_Lock, 0, NULL, 0, NULL, 0);
+}
+
+static void show_nxp(void)
+{
+	lv_obj_t *content = ui_page_begin("NXP secure element", UI_NAVIGATION_BACK);
+	ui_clear_sensitive();
+	int state = app_nxp_state();
+	bool legacy_clear = storage_exists(storage_ids.seed) == 0;
+	const char *detail;
+	switch (state) {
+	case NXP_EMPTY:
+		detail = "Ready to initialize a wallet";
+		break;
+	case NXP_READY:
+		detail = ui.status.wallet == WalletState_Ready ? "Wallet unlocked" : "Wallet locked";
+		break;
+	case NXP_AUTH_REJECTED:
+		detail = "PIN rejected or attempt limit reached";
+		break;
+	case NXP_INCOMPLETE:
+		detail = "Initialization incomplete; erase to recover";
+		break;
+	case NXP_UNCONFIGURED:
+		detail = "Connection credentials not configured";
+		break;
+	default:
+		detail = "Secure element unavailable";
+		break;
+	}
+	if (!legacy_clear) {
+		detail = "Software wallet must be backed up and erased before using secure storage";
+	}
+	ui_list_row(content, &oskey_wallet, "A5000R2HQ1", detail, NULL, UI_TONE_DEFAULT, NULL, NULL);
+	ui_list_row(content, &oskey_warning, "PIN protection",
+		    "10 consecutive failures lock the wallet across restarts. "
+		    "Recovery requires erasing it. Remaining attempts are not reported by the chip.",
+		    NULL, UI_TONE_WARNING, NULL, NULL);
+	ui_section(content, "WALLET");
+	if (legacy_clear && state == NXP_EMPTY) {
+		ui_list_row(content, &oskey_wallet, "Initialize wallet", "Create or import a recovery phrase",
+			    NULL, UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_PIN_NEW);
+	} else if (legacy_clear && (state == NXP_READY || state == NXP_AUTH_REJECTED)) {
+		if (ui.status.wallet == WalletState_Ready) {
+			ui_list_row(content, &oskey_wallet, "Lock wallet", "Clear the unlocked seed from memory",
+				    NULL, UI_TONE_ACTIVE, nxp_lock, NULL);
+		} else {
+			ui_list_row(content, &oskey_wallet, "Unlock with PIN", "Enter your wallet PIN",
+				    NULL, UI_TONE_ACTIVE, navigate, (void *)(uintptr_t)UI_PAGE_LOCKED);
+		}
+	}
+	ui_list_row(content, &oskey_refresh, "Refresh connection", "Also locks an unlocked wallet",
+		    NULL, UI_TONE_ACTIVE, nxp_refresh, NULL);
+	ui_list_row(content, &oskey_trash, "Erase wallet", "Permanently remove wallet and device data",
+		    NULL, UI_TONE_DANGER, confirm_reset, NULL);
+}
+#endif
+
 static void show_settings(void)
 {
 	lv_obj_t *content = ui_page_begin("Device settings", UI_NAVIGATION_BACK);
 	ui_clear_sensitive();
+#if defined(CONFIG_OSKEY_NXP_SE)
+	ui_nxp_entry(content);
+#endif
 #if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 	ui_section(content, "STORAGE");
 	ui_list_row(content, &oskey_document, "Files", "Browse the SD card read-only", NULL,
@@ -857,6 +941,9 @@ static void show_entropy(void)
 static void show_storage_error(void)
 {
 	lv_obj_t *content = ui_page_begin("Storage unavailable", UI_NAVIGATION_NONE);
+#if defined(CONFIG_OSKEY_NXP_SE)
+	ui_nxp_entry(content);
+#endif
 	ui_list_row(content, &oskey_warning, "Secure storage could not be opened",
 		    "Restart first; erase only if the problem continues", NULL, UI_TONE_WARNING,
 		    NULL, NULL);
@@ -902,6 +989,11 @@ void ui_render(void)
 	case UI_PAGE_SETTINGS:
 		show_settings();
 		break;
+#if defined(CONFIG_OSKEY_NXP_SE)
+	case UI_PAGE_NXP:
+		show_nxp();
+		break;
+#endif
 #if defined(CONFIG_OSKEY_REMOVABLE_MEDIA)
 	case UI_PAGE_FILES:
 		ui_files_render();

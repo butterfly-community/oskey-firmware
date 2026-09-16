@@ -597,6 +597,11 @@ void ui_input_page(const struct ui_input_config *config, ui_input_submit_t submi
 		    UI_TONE_SUCCESS, input_action_clicked, NULL);
 	ui.input_submit = lv_obj_get_child(content, -1);
 	lv_obj_set_style_margin_top(ui.input_submit, 18, 0);
+#if defined(CONFIG_OSKEY_NXP_SE)
+	if (ui.page == UI_PAGE_LOCKED) {
+		ui_nxp_entry(content);
+	}
+#endif
 
 	ui.keyboard = lv_keyboard_create(ui.screen);
 	lv_obj_set_size(ui.keyboard, LV_PCT(100), LV_MIN(ui.height * 55 / 100, 200));
