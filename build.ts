@@ -29,7 +29,7 @@ const lichuangWestArgs = [
   "espressif-psram-8M",
 ];
 
-const buildDir = "temp";
+const buildDir = "build/temp";
 const outputDir = "boards/build";
 const artifacts = ["bin", "elf", "uf2"] as const;
 

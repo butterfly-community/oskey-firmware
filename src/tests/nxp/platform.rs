@@ -2,9 +2,9 @@
 //! Exercise the production Rust adapter against a controlled C storage boundary.
 extern crate alloc;
 
-#[path = "../../src/rs/ffi.rs"]
+#[path = "../../rs/ffi.rs"]
 mod ffi;
-#[path = "../../src/rs/platform.rs"]
+#[path = "../../rs/platform.rs"]
 mod platform;
 mod rs {
     pub(crate) use crate::{ffi, platform};

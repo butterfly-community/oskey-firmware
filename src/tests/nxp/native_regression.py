@@ -10,7 +10,7 @@ import time
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("firmware", type=Path)
 parser.add_argument("--wallet", action="store_true")
-parser.add_argument("--runner", type=Path, default=Path("tests/integration/target/debug/oskey-test"))
+parser.add_argument("--runner", type=Path, default=Path("src/tests/integration/target/debug/oskey-test"))
 args = parser.parse_args()
 firmware, runner = args.firmware.resolve(), args.runner.resolve()
 

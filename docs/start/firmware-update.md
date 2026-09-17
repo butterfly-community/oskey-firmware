@@ -50,7 +50,7 @@ python -m pip install -r "$mcuboot_dir/scripts/requirements.txt"
 Select one profile in the same shell. Development uses repository test keys and virtual eFuses:
 
 ```sh
-output=temp/development
+output=build/temp/development
 profile="$app_dir/mcuboot/esp.conf"
 mcuboot_key="$app_dir/sign/root-ec-p256.pem"
 secure_boot_key="$app_dir/sign/root-rsa-3072.pem"
@@ -61,7 +61,7 @@ Production permanently provisions real eFuses. Never select this profile in deve
 automated tests. Store both production keys outside the source tree:
 
 ```sh
-output=temp/production
+output=build/temp/production
 profile="$app_dir/mcuboot/esp-production.conf"
 mcuboot_key=/secure/path/mcuboot-p256.pem
 secure_boot_key=/secure/path/secure-boot-rsa3072.pem

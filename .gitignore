@@ -8,11 +8,8 @@
 /src/audio/assets/generated/
 *.bin
 target
-/temp/
 kconfig.json
 *.log
 AGENTS.md
-/test*/
-!/tests/
-/tests/*
-!/tests/nxp/
+/src/tests/*
+!/src/tests/nxp/

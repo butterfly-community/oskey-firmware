@@ -8,7 +8,7 @@ list(APPEND DTS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/drivers)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(oskey)
 
-zephyr_include_directories(include)
+zephyr_include_directories(drivers/include)
 
 add_subdirectory(drivers)
 
