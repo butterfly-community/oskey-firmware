@@ -98,7 +98,8 @@ static int webusb_bulk_request_handler(struct usbd_class_data *c_data, struct ne
 	return 0;
 }
 
-static void *webusb_bulk_get_desc(struct usbd_class_data *const c_data, const enum usbd_speed speed)
+static const void *webusb_bulk_get_desc(struct usbd_class_data *const c_data,
+				      const enum usbd_speed speed)
 {
 	struct webusb_bulk_data *data = usbd_class_get_private(c_data);
 

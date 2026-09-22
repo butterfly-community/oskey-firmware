@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MPL-2.0
+# Validated main revisions. Keep Rust here so west update cannot downgrade it
+# to the older version in Zephyr's optional manifest.
+manifest:
+  projects:
+    - name: zephyr
+      url: https://github.com/zephyrproject-rtos/zephyr
+      revision: 0388ef0c424d70302c279d38f0aa1a69e92e157d
+      import:
+        name-blocklist: [zephyr-lang-rust]
+    - name: zephyr-lang-rust
+      url: https://github.com/zephyrproject-rtos/zephyr-lang-rust
+      revision: 6889ba3bdc0d9debfbb5aea07c1a869935eea65b
+      path: modules/lang/rust
+  self:
+    path: oskey

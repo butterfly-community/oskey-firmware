@@ -7,6 +7,7 @@ compile_error!("OSKey requires native pointer-width atomic operations");
 
 extern crate alloc;
 extern crate zephyr;
+extern crate zephyr_panic;
 
 #[cfg(all(target_os = "linux", not(test)))]
 /// cbindgen:ignore

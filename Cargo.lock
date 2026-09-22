@@ -1191,6 +1191,7 @@ dependencies = [
  "cbindgen",
  "oskey-action",
  "zephyr",
+ "zephyr-panic",
  "zeroize",
 ]
 
@@ -1580,6 +1581,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "zephyr-panic"
+version = "0.1.0"
+dependencies = [
+ "zephyr",
+ "zephyr-build",
 ]
 
 [[package]]

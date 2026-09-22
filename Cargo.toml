@@ -12,6 +12,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 zephyr = "0.1"
+zephyr-panic = "0.1"
 
 oskey-action = { path = "lib/core/action", default-features = false, features = [
   "crypto-psa",

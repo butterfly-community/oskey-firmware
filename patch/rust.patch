@@ -1,8 +1,10 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index be31379..6fe45a8 100644
+index a0ecfd7..1e72af1 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -51,2 +51,15 @@ function(_rust_map_target)
+@@ -49,6 +49,19 @@ function(_rust_map_target)
+     else()
+       message(FATAL_ERROR "Rust: Unsupported riscv ISA")
      endif()
 +  elseif(CONFIG_XTENSA)
 +    # Xtensa targets exist upstream as tier 3 (rust-lang/rust #125141) but
@@ -18,7 +20,12 @@ index be31379..6fe45a8 100644
 +      message(FATAL_ERROR "Rust: Unsupported Xtensa SoC series")
 +    endif()
    elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64"))
-@@ -92,1 +105,9 @@ function(add_cargo_target_with_zephyr_env target)
+     set(RUST_TARGET "x86_64-unknown-none" PARENT_SCOPE)
+   elseif(CONFIG_ARCH_POSIX AND CONFIG_64BIT AND (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64"))
+@@ -91,6 +104,14 @@ function(add_cargo_target_with_zephyr_env target)
+   set(cargo_args ${CARGO_TARGET_CARGO_ARGS})
+   list(POP_FRONT cargo_args cargo_command)
+ 
 +  if(CONFIG_XTENSA)
 +    set(cargo_toolchain_arg +esp)
 +    set(cargo_build_std_args -Z build-std=core,alloc)
@@ -28,36 +35,57 @@ index be31379..6fe45a8 100644
 +  endif()
 +
    add_custom_command(
-@@ -106,3 +127,3 @@ function(add_cargo_target_with_zephyr_env target)
+     OUTPUT ${CARGO_TARGET_OUTPUT}
+     BYPRODUCTS ${CARGO_TARGET_BYPRODUCTS}
+@@ -106,7 +127,7 @@ function(add_cargo_target_with_zephyr_env target)
+       WRAPPER_FILE="${WRAPPER_FILE}"
+       DT_AUGMENTS="${DT_AUGMENTS}"
        BINARY_DIR_INCLUDE_GENERATED="${BINARY_DIR_INCLUDE_GENERATED}"
 -      cargo ${cargo_command}
 +      cargo ${cargo_toolchain_arg} ${cargo_command}
        ${rust_build_type_arg}
-@@ -114,2 +135,3 @@ function(add_cargo_target_with_zephyr_env target)
+ 
+       # Set a replacement so that packages can just use `zephyr-sys` as a package
+@@ -114,6 +135,7 @@ function(add_cargo_target_with_zephyr_env target)
+       ${command_paths}
+       --target ${RUST_TARGET}
        --target-dir ${CARGO_TARGET_DIR}
 +      ${cargo_build_std_args}
        ${cargo_args}
-@@ -204,4 +236,4 @@ DOTCONFIG = \"${DOTCONFIG}\"
+     COMMENT "${CARGO_TARGET_COMMENT}"
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+@@ -204,8 +226,8 @@ target-dir = \"${CARGO_TARGET_DIR}\"
+ BUILD_DIR = \"${CMAKE_CURRENT_BINARY_DIR}\"
+ DOTCONFIG = \"${DOTCONFIG}\"
  ZEPHYR_DTS = \"${ZEPHYR_DTS}\"
 -INCLUDE_DIRS = \"${include_dirs}\"
 -INCLUDE_DEFINES = \"${include_defines}\"
 +INCLUDE_DIRS = '${include_dirs}'
 +INCLUDE_DEFINES = '${include_defines}'
  WRAPPER_FILE = \"${WRAPPER_FILE}\"
-@@ -225,3 +246,2 @@ ${config_paths}
+ BINARY_DIR_INCLUDE_GENERATED = \"${BINARY_DIR_INCLUDE_GENERATED}\"
+ DT_AUGMENTS = \"${DT_AUGMENTS}\"
+@@ -225,7 +247,6 @@ ${config_paths}
+ 
+   # Command to lint the Rust application.
    add_cargo_target_with_zephyr_env(clippy
 -    ALL
      OUTPUT run_rust_clippy
+     CARGO_ARGS
+       clippy
 diff --git a/Kconfig b/Kconfig
-index 0b2d057..f84862c 100644
+index 2d3eddc..fbc0d76 100644
 --- a/Kconfig
 +++ b/Kconfig
-@@ -11,2 +11,3 @@ config RUST_SUPPORTED
+@@ -9,6 +9,7 @@ config RUST_SUPPORTED
+ 	bool
+ 	default y if ((CPU_CORTEX_M || \
  				(RISCV && !RISCV_ISA_RV32E && !RISCV_ISA_RV128I) || \
 +				XTENSA || \
- 				(ARCH_POSIX && 64BIT)) && \
-@@ -31,6 +32,13 @@ config RUST_ALLOC
- 	  an allocator.  This allocator will use the currently configured
+ 				(ARCH_POSIX && 64BIT) || \
+ 				HEXAGON) && \
+ 				!TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
+@@ -32,6 +33,13 @@ config RUST_ALLOC
  	  Zephyr allocator (malloc/free).  This this enabled, Rust
  	  applications can use the `alloc` crate.
  
@@ -68,10 +96,36 @@ index 0b2d057..f84862c 100644
 +	  Allocate Rust objects larger than 128 bytes from external ESP PSRAM.
 +	  Smaller allocations continue to use the Zephyr allocator.
 +
- endif # RUST
- 
+ config RUST_BLOCKING_POOL
+ 	bool "Worker pool for offloading blocking calls"
+ 	help
+diff --git a/dt-rust.yaml b/dt-rust.yaml
+index fb96ccf..a5cd630 100644
+--- a/dt-rust.yaml
++++ b/dt-rust.yaml
+@@ -33,6 +33,7 @@
+ # having this compatible property.  The nodes themselves are built out of the properties associated
+ # with each gpio.
+ - name: gpio-keys
++  cfg: CONFIG_GPIO
+   rules:
+     - !Compatible
+       names: [gpio-keys]
+diff --git a/zephyr-build/src/lib.rs b/zephyr-build/src/lib.rs
+index 6fd4f77..7edbc60 100644
+--- a/zephyr-build/src/lib.rs
++++ b/zephyr-build/src/lib.rs
+@@ -78,7 +78,7 @@ pub fn build_kconfig_mod() {
+         let line = line.expect("reading line from dotconfig");
+         if let Some(caps) = config_hex.captures(&line) {
+             writeln!(&mut f, "#[allow(dead_code)]").unwrap();
+-            writeln!(&mut f, "pub const {}: usize = {};", &caps[1], &caps[2]).unwrap();
++            writeln!(&mut f, "pub const {}: u64 = {};", &caps[1], &caps[2]).unwrap();
+         } else if let Some(caps) = config_int.captures(&line) {
+             writeln!(&mut f, "#[allow(dead_code)]").unwrap();
+             writeln!(&mut f, "pub const {}: isize = {};", &caps[1], &caps[2]).unwrap();
 diff --git a/zephyr/src/alloc_impl.rs b/zephyr/src/alloc_impl.rs
-index a8d86bf..e0c8f62 100644
+index 359dde6..39544df 100644
 --- a/zephyr/src/alloc_impl.rs
 +++ b/zephyr/src/alloc_impl.rs
 @@ -57,9 +57,18 @@ use alloc::alloc::handle_alloc_error;
@@ -105,12 +159,10 @@ index a8d86bf..e0c8f62 100644
          // The C allocation library assumes an alignment of 8.  For now, just panic if this cannot
          // be satistifed.
          if align > 8 {
-@@ -82,7 +96,13 @@ unsafe impl GlobalAlloc for ZephyrAllocator {
-         malloc(size)
+@@ -83,6 +97,12 @@ unsafe impl GlobalAlloc for ZephyrAllocator {
      }
  
--    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-+    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
+     unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
 +        #[cfg(CONFIG_RUST_ALLOC_ESP_SPIRAM)]
 +        if _layout.size() > ESP_SPIRAM_THRESHOLD {
 +            shared_multi_heap_free(ptr);
@@ -120,12 +172,3 @@ index a8d86bf..e0c8f62 100644
          free(ptr)
      }
  }
-diff --git a/zephyr-build/src/lib.rs b/zephyr-build/src/lib.rs
-index 6fd4f77..7edbc60 100644
---- a/zephyr-build/src/lib.rs
-+++ b/zephyr-build/src/lib.rs
-@@ -80,3 +80,3 @@ pub fn build_kconfig_mod() {
-             writeln!(&mut f, "#[allow(dead_code)]").unwrap();
--            writeln!(&mut f, "pub const {}: usize = {};", &caps[1], &caps[2]).unwrap();
-+            writeln!(&mut f, "pub const {}: u64 = {};", &caps[1], &caps[2]).unwrap();
-         } else if let Some(caps) = config_int.captures(&line) {
