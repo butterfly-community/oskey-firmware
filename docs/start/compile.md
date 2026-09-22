@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 
-You can directly use the Dockerfile, which provides a tested compilation and debugging environment. This project does not recommend native compilation on Windows. Windows users are advised to use WSL.
+The Dockerfile describes the CI build environment. Use the existing Zephyr workspace for local builds; do not rebuild Docker images locally. This project does not recommend native compilation on Windows. Windows users are advised to use WSL.
 
 ## Getting Started
 
@@ -23,14 +23,13 @@ west build -p always -b esp32s3_devkitc/esp32s3/procpu samples/hello_world
 
 [https://docs.zephyrproject.org/latest/develop/languages/rust/index.html](https://docs.zephyrproject.org/latest/develop/languages/rust/index.html)
 
-Additional application patches are also required.
+Use the project's [`west.yml`](../../west.yml) and follow the
+[workspace setup instructions](../../patch/README.md#reproduce-the-workspace).
+They pin Zephyr main and Rust to validated commits and apply all required patches.
+Run the patch helper from the OSKey source directory:
 
 ```bash
-cd <YOUR_ZEPHYR_PATH>/modules/lang/rust
-
-wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/rust.patch
-
-git apply rust.patch
+python3 patch/apply.py /path/to/zephyr-project
 ```
 
 Also refer to [Docker](../../Dockerfile)

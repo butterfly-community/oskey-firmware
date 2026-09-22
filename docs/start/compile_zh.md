@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 
-您可以直接使用 Dockerfile，这是经过测试的编译和调试环境。本项目不建议使用 Windows 原生编译，Windows 用户请使用 WSL。
+Dockerfile 用于 CI 编译环境。本地编译使用已有的 Zephyr 工作区，禁止在本地重建 Docker 镜像。本项目不建议使用 Windows 原生编译，Windows 用户请使用 WSL。
 
 ## 环境配置
 
@@ -26,14 +26,11 @@ west build -p always -b esp32s3_devkitc/esp32s3/procpu samples/hello_world
 
 [https://docs.zephyrproject.org/latest/develop/languages/rust/index.html](https://docs.zephyrproject.org/latest/develop/languages/rust/index.html)
 
-配置 Rust 补丁
+使用工程的 [`west.yml`](../../west.yml)，按[工作区配置说明](../../patch/README.md#reproduce-the-workspace)
+更新全部依赖。Zephyr main 和 Rust 模块均固定到验证过的提交；从 OSKey 源码目录统一应用补丁：
 
 ```bash
-cd <YOUR_ZEPHYR_PATH>/modules/lang/rust
-
-wget https://raw.githubusercontent.com/butterfly-community/oskey-firmware/refs/heads/master/patch/rust.patch
-
-git apply rust.patch
+python3 patch/apply.py /path/to/zephyr-project
 ```
 
 另外可以参考 [Docker](../../Dockerfile)

@@ -33,22 +33,16 @@ The simulator uses `/tmp/ttyOSKey`; host tools use `/tmp/ttyOSKeyC`.
 
 ## Zephyr Patches
 
-The current patches are tested with Zephyr `5058917ea61b9d075f24c0dfeb89fdb95a405d52`.
-Apply them in this order from the OSKey source directory:
+Use OSKey's [`west.yml`](../../west.yml) to pin Zephyr, Rust, and the imported dependencies.
+Follow the [workspace setup and update instructions](../../patch/README.md#reproduce-the-workspace),
+then apply all retained patches from the OSKey source directory:
 
 ```sh
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/tf-psa-threading.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/esp32-virtual-efuse.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/change-pin.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/oskey.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/usb-busy.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/fido/keepalive.patch"
-git -C "$ZEPHYR_BASE" apply "$PWD/patch/usb-dwc2-zlp-cache.patch"
+python3 patch/apply.py "$ZEPHYR_WORKSPACE"
 ```
 
-`change-pin.patch` mirrors upstream Zephyr PR #115238 and can be removed once that change is
-present in the Zephyr tree. See [`patch/README.md`](../../patch/README.md) for the audit status and
-removal condition of every patch.
+The patch audit and removal conditions are recorded in [`patch/README.md`](../../patch/README.md).
+CTAP `changePIN` is now provided by upstream Zephyr.
 
 ## Build
 
