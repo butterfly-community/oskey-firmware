@@ -1,0 +1,6 @@
+# The image installs dependencies; CI mounts the application at runtime.
+**
+!Dockerfile
+!west.yml
+!patch/
+!patch/**
