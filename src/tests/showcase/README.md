@@ -2,7 +2,7 @@
 
 # OSKey 产品展示截图
 
-本应用复用 `src/display/` 中的 LVGL 页面，以固定展示数据渲染完整的产品截图。钱包状态、签名请求、Wi-Fi 网络、NXP 状态、姿态数据和文件目录由 `fixtures.c` 提供。气隙流程、MQTT、麦克风与更新流程使用同一套 UI 控件组成展示页。FIDO 请求使用 `www.google.com` 和 `demo@example.com`。
+本工具复用 `src/display/` 中的 LVGL 页面，并使用 Chromium 渲染 `src/net/wifi_portal.html` 中的浏览器管理页面。钱包状态、签名请求、Wi-Fi 网络、NXP 状态、姿态数据和文件目录由 `fixtures.c` 提供。气隙流程、MQTT、麦克风、实体按键与 FIDO2 应用介绍使用同一套 UI 控件组成展示页。Google FIDO 请求使用 `www.google.com` 和 `demo@example.com`。
 
 展示应用单独构建，输出目录为 `build/showcase/`；产品文档和 PNG 截图位于 `docs/showcase/`。原始帧写入构建目录下的临时目录，转换后自动清理。
 
@@ -22,7 +22,9 @@ rustc +esp --version
 python3 src/tests/showcase/capture.py
 ```
 
-程序使用 SDL dummy 驱动和 LVGL snapshot 离屏渲染，生成 Markdown 首页、PNG 截图、总览拼图与清单。Python 环境需要 Pillow。
+程序使用 SDL dummy 驱动、LVGL snapshot 和 Chromium 离屏渲染，生成 Markdown 首页、PNG 截图、总览拼图与清单。Python 环境需要 Pillow。
+
+浏览器截图直接渲染项目的管理页面，分别展示 Wi-Fi 配网、主机名与重启管理、签名固件上传。工具自动寻找系统安装或 Playwright 缓存中的 Chromium，也可以通过 `OSKEY_SHOWCASE_BROWSER` 指定可执行文件。浏览器配置和中间页面写入构建目录下的临时目录，截图完成后自动清理。
 
 复用已构建的展示程序：
 

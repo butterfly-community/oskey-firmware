@@ -3,14 +3,14 @@
     {
       "id": "start",
       "title": "从开机到模块总览",
-      "summary": "设备能力总览、钱包与通行密钥首页，以及按需组合的连接和外设模块。",
-      "description": "开机即可查看设备能力，进入钱包与通行密钥首页，再按使用习惯选择连接和外设模块。"
+      "summary": "设备能力总览、可选安全启动与 Flash 加密、触摸与实体按键交互。",
+      "description": "开机即可查看设备能力，进入钱包与通行密钥首页，再按使用习惯选择连接和外设模块。可选安全启动验证固件来源，Flash 加密保护设备内的持久化数据；触摸屏与实体按键提供设备端确认，让不同形态的硬件都能承载你的选择。"
     },
     {
       "id": "wallet",
       "title": "创建、恢复与解锁钱包",
-      "summary": "钱包创建与恢复，12 / 18 / 24 词助记词、备份验证、口令保护与 PIN 解锁。",
-      "description": "从 PIN 创建到助记词备份，完整呈现钱包初始化、12 / 18 / 24 词选择、短语验证、导入、口令与触摸解锁的操作流程。"
+      "summary": "钱包创建与恢复、12 / 18 / 24 词助记词、口令与 PIN 保护，以及按需选择的 seed 存储后端。",
+      "description": "从 PIN 创建到助记词备份，完整呈现钱包初始化、12 / 18 / 24 词选择、短语验证、导入、口令与触摸解锁的操作流程。seed 可采用软件加密存储，也可交给 NXP 安全芯片管理；根据硬件方案选择存储后端，使用同一套钱包功能。"
     },
     {
       "id": "entropy",
@@ -33,20 +33,20 @@
     {
       "id": "fido",
       "title": "以 Google 为例的 FIDO2 身份认证",
-      "summary": "FIDO2 通行密钥注册与登录、用户在场确认、权限授权和 PIN 管理；以 www.google.com 为例。",
-      "description": "以 www.google.com 为服务、demo@example.com 为账号，展示通行密钥注册、登录签名、用户在场确认、权限授权与 PIN 管理。每一次私钥操作都在设备屏幕上确认。"
+      "summary": "FIDO2 通行密钥、OpenSSH 硬件密钥、驻留凭据与独立 FIDO PIN 管理。",
+      "description": "以 www.google.com 为服务、demo@example.com 为账号，展示通行密钥注册、登录签名、用户在场确认与权限授权。私钥操作通过设备端确认完成，同时支持 OpenSSH 硬件密钥与驻留通行密钥。FIDO PIN 与钱包 PIN 独立管理，可通过 USB 主机设置和修改，并在设备上恢复尝试次数。"
     },
     {
       "id": "nxp",
       "title": "NXP A5000 安全芯片管理",
       "summary": "A5000R2HQ1 seed 安全存储、PIN 解锁、重试次数保护、锁定与钱包清除。",
-      "description": "A5000R2HQ1 为 seed 提供安全存储。专属页面呈现初始化、钱包锁定与 PIN 解锁、次数保护、连接刷新和钱包清除，让安全芯片的状态与操作一目了然。"
+      "description": "NXP A5000 安全芯片可按需选配，由 A5000R2HQ1 为 seed 提供安全存储。专属页面呈现初始化、钱包锁定与 PIN 解锁、连接刷新和钱包清除。芯片执行十次 PIN 尝试限制，锁定状态跨重启保持，清除钱包后即可重新初始化。"
     },
     {
       "id": "connectivity",
       "title": "连接你的设备与应用",
-      "summary": "Wi-Fi 扫描与配网、蓝牙加密连接与地址隐私、WebUSB / FIDO2，以及 MQTT 消息通信。",
-      "description": "Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙提供发现、加密连接和地址隐私；USB 汇集 WebUSB 与 FIDO2；MQTT 将设备状态与消息带入应用。"
+      "summary": "Wi-Fi、蓝牙、WebUSB、UART 与 MQTT 通信，以及浏览器配网和设备管理。",
+      "description": "Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙提供发现、加密连接和地址隐私；WebUSB、蓝牙与 UART 使用统一的钱包通信协议，USB 同时提供 FIDO2 身份认证；MQTT 将设备状态与消息带入应用。在浏览器中打开设备管理页面，即可配置 Wi-Fi、设置设备主机名和远程重启，让设备自然融入你的网络与工作环境。"
     },
     {
       "id": "camera",
@@ -57,8 +57,8 @@
     {
       "id": "audio",
       "title": "声音也是一种交互",
-      "summary": "提示音播放、扬声器音量调节与麦克风输入电平。",
-      "description": "播放提示音、调节扬声器音量，查看麦克风输入电平，让听觉反馈和环境声音成为设备的一部分。"
+      "summary": "提示音与音量调节、USB 双声道录音、采样率选择与麦克风隐私控制。",
+      "description": "播放提示音、调节扬声器音量，让听觉反馈成为设备的一部分。USB 麦克风提供双声道 16-bit PCM 录音，支持由主机选择 16 / 32 / 48 kHz 采样率。设备端隐私开关掌握采音时机，关闭时 USB 录音接口提供静音；环境声音也可参与钱包的熵混合。"
     },
     {
       "id": "imu",
@@ -69,20 +69,20 @@
     {
       "id": "storage",
       "title": "浏览随身文件",
-      "summary": "SD 卡目录浏览、文件信息查看与目录切换。",
-      "description": "通过 SD 卡文件浏览器查看目录、文件名与文件大小，在根目录和子目录之间自由切换。"
+      "summary": "FAT16 / FAT32 / exFAT 只读浏览、文件信息、目录导航与内部存储完整性校验。",
+      "description": "通过 SD 卡文件浏览器查看目录、文件名与文件大小，在根目录和子目录之间自由切换。支持 FAT16、FAT32 和 exFAT，以只读方式浏览随身文件。内部存储提供完整性校验，钱包记录与设备设置分别管理，SD 卡文件浏览与钱包内部存储各自独立。"
     },
     {
       "id": "update",
       "title": "签名固件更新",
-      "summary": "蓝牙 / UART 固件传输、MCUboot 签名校验、版本保护与更新重启。",
-      "description": "通过蓝牙或 UART 传输固件，展示 MCUboot 签名校验、版本保护、更新进度与重启应用的流程。"
+      "summary": "蓝牙 / UART / 浏览器固件更新、签名校验、版本保护、启动确认与自动回滚。",
+      "description": "通过蓝牙、UART 或浏览器上传签名固件，查看更新进度并重启应用。MCUboot 校验固件签名并提供版本保护，设备在新固件成功启动后确认更新，自动回滚机制为版本切换提供恢复保障。"
     },
     {
       "id": "maintenance",
       "title": "设备维护",
-      "summary": "设备重启、数据清除、存储恢复与敏感操作确认。",
-      "description": "重启、清除设备数据和存储恢复操作集中呈现，敏感操作在设备上再次确认。"
+      "summary": "设备重启、数据清除、存储恢复、设置持久化与敏感操作确认。",
+      "description": "重启、清除设备数据和存储恢复操作集中呈现，敏感操作在设备上再次确认。钱包配置、网络设置与蓝牙配对信息持久保存，重启后保留钱包与连接配置。"
     }
   ],
   "scenes": [
@@ -765,6 +765,57 @@
       "page": "UI_PAGE_CONFIRMATION",
       "expected_text": "Credential ID",
       "renderer": "firmware-ui"
+    },
+    {
+      "id": "86-browser-wifi",
+      "title": "浏览器 Wi-Fi 配网",
+      "section": "connectivity",
+      "page": "WEB_WIFI",
+      "expected_text": "Network credentials",
+      "renderer": "browser-portal",
+      "portal_view": "wifi"
+    },
+    {
+      "id": "87-browser-device",
+      "title": "浏览器主机名与重启管理",
+      "section": "connectivity",
+      "page": "WEB_DEVICE",
+      "expected_text": "Hostname",
+      "renderer": "browser-portal",
+      "portal_view": "device"
+    },
+    {
+      "id": "88-browser-firmware",
+      "title": "浏览器上传签名固件",
+      "section": "update",
+      "page": "WEB_FIRMWARE",
+      "expected_text": "Firmware update",
+      "renderer": "browser-portal",
+      "portal_view": "firmware"
+    },
+    {
+      "id": "89-usb-microphone",
+      "title": "USB 双声道录音与隐私控制",
+      "section": "audio",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "USB Audio Class 2",
+      "renderer": "presentation"
+    },
+    {
+      "id": "90-physical-confirmation",
+      "title": "实体按键确认",
+      "section": "start",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "Physical confirmation",
+      "renderer": "presentation"
+    },
+    {
+      "id": "91-fido-applications",
+      "title": "OpenSSH、驻留通行密钥与独立 PIN",
+      "section": "fido",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "OpenSSH",
+      "renderer": "presentation"
     }
   ]
 }

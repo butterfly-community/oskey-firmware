@@ -374,12 +374,12 @@ static void hardware_scenes(void)
     ui_status_update(&ui.status);
     page(UI_PAGE_AUDIO, "63-audio-playback");
     fixture_page("Microphone");
-    row(&oskey_microphone, "Ambient sound", "Microphone enabled / 16 kHz mono");
+    row(&oskey_microphone, "Ambient sound", "Microphone enabled / stereo PCM");
     ui_section(ui.content, "INPUT LEVEL");
     lv_obj_t *level = lv_bar_create(ui.content);
     lv_obj_set_size(level, LV_PCT(100), 20);
     lv_bar_set_value(level, 68, LV_ANIM_OFF);
-    row(&oskey_audio, "Live level", "68% / presentation audio sample");
+    row(&oskey_audio, "Live level", "68% / microphone input");
     row(&oskey_shuffle, "Entropy source", "Mix ambient sound with hardware randomness");
     capture("64-microphone");
     ui_open(UI_PAGE_IMU);
@@ -418,7 +418,7 @@ static void hardware_scenes(void)
     capture("72-mqtt");
     fixture_page("Firmware update");
     row(&oskey_refresh, "MCUboot", "Signed firmware / version protection");
-    row(&oskey_bluetooth, "Update transport", "Authenticated Bluetooth or UART update mode");
+    row(&oskey_bluetooth, "Update transport", "Bluetooth / UART / browser upload");
     row(&oskey_document, "Selected image", "OSKey 0.4.0 / 1.4 MiB");
     row(&oskey_success, "Signature", "EC P-256 / verified");
     capture("73-firmware-update");
@@ -482,6 +482,32 @@ static void composition_scenes(void)
     capture("83-contract-call-details");
 }
 
+static void additional_scenes(void)
+{
+    fixture_page("USB microphone");
+    row(&oskey_microphone, "Stereo recording", "USB Audio Class 2 / 16-bit PCM");
+    row(&oskey_audio, "Sample rates", "16 / 32 / 48 kHz / selected by the host");
+    row(&oskey_usb, "Recording input", "MIC1 left / MIC2 right");
+    row(&oskey_success, "Microphone privacy", "Device switch controls sound capture");
+    row(&oskey_microphone, "Quiet mode", "Switch off to send silence over USB");
+    capture("89-usb-microphone");
+
+    fixture_page("Physical confirmation");
+    row(&oskey_document, "User button", "Approve a request with the device button");
+    row(&oskey_wallet, "Wallet signing", "Physical approval for private-key operations");
+    row(&oskey_passkey, "FIDO2 presence", "Confirm that you are holding the device");
+    row(&oskey_success, "Your hardware", "Choose button or touch interaction for your build");
+    capture("90-physical-confirmation");
+
+    fixture_page("FIDO2 applications");
+    row(&oskey_passkey, "Google passkeys", "www.google.com / register and authenticate");
+    row(&oskey_document, "OpenSSH", "Hardware-backed SSH keys and signatures");
+    row(&oskey_passkey, "Resident credentials", "Keep discoverable passkeys on the device");
+    row(&oskey_usb, "FIDO PIN management", "Set or change the PIN from the USB host");
+    row(&oskey_wallet, "Independent PIN", "Manage FIDO and wallet PINs separately");
+    capture("91-fido-applications");
+}
+
 int main(void)
 {
     output_directory = getenv("OSKEY_SHOWCASE_OUTPUT");
@@ -517,6 +543,7 @@ int main(void)
     signing_scenes();
     hardware_scenes();
     composition_scenes();
+    additional_scenes();
     printf("Showcase complete: %u frames\n", captures);
     fflush(stdout);
     exit(0);

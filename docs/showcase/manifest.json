@@ -1,5 +1,5 @@
 {
-  "renderer": "Zephyr native_sim / OSKey LVGL / fixed presentation data",
+  "renderer": "Zephyr native_sim / OSKey LVGL / Chromium",
   "rp_id": "www.google.com",
   "width": 480,
   "height": 800,
@@ -1581,14 +1581,14 @@
       "visible_text": [
         "Microphone",
         "Ambient sound",
-        "Microphone enabled / 16 kHz mono",
+        "Microphone enabled / stereo PCM",
         "INPUT LEVEL",
         "Live level",
-        "68% / presentation audio sample",
+        "68% / microphone input",
         "Entropy source",
         "Mix ambient sound with hardware randomness"
       ],
-      "sha256": "d51c93f6d16fe4c87e70d97ffec6d22db0f23877b5bfa4f267c9aa942f2e3ae1"
+      "sha256": "c589c351d644b68d0e0e4ace87cc21e11a8b9873558ee96107231b3598e1e107"
     },
     {
       "id": "65-imu-orientation",
@@ -1747,13 +1747,13 @@
         "MCUboot",
         "Signed firmware / version protection",
         "Update transport",
-        "Authenticated Bluetooth or UART update mode",
+        "Bluetooth / UART / browser upload",
         "Selected image",
         "OSKey 0.4.0 / 1.4 MiB",
         "Signature",
         "EC P-256 / verified"
       ],
-      "sha256": "afb82627e524e9eaaa39bc4334f5deb8891b07aae6b724f2cf79233b8b849959"
+      "sha256": "84fce8ca5abcb09552fa65a208fa61b8ac280eccb36a2e996b402e06431cbee9"
     },
     {
       "id": "74-update-progress",
@@ -1768,7 +1768,7 @@
         "MCUboot",
         "Signed firmware / version protection",
         "Update transport",
-        "Authenticated Bluetooth or UART update mode",
+        "Bluetooth / UART / browser upload",
         "Selected image",
         "OSKey 0.4.0 / 1.4 MiB",
         "Signature",
@@ -1776,7 +1776,7 @@
         "Transfer progress",
         "72% / writing the secondary image slot"
       ],
-      "sha256": "d22eb3b627803bd99edcf8039a54ee4795cdcbca5719c7b3f8c75f552bd6103e"
+      "sha256": "24643bfde1dda195221a3fc8ebed18474fb6ed16975a7fd8035275d6ef4570b1"
     },
     {
       "id": "75-update-ready",
@@ -2065,6 +2065,166 @@
         "Do not approve this request"
       ],
       "sha256": "16f263b214530e1c1f4b637d399de819c9cef9120fe7c02f3333f27300162b20"
+    },
+    {
+      "id": "86-browser-wifi",
+      "title": "浏览器 Wi-Fi 配网",
+      "section": "connectivity",
+      "page": "WEB_WIFI",
+      "expected_text": "Network credentials",
+      "renderer": "browser-portal",
+      "portal_view": "wifi",
+      "image": "images/86-browser-wifi.png",
+      "visible_text": [
+        "OSKey",
+        "",
+        "Settings",
+        "",
+        "Wi-Fi",
+        "Device",
+        "",
+        "Mode: STA",
+        "",
+        "Network credentials",
+        "",
+        "Choose the Wi-Fi network OSKey should connect to.",
+        "",
+        "Network name (SSID)",
+        "Password",
+        "Connect"
+      ],
+      "sha256": "e7de482f40f71eac9d951778b1e605eaa9f2f910f0e72a6be88d38d2289bfdbc"
+    },
+    {
+      "id": "87-browser-device",
+      "title": "浏览器主机名与重启管理",
+      "section": "connectivity",
+      "page": "WEB_DEVICE",
+      "expected_text": "Hostname",
+      "renderer": "browser-portal",
+      "portal_view": "device",
+      "image": "images/87-browser-device.png",
+      "visible_text": [
+        "OSKey",
+        "",
+        "Settings",
+        "",
+        "Wi-Fi",
+        "Device",
+        "",
+        "Identity, preferences, and maintenance",
+        "",
+        "Hostname",
+        "",
+        "Name used to identify OSKey on the local network.",
+        "",
+        "Save",
+        "",
+        "Firmware update",
+        "Restart",
+        "",
+        "Saved settings are retained.",
+        "",
+        "Restart"
+      ],
+      "sha256": "375ec0b75c8b2274d6681e4092925fd4e8330513aef6bee0f4d13914a3a9b357"
+    },
+    {
+      "id": "88-browser-firmware",
+      "title": "浏览器上传签名固件",
+      "section": "update",
+      "page": "WEB_FIRMWARE",
+      "expected_text": "Firmware update",
+      "renderer": "browser-portal",
+      "portal_view": "firmware",
+      "image": "images/88-browser-firmware.png",
+      "visible_text": [
+        "OSKey",
+        "",
+        "Settings",
+        "",
+        "Wi-Fi",
+        "Device",
+        "",
+        "Identity, preferences, and maintenance",
+        "",
+        "Hostname",
+        "Firmware update",
+        "",
+        "Upload a signed OSKey firmware image.",
+        "",
+        "Upload",
+        "",
+        "Restart"
+      ],
+      "sha256": "7fa2743cf809ccf8f9094ef8d08d597cafd42e0b66138d2e3445ae29bb0910e9"
+    },
+    {
+      "id": "89-usb-microphone",
+      "title": "USB 双声道录音与隐私控制",
+      "section": "audio",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "USB Audio Class 2",
+      "renderer": "presentation",
+      "image": "images/89-usb-microphone.png",
+      "visible_text": [
+        "USB microphone",
+        "Stereo recording",
+        "USB Audio Class 2 / 16-bit PCM",
+        "Sample rates",
+        "16 / 32 / 48 kHz / selected by the host",
+        "Recording input",
+        "MIC1 left / MIC2 right",
+        "Microphone privacy",
+        "Device switch controls sound capture",
+        "Quiet mode",
+        "Switch off to send silence over USB"
+      ],
+      "sha256": "158507aab6f16ee76c3b79d5765243a9de150873682d19b9b11a58440db520c8"
+    },
+    {
+      "id": "90-physical-confirmation",
+      "title": "实体按键确认",
+      "section": "start",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "Physical confirmation",
+      "renderer": "presentation",
+      "image": "images/90-physical-confirmation.png",
+      "visible_text": [
+        "Physical confirmation",
+        "User button",
+        "Approve a request with the device button",
+        "Wallet signing",
+        "Physical approval for private-key operations",
+        "FIDO2 presence",
+        "Confirm that you are holding the device",
+        "Your hardware",
+        "Choose button or touch interaction for your build"
+      ],
+      "sha256": "8e352e3f9837df9de2f068bd116b9b8f19c20e423dbd49e9b97634cc6b4cfa08"
+    },
+    {
+      "id": "91-fido-applications",
+      "title": "OpenSSH、驻留通行密钥与独立 PIN",
+      "section": "fido",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "OpenSSH",
+      "renderer": "presentation",
+      "image": "images/91-fido-applications.png",
+      "visible_text": [
+        "FIDO2 applications",
+        "Google passkeys",
+        "www.google.com / register and authenticate",
+        "OpenSSH",
+        "Hardware-backed SSH keys and signatures",
+        "Resident credentials",
+        "Keep discoverable passkeys on the device",
+        "FIDO PIN management",
+        "Set or change the PIN from the USB host",
+        "Independent PIN",
+        "Manage FIDO and wallet PINs separately"
+      ],
+      "sha256": "988864c234b737f68c2269cac359065dc94415fd89c693557788999de134a226"
     }
   ],
   "inputs_sha256": {
@@ -2107,13 +2267,14 @@
     "src/display/ui_pages.c": "bb803abfbf88531ef868f2331f5c990e351edb893bc0f0b8f2dee14dd2fa8327",
     "src/display/ui_qr.c": "7b6621a9a792acdfd0032daf4aa8c204174b95b15dedf23493a81736c723afaa",
     "src/display/ui_status.c": "57e2c7604ee06d6fee17a19c8b7d6359814cf656eebba7cf5a15ba2b76870512",
+    "src/net/wifi_portal.html": "63fd806d4aafa69cf5b77e6379fb27076a13fba23278c8a3aa272a47adb786fa",
     "src/tests/showcase/CMakeLists.txt": "1306f23bb9a262c2642992849038f75f309821ba359c7b33c7940a8e45e79bc7",
     "src/tests/showcase/app.overlay": "57c08527c9106905f5e0bfc1e8023db0bdc62246c72f0ef59c0ff715a13c1470",
-    "src/tests/showcase/capture.py": "69de644150498bb9c4399c7ef71ee394deb55f3ab971a24757d49d31fca0e5cd",
-    "src/tests/showcase/catalog.json": "dd37b93addd76999c87f472ceb984b3a6241b2e4665b1adb1d9f0e953c1042ef",
+    "src/tests/showcase/capture.py": "7aa66a949cf713e1a73247d1e6b37cb14bc1f3415d1928a4c44a266582b5d467",
+    "src/tests/showcase/catalog.json": "c7af9842b58e08e3c1767e5474d4edf2375cdbd932258c6ec122b32eabe86e84",
     "src/tests/showcase/fixtures.c": "09595a69a0807f31dc2dd05b93cb9989070771981a700c0d19961c649c24fc4a",
     "src/tests/showcase/fixtures.h": "de6baaddd784184a0c62363abe74118f545f9aa98d313b97bbaba893019271f9",
-    "src/tests/showcase/main.c": "a27a1c104b371d187f04ea2225bba1fcf74dcf3512f2acc90966d2727e1af500",
+    "src/tests/showcase/main.c": "c820c86b0936c6efc524ffb1c149be9cc946df3c70b0991d69190d8f1d24887b",
     "src/tests/showcase/prj.conf": "329ebc015333e99944e3f787f35269cd81aae1128a936bd37a0f9b60896d87a6",
     "src/tests/showcase/qr_decode.c": "bfad25c1ba7b2c5a6a910c4c0649f93260f18c706a5618872e702580371551cf"
   },

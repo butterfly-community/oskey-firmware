@@ -10,37 +10,37 @@
 
 | 模块 | 功能 |
 | --- | --- |
-| [从开机到模块总览](#从开机到模块总览) | 设备能力总览、钱包与通行密钥首页，以及按需组合的连接和外设模块。 |
-| [创建、恢复与解锁钱包](#创建恢复与解锁钱包) | 钱包创建与恢复，12 / 18 / 24 词助记词、备份验证、口令保护与 PIN 解锁。 |
+| [从开机到模块总览](#从开机到模块总览) | 设备能力总览、可选安全启动与 Flash 加密、触摸与实体按键交互。 |
+| [创建、恢复与解锁钱包](#创建恢复与解锁钱包) | 钱包创建与恢复、12 / 18 / 24 词助记词、口令与 PIN 保护，以及按需选择的 seed 存储后端。 |
 | [让随机性来自你的世界](#让随机性来自你的世界) | 硬件随机数、触摸、运动、摄像头和环境声音多源熵混合，支持自定义熵。 |
 | [地址派生、消息与交易签名](#地址派生消息与交易签名) | HD 地址派生与二维码、以太坊消息和交易签名，以及设备端交易审阅与授权。 |
 | [用二维码完成气隙签名](#用二维码完成气隙签名) | 通过二维码传递交易请求与签名结果，在设备上完成扫描、审阅、确认与签名。 |
-| [以 Google 为例的 FIDO2 身份认证](#以-google-为例的-fido2-身份认证) | FIDO2 通行密钥注册与登录、用户在场确认、权限授权和 PIN 管理；以 www.google.com 为例。 |
+| [以 Google 为例的 FIDO2 身份认证](#以-google-为例的-fido2-身份认证) | FIDO2 通行密钥、OpenSSH 硬件密钥、驻留凭据与独立 FIDO PIN 管理。 |
 | [NXP A5000 安全芯片管理](#nxp-a5000-安全芯片管理) | A5000R2HQ1 seed 安全存储、PIN 解锁、重试次数保护、锁定与钱包清除。 |
-| [连接你的设备与应用](#连接你的设备与应用) | Wi-Fi 扫描与配网、蓝牙加密连接与地址隐私、WebUSB / FIDO2，以及 MQTT 消息通信。 |
+| [连接你的设备与应用](#连接你的设备与应用) | Wi-Fi、蓝牙、WebUSB、UART 与 MQTT 通信，以及浏览器配网和设备管理。 |
 | [摄像头与二维码](#摄像头与二维码) | 摄像头预览、二维码识别，以及地址与交互请求读取。 |
-| [声音也是一种交互](#声音也是一种交互) | 提示音播放、扬声器音量调节与麦克风输入电平。 |
+| [声音也是一种交互](#声音也是一种交互) | 提示音与音量调节、USB 双声道录音、采样率选择与麦克风隐私控制。 |
 | [把设备运动变成可见姿态](#把设备运动变成可见姿态) | 六轴运动采集、姿态融合与立体模型实时显示。 |
-| [浏览随身文件](#浏览随身文件) | SD 卡目录浏览、文件信息查看与目录切换。 |
-| [签名固件更新](#签名固件更新) | 蓝牙 / UART 固件传输、MCUboot 签名校验、版本保护与更新重启。 |
-| [设备维护](#设备维护) | 设备重启、数据清除、存储恢复与敏感操作确认。 |
+| [浏览随身文件](#浏览随身文件) | FAT16 / FAT32 / exFAT 只读浏览、文件信息、目录导航与内部存储完整性校验。 |
+| [签名固件更新](#签名固件更新) | 蓝牙 / UART / 浏览器固件更新、签名校验、版本保护、启动确认与自动回滚。 |
+| [设备维护](#设备维护) | 设备重启、数据清除、存储恢复、设置持久化与敏感操作确认。 |
 
 ## 从开机到模块总览
 
-开机即可查看设备能力，进入钱包与通行密钥首页，再按使用习惯选择连接和外设模块。
+开机即可查看设备能力，进入钱包与通行密钥首页，再按使用习惯选择连接和外设模块。可选安全启动验证固件来源，Flash 加密保护设备内的持久化数据；触摸屏与实体按键提供设备端确认，让不同形态的硬件都能承载你的选择。
 
 | 启动画面 | 设备能力总览 | 钱包与通行密钥首页 |
 | --- | --- | --- |
 | <a href="images/01-startup.png"><img src="images/01-startup.png" alt="启动画面" width="240"></a> | <a href="images/02-capabilities.png"><img src="images/02-capabilities.png" alt="设备能力总览" width="240"></a> | <a href="images/23-wallet-home.png"><img src="images/23-wallet-home.png" alt="钱包与通行密钥首页" width="240"></a> |
 
-| 模块与设备设置 | 自由选择与组合模块 |
-| --- | --- |
-| <a href="images/48-device-settings.png"><img src="images/48-device-settings.png" alt="模块与设备设置" width="240"></a> | <a href="images/80-module-composition.png"><img src="images/80-module-composition.png" alt="自由选择与组合模块" width="240"></a> |
+| 模块与设备设置 | 自由选择与组合模块 | 实体按键确认 |
+| --- | --- | --- |
+| <a href="images/48-device-settings.png"><img src="images/48-device-settings.png" alt="模块与设备设置" width="240"></a> | <a href="images/80-module-composition.png"><img src="images/80-module-composition.png" alt="自由选择与组合模块" width="240"></a> | <a href="images/90-physical-confirmation.png"><img src="images/90-physical-confirmation.png" alt="实体按键确认" width="240"></a> |
 
 
 ## 创建、恢复与解锁钱包
 
-从 PIN 创建到助记词备份，完整呈现钱包初始化、12 / 18 / 24 词选择、短语验证、导入、口令与触摸解锁的操作流程。
+从 PIN 创建到助记词备份，完整呈现钱包初始化、12 / 18 / 24 词选择、短语验证、导入、口令与触摸解锁的操作流程。seed 可采用软件加密存储，也可交给 NXP 安全芯片管理；根据硬件方案选择存储后端，使用同一套钱包功能。
 
 | 创建钱包 PIN | PIN 输入与遮蔽 | 确认钱包 PIN |
 | --- | --- | --- |
@@ -112,7 +112,7 @@
 
 ## 以 Google 为例的 FIDO2 身份认证
 
-以 www.google.com 为服务、demo@example.com 为账号，展示通行密钥注册、登录签名、用户在场确认、权限授权与 PIN 管理。每一次私钥操作都在设备屏幕上确认。
+以 www.google.com 为服务、demo@example.com 为账号，展示通行密钥注册、登录签名、用户在场确认与权限授权。私钥操作通过设备端确认完成，同时支持 OpenSSH 硬件密钥与驻留通行密钥。FIDO PIN 与钱包 PIN 独立管理，可通过 USB 主机设置和修改，并在设备上恢复尝试次数。
 
 | Google 通行密钥私钥授权 | Google 通行密钥注册 | 返回通行密钥注册结果 |
 | --- | --- | --- |
@@ -126,14 +126,14 @@
 | --- | --- | --- |
 | <a href="images/45-google-presence.png"><img src="images/45-google-presence.png" alt="确认用户在场" width="240"></a> | <a href="images/46-google-authorize.png"><img src="images/46-google-authorize.png" alt="授权通行密钥访问" width="240"></a> | <a href="images/47-fido-pin-recovery.png"><img src="images/47-fido-pin-recovery.png" alt="恢复 FIDO PIN 尝试次数" width="240"></a> |
 
-| FIDO PIN 次数保护 | Google 通行密钥凭据详情 |
-| --- | --- |
-| <a href="images/61-fido-pin-protection.png"><img src="images/61-fido-pin-protection.png" alt="FIDO PIN 次数保护" width="240"></a> | <a href="images/85-google-credential-details.png"><img src="images/85-google-credential-details.png" alt="Google 通行密钥凭据详情" width="240"></a> |
+| FIDO PIN 次数保护 | Google 通行密钥凭据详情 | OpenSSH、驻留通行密钥与独立 PIN |
+| --- | --- | --- |
+| <a href="images/61-fido-pin-protection.png"><img src="images/61-fido-pin-protection.png" alt="FIDO PIN 次数保护" width="240"></a> | <a href="images/85-google-credential-details.png"><img src="images/85-google-credential-details.png" alt="Google 通行密钥凭据详情" width="240"></a> | <a href="images/91-fido-applications.png"><img src="images/91-fido-applications.png" alt="OpenSSH、驻留通行密钥与独立 PIN" width="240"></a> |
 
 
 ## NXP A5000 安全芯片管理
 
-A5000R2HQ1 为 seed 提供安全存储。专属页面呈现初始化、钱包锁定与 PIN 解锁、次数保护、连接刷新和钱包清除，让安全芯片的状态与操作一目了然。
+NXP A5000 安全芯片可按需选配，由 A5000R2HQ1 为 seed 提供安全存储。专属页面呈现初始化、钱包锁定与 PIN 解锁、连接刷新和钱包清除。芯片执行十次 PIN 尝试限制，锁定状态跨重启保持，清除钱包后即可重新初始化。
 
 | A5000 初始化 | 安全芯片钱包解锁状态 | 安全芯片 PIN 解锁入口 |
 | --- | --- | --- |
@@ -146,7 +146,7 @@ A5000R2HQ1 为 seed 提供安全存储。专属页面呈现初始化、钱包锁
 
 ## 连接你的设备与应用
 
-Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙提供发现、加密连接和地址隐私；USB 汇集 WebUSB 与 FIDO2；MQTT 将设备状态与消息带入应用。
+Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙提供发现、加密连接和地址隐私；WebUSB、蓝牙与 UART 使用统一的钱包通信协议，USB 同时提供 FIDO2 身份认证；MQTT 将设备状态与消息带入应用。在浏览器中打开设备管理页面，即可配置 Wi-Fi、设置设备主机名和远程重启，让设备自然融入你的网络与工作环境。
 
 | Wi-Fi 连接与地址信息 | 附近网络与安全类型 | Wi-Fi 密码配置 |
 | --- | --- | --- |
@@ -156,9 +156,13 @@ Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙�
 | --- | --- | --- |
 | <a href="images/57-wifi-access-point.png"><img src="images/57-wifi-access-point.png" alt="接入热点与配网入口" width="240"></a> | <a href="images/58-bluetooth-discovery.png"><img src="images/58-bluetooth-discovery.png" alt="蓝牙发现与地址隐私" width="240"></a> | <a href="images/59-bluetooth-connected.png"><img src="images/59-bluetooth-connected.png" alt="加密蓝牙连接" width="240"></a> |
 
-| USB、WebUSB 与 FIDO2 | MQTT 消息通信 |
-| --- | --- |
-| <a href="images/60-usb-interfaces.png"><img src="images/60-usb-interfaces.png" alt="USB、WebUSB 与 FIDO2" width="240"></a> | <a href="images/72-mqtt.png"><img src="images/72-mqtt.png" alt="MQTT 消息通信" width="240"></a> |
+| USB、WebUSB 与 FIDO2 | MQTT 消息通信 | 浏览器 Wi-Fi 配网 |
+| --- | --- | --- |
+| <a href="images/60-usb-interfaces.png"><img src="images/60-usb-interfaces.png" alt="USB、WebUSB 与 FIDO2" width="240"></a> | <a href="images/72-mqtt.png"><img src="images/72-mqtt.png" alt="MQTT 消息通信" width="240"></a> | <a href="images/86-browser-wifi.png"><img src="images/86-browser-wifi.png" alt="浏览器 Wi-Fi 配网" width="240"></a> |
+
+| 浏览器主机名与重启管理 |
+| --- |
+| <a href="images/87-browser-device.png"><img src="images/87-browser-device.png" alt="浏览器主机名与重启管理" width="240"></a> |
 
 
 ## 摄像头与二维码
@@ -172,11 +176,15 @@ Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙�
 
 ## 声音也是一种交互
 
-播放提示音、调节扬声器音量，查看麦克风输入电平，让听觉反馈和环境声音成为设备的一部分。
+播放提示音、调节扬声器音量，让听觉反馈成为设备的一部分。USB 麦克风提供双声道 16-bit PCM 录音，支持由主机选择 16 / 32 / 48 kHz 采样率。设备端隐私开关掌握采音时机，关闭时 USB 录音接口提供静音；环境声音也可参与钱包的熵混合。
 
 | 扬声器与音量调节 | 音频播放状态 | 麦克风与输入电平 |
 | --- | --- | --- |
 | <a href="images/62-audio-volume.png"><img src="images/62-audio-volume.png" alt="扬声器与音量调节" width="240"></a> | <a href="images/63-audio-playback.png"><img src="images/63-audio-playback.png" alt="音频播放状态" width="240"></a> | <a href="images/64-microphone.png"><img src="images/64-microphone.png" alt="麦克风与输入电平" width="240"></a> |
+
+| USB 双声道录音与隐私控制 |
+| --- |
+| <a href="images/89-usb-microphone.png"><img src="images/89-usb-microphone.png" alt="USB 双声道录音与隐私控制" width="240"></a> |
 
 
 ## 把设备运动变成可见姿态
@@ -190,7 +198,7 @@ Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙�
 
 ## 浏览随身文件
 
-通过 SD 卡文件浏览器查看目录、文件名与文件大小，在根目录和子目录之间自由切换。
+通过 SD 卡文件浏览器查看目录、文件名与文件大小，在根目录和子目录之间自由切换。支持 FAT16、FAT32 和 exFAT，以只读方式浏览随身文件。内部存储提供完整性校验，钱包记录与设备设置分别管理，SD 卡文件浏览与钱包内部存储各自独立。
 
 | SD 卡根目录与文件大小 | 文件夹浏览与返回 |
 | --- | --- |
@@ -199,16 +207,20 @@ Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙�
 
 ## 签名固件更新
 
-通过蓝牙或 UART 传输固件，展示 MCUboot 签名校验、版本保护、更新进度与重启应用的流程。
+通过蓝牙、UART 或浏览器上传签名固件，查看更新进度并重启应用。MCUboot 校验固件签名并提供版本保护，设备在新固件成功启动后确认更新，自动回滚机制为版本切换提供恢复保障。
 
 | 签名固件与更新通道 | 固件传输进度 | 固件校验与重启应用 |
 | --- | --- | --- |
 | <a href="images/73-firmware-update.png"><img src="images/73-firmware-update.png" alt="签名固件与更新通道" width="240"></a> | <a href="images/74-update-progress.png"><img src="images/74-update-progress.png" alt="固件传输进度" width="240"></a> | <a href="images/75-update-ready.png"><img src="images/75-update-ready.png" alt="固件校验与重启应用" width="240"></a> |
 
+| 浏览器上传签名固件 |
+| --- |
+| <a href="images/88-browser-firmware.png"><img src="images/88-browser-firmware.png" alt="浏览器上传签名固件" width="240"></a> |
+
 
 ## 设备维护
 
-重启、清除设备数据和存储恢复操作集中呈现，敏感操作在设备上再次确认。
+重启、清除设备数据和存储恢复操作集中呈现，敏感操作在设备上再次确认。钱包配置、网络设置与蓝牙配对信息持久保存，重启后保留钱包与连接配置。
 
 | 设备维护入口 | 重启确认 | 设备数据清除确认 |
 | --- | --- | --- |

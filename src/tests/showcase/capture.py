@@ -3,10 +3,12 @@
 """Render and audit the OSKey product gallery with deterministic LVGL fixtures."""
 import argparse
 import hashlib
+import html
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 
@@ -43,10 +45,71 @@ def render(firmware, build, frames):
                                 stdout=log, stderr=subprocess.STDOUT, timeout=90)
     log = log_path.read_text()
     require(result.returncode == 0, f'Renderer exited with {result.returncode}:\n{log[-5000:]}')
-    expected = {scene['id'] for scene in CATALOG['scenes']}
+    expected = {scene['id'] for scene in CATALOG['scenes'] if scene['renderer'] != 'browser-portal'}
     actual = {path.stem for path in frames.glob('*.ppm')}
     require(actual == expected, f'Frame mismatch: missing {expected - actual}, extra {actual - expected}')
     require(f'Showcase complete: {len(expected)} frames' in log, 'Renderer completion record missing')
+
+
+def render_portal(build, frames):
+    browser = os.environ.get('OSKEY_SHOWCASE_BROWSER')
+    if not browser:
+        browser = next((path for name in ['chromium', 'chromium-browser', 'google-chrome']
+                        if (path := shutil.which(name))), None)
+    if not browser:
+        cache = Path.home() / '.cache/ms-playwright'
+        cached = sorted(cache.glob('chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell'))
+        cached = cached or sorted(cache.glob('chromium-*/chrome-linux64/chrome'))
+        browser = str(cached[-1]) if cached else None
+    require(browser, 'Set OSKEY_SHOWCASE_BROWSER to a Chromium executable')
+    portal = (ROOT / 'src/net/wifi_portal.html').read_text()
+    portal = portal.replace('@CONFIG_OSKEY_WIFI_AP_IP_ADDRESS@', '192.168.4.1')
+    portal = portal.replace('@CONFIG_OSKEY_MCUBOOT@', 'y')
+    views = {
+        'wifi': """
+            document.querySelector('#wifi details').open = true;
+            document.querySelector('#ssid').value = 'OSKey-Studio';
+            document.querySelector('#password').value = 'OSKeyConnect!';
+        """,
+        'device': """
+            document.querySelector('[data-panel="device"]').click();
+            document.querySelector('#hostnameForm').closest('details').open = true;
+            document.querySelector('#hostnameForm input').value = 'OSKey-Studio';
+            document.querySelector('#rebootButton').closest('details').open = true;
+        """,
+        'firmware': """
+            document.querySelector('[data-panel="device"]').click();
+            document.querySelector('#firmwareSetting').open = true;
+            const files = new DataTransfer();
+            files.items.add(new File([], 'oskey-0.4.0.signed.bin', {type: 'application/octet-stream'}));
+            document.querySelector('#firmwareFile').files = files.files;
+        """,
+    }
+    with (build / 'browser-capture.log').open('w') as log:
+        for scene in CATALOG['scenes']:
+            if scene['renderer'] != 'browser-portal':
+                continue
+            script = views[scene['portal_view']] + """
+                document.body.setAttribute('data-showcase-text', document.body.innerText);
+            """
+            document = frames / (scene['id'] + '.html')
+            document.write_text(portal.replace('</body>', f'<script>{script}</script></body>'))
+            screenshot = frames / (scene['id'] + '.png')
+            with tempfile.TemporaryDirectory(prefix='browser-', dir=build) as profile:
+                result = subprocess.run([
+                    browser, '--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
+                    '--hide-scrollbars', '--force-device-scale-factor=1', '--window-size=480,800',
+                    '--virtual-time-budget=1000', f'--user-data-dir={profile}',
+                    f'--screenshot={screenshot}', '--dump-dom', document.as_uri(),
+                ], capture_output=True, text=True, timeout=30)
+            log.write(scene['id'] + '\n' + result.stderr)
+            require(result.returncode == 0 and screenshot.is_file(),
+                    f"Browser capture failed: {scene['id']}\n{result.stderr[-2000:]}")
+            match = re.search(r'<body\b[^>]*\bdata-showcase-text="([^"]*)"', result.stdout)
+            require(match is not None, f"Browser text record missing: {scene['id']}")
+            (frames / (scene['id'] + '.txt')).write_text(html.unescape(match.group(1)))
+            with Image.open(screenshot) as image:
+                image.convert('RGB').save(frames / (scene['id'] + '.ppm'))
 
 
 def convert(frames, output):
@@ -133,6 +196,7 @@ def input_digests():
     paths |= set((ROOT / 'src/display').glob('*.c')) | set((ROOT / 'src/display').glob('*.h'))
     paths |= set((ROOT / 'src/display/assets').glob('*.c')) | set((ROOT / 'src/display/assets').glob('*.h'))
     paths |= set((ROOT / 'src/display/assets/generated').glob('*.a8'))
+    paths.add(ROOT / 'src/net/wifi_portal.html')
     return {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in sorted(paths)}
 
@@ -236,8 +300,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix='frames-', dir=build) as directory:
         frames = Path(directory)
         render(firmware, build, frames)
+        render_portal(build, frames)
         records = convert(frames, output)
-    metadata = {'renderer': 'Zephyr native_sim / OSKey LVGL / fixed presentation data',
+    metadata = {'renderer': 'Zephyr native_sim / OSKey LVGL / Chromium',
                 'rp_id': 'www.google.com', 'width': 480, 'height': 800, 'screenshots': records,
                 'inputs_sha256': input_digests(), 'qr_payloads': decode_qrs(output, build)}
     (output / 'manifest.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + '\n')
