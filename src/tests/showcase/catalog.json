@@ -1,0 +1,770 @@
+{
+  "sections": [
+    {
+      "id": "start",
+      "title": "从开机到模块总览",
+      "summary": "设备能力总览、钱包与通行密钥首页，以及按需组合的连接和外设模块。",
+      "description": "开机即可查看设备能力，进入钱包与通行密钥首页，再按使用习惯选择连接和外设模块。"
+    },
+    {
+      "id": "wallet",
+      "title": "创建、恢复与解锁钱包",
+      "summary": "钱包创建与恢复，12 / 18 / 24 词助记词、备份验证、口令保护与 PIN 解锁。",
+      "description": "从 PIN 创建到助记词备份，完整呈现钱包初始化、12 / 18 / 24 词选择、短语验证、导入、口令与触摸解锁的操作流程。"
+    },
+    {
+      "id": "entropy",
+      "title": "让随机性来自你的世界",
+      "summary": "硬件随机数、触摸、运动、摄像头和环境声音多源熵混合，支持自定义熵。",
+      "description": "硬件随机数与触摸轨迹、设备运动、摄像头画面和环境声音一起参与熵混合；也可以逐位设置自定义熵。"
+    },
+    {
+      "id": "ethereum",
+      "title": "地址派生、消息与交易签名",
+      "summary": "HD 地址派生与二维码、以太坊消息和交易签名，以及设备端交易审阅与授权。",
+      "description": "查看 HD 派生路径和地址二维码，在设备上审阅以太坊消息、收款地址、金额与网络。签名前确认私钥访问，随后查看公钥、哈希和签名结果。"
+    },
+    {
+      "id": "airgap",
+      "title": "用二维码完成气隙签名",
+      "summary": "通过二维码传递交易请求与签名结果，在设备上完成扫描、审阅、确认与签名。",
+      "description": "钱包应用展示请求二维码，OSKey 扫描并在屏幕上确认交易，签名结果再通过二维码回到钱包应用。三个画面串起完整的交互过程。"
+    },
+    {
+      "id": "fido",
+      "title": "以 Google 为例的 FIDO2 身份认证",
+      "summary": "FIDO2 通行密钥注册与登录、用户在场确认、权限授权和 PIN 管理；以 www.google.com 为例。",
+      "description": "以 www.google.com 为服务、demo@example.com 为账号，展示通行密钥注册、登录签名、用户在场确认、权限授权与 PIN 管理。每一次私钥操作都在设备屏幕上确认。"
+    },
+    {
+      "id": "nxp",
+      "title": "NXP A5000 安全芯片管理",
+      "summary": "A5000R2HQ1 seed 安全存储、PIN 解锁、重试次数保护、锁定与钱包清除。",
+      "description": "A5000R2HQ1 为 seed 提供安全存储。专属页面呈现初始化、钱包锁定与 PIN 解锁、次数保护、连接刷新和钱包清除，让安全芯片的状态与操作一目了然。"
+    },
+    {
+      "id": "connectivity",
+      "title": "连接你的设备与应用",
+      "summary": "Wi-Fi 扫描与配网、蓝牙加密连接与地址隐私、WebUSB / FIDO2，以及 MQTT 消息通信。",
+      "description": "Wi-Fi 提供网络扫描、密码输入、热点配网与地址信息；蓝牙提供发现、加密连接和地址隐私；USB 汇集 WebUSB 与 FIDO2；MQTT 将设备状态与消息带入应用。"
+    },
+    {
+      "id": "camera",
+      "title": "摄像头与二维码",
+      "summary": "摄像头预览、二维码识别，以及地址与交互请求读取。",
+      "description": "从摄像头状态进入扫码预览，识别地址或交互请求，直接在屏幕上查看二维码内容和识别耗时。"
+    },
+    {
+      "id": "audio",
+      "title": "声音也是一种交互",
+      "summary": "提示音播放、扬声器音量调节与麦克风输入电平。",
+      "description": "播放提示音、调节扬声器音量，查看麦克风输入电平，让听觉反馈和环境声音成为设备的一部分。"
+    },
+    {
+      "id": "imu",
+      "title": "把设备运动变成可见姿态",
+      "summary": "六轴运动采集、姿态融合与立体模型实时显示。",
+      "description": "六轴加速度与陀螺仪数据经过姿态融合，在屏幕上变成随设备倾斜转动的立体模型。"
+    },
+    {
+      "id": "storage",
+      "title": "浏览随身文件",
+      "summary": "SD 卡目录浏览、文件信息查看与目录切换。",
+      "description": "通过 SD 卡文件浏览器查看目录、文件名与文件大小，在根目录和子目录之间自由切换。"
+    },
+    {
+      "id": "update",
+      "title": "签名固件更新",
+      "summary": "蓝牙 / UART 固件传输、MCUboot 签名校验、版本保护与更新重启。",
+      "description": "通过蓝牙或 UART 传输固件，展示 MCUboot 签名校验、版本保护、更新进度与重启应用的流程。"
+    },
+    {
+      "id": "maintenance",
+      "title": "设备维护",
+      "summary": "设备重启、数据清除、存储恢复与敏感操作确认。",
+      "description": "重启、清除设备数据和存储恢复操作集中呈现，敏感操作在设备上再次确认。"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "01-startup",
+      "title": "启动画面",
+      "section": "start",
+      "page": "UI_PAGE_SPLASH",
+      "expected_text": "OSKey",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "02-capabilities",
+      "title": "设备能力总览",
+      "section": "start",
+      "page": "UI_PAGE_CAPABILITIES",
+      "expected_text": "OSKey capabilities",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "03-create-pin",
+      "title": "创建钱包 PIN",
+      "section": "wallet",
+      "page": "UI_PAGE_PIN_NEW",
+      "expected_text": "Create PIN",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "04-pin-entered",
+      "title": "PIN 输入与遮蔽",
+      "section": "wallet",
+      "page": "UI_PAGE_PIN_NEW",
+      "expected_text": "Create PIN",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "05-confirm-pin",
+      "title": "确认钱包 PIN",
+      "section": "wallet",
+      "page": "UI_PAGE_PIN_CONFIRM",
+      "expected_text": "Confirm PIN",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "06-recovery-source",
+      "title": "创建或恢复钱包",
+      "section": "wallet",
+      "page": "UI_PAGE_SOURCE",
+      "expected_text": "Create wallet",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "07-mnemonic-length",
+      "title": "选择助记词长度",
+      "section": "wallet",
+      "page": "UI_PAGE_LENGTH",
+      "expected_text": "24 words",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "08-entropy-method",
+      "title": "选择熵生成方式",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY_METHOD",
+      "expected_text": "Entropy method",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "09-entropy-sources",
+      "title": "组合四种辅助熵源",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY_SOURCES",
+      "expected_text": "Ambient sound",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "10-entropy-touch",
+      "title": "触摸轨迹采集",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY_COLLECT",
+      "expected_text": "Screen movement",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "11-entropy-motion",
+      "title": "设备运动采集",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY_COLLECT",
+      "expected_text": "Device movement",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "12-entropy-camera",
+      "title": "摄像头画面采集",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY_COLLECT",
+      "expected_text": "Camera frames",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "13-entropy-microphone",
+      "title": "环境声音采集",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY_COLLECT",
+      "expected_text": "Ambient sound",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "14-entropy-ready",
+      "title": "多源熵混合",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY_COLLECT",
+      "expected_text": "Sources collected",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "15-custom-entropy",
+      "title": "逐位自定义熵",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY",
+      "expected_text": "Custom entropy",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "16-mnemonic-12",
+      "title": "12 词助记词",
+      "section": "wallet",
+      "page": "UI_PAGE_MNEMONIC",
+      "expected_text": "Recovery phrase",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "17-mnemonic-18",
+      "title": "18 词助记词",
+      "section": "wallet",
+      "page": "UI_PAGE_MNEMONIC",
+      "expected_text": "Recovery phrase",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "18-mnemonic-24",
+      "title": "24 词助记词",
+      "section": "wallet",
+      "page": "UI_PAGE_MNEMONIC",
+      "expected_text": "Recovery phrase",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "19-verify-mnemonic",
+      "title": "核对恢复短语",
+      "section": "wallet",
+      "page": "UI_PAGE_VERIFY",
+      "expected_text": "Verify phrase",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "20-import-wallet",
+      "title": "导入已有钱包",
+      "section": "wallet",
+      "page": "UI_PAGE_IMPORT",
+      "expected_text": "Import wallet",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "21-passphrase",
+      "title": "设置助记词口令",
+      "section": "wallet",
+      "page": "UI_PAGE_PASSPHRASE",
+      "expected_text": "Mnemonic passphrase",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "22-confirm-passphrase",
+      "title": "确认助记词口令",
+      "section": "wallet",
+      "page": "UI_PAGE_PASSPHRASE_CONFIRM",
+      "expected_text": "Confirm passphrase",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "23-wallet-home",
+      "title": "钱包与通行密钥首页",
+      "section": "start",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "Hardware wallet",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "24-unlock-wallet",
+      "title": "PIN 解锁钱包",
+      "section": "wallet",
+      "page": "UI_PAGE_LOCKED",
+      "expected_text": "Unlock OSKey",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "25-unlock-keyboard",
+      "title": "触摸键盘输入",
+      "section": "wallet",
+      "page": "UI_PAGE_LOCKED",
+      "expected_text": "Unlock OSKey",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "26-hd-account",
+      "title": "HD 派生路径与地址二维码",
+      "section": "ethereum",
+      "page": "showcase",
+      "expected_text": "Ethereum account",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "27-private-key-confirmation",
+      "title": "设备端私钥授权",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Use private key?",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "28-ethereum-message",
+      "title": "EIP-191 消息签名确认",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Hello from OSKey",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "29-message-details",
+      "title": "消息哈希与派生路径",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Derivation path",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "30-message-signature",
+      "title": "消息签名结果",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Send signature",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "31-message-signature-details",
+      "title": "公钥与签名详情",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Signature",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "32-ethereum-transaction",
+      "title": "EIP-2930 交易签名确认",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "0.025 ETH",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "33-transaction-details",
+      "title": "Nonce、Gas 与交易哈希",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Gas limit",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "34-transaction-signature",
+      "title": "交易签名结果",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Send signature",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "35-contract-creation",
+      "title": "合约创建确认",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "New contract",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "36-airgap-request",
+      "title": "扫描气隙签名请求",
+      "section": "airgap",
+      "page": "showcase",
+      "expected_text": "Scan signing request",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "37-airgap-review",
+      "title": "设备端确认气隙交易",
+      "section": "airgap",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "0.025 ETH",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "38-airgap-signature",
+      "title": "二维码返回签名结果",
+      "section": "airgap",
+      "page": "showcase",
+      "expected_text": "Return the signature",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "39-google-passkey-permission",
+      "title": "Google 通行密钥私钥授权",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Use private key?",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "40-google-create-passkey",
+      "title": "Google 通行密钥注册",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "www.google.com",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "41-google-passkey-result",
+      "title": "返回通行密钥注册结果",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Send result",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "42-google-authenticate",
+      "title": "Google 通行密钥登录确认",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "www.google.com",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "43-google-signature",
+      "title": "Google FIDO 签名结果",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Send result",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "44-google-signature-details",
+      "title": "通行密钥公钥与签名",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Signature",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "45-google-presence",
+      "title": "确认用户在场",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Confirm physical presence",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "46-google-authorize",
+      "title": "授权通行密钥访问",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Permissions",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "47-fido-pin-recovery",
+      "title": "恢复 FIDO PIN 尝试次数",
+      "section": "fido",
+      "page": "UI_PAGE_FIDO_PIN_RECOVER",
+      "expected_text": "Recover FIDO PIN",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "48-device-settings",
+      "title": "模块与设备设置",
+      "section": "start",
+      "page": "UI_PAGE_SETTINGS",
+      "expected_text": "Device settings",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "49-nxp-initialize",
+      "title": "A5000 初始化",
+      "section": "nxp",
+      "page": "UI_PAGE_NXP",
+      "expected_text": "Ready to initialize a wallet",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "50-nxp-unlocked",
+      "title": "安全芯片钱包解锁状态",
+      "section": "nxp",
+      "page": "UI_PAGE_NXP",
+      "expected_text": "Wallet unlocked",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "51-nxp-locked",
+      "title": "安全芯片 PIN 解锁入口",
+      "section": "nxp",
+      "page": "UI_PAGE_NXP",
+      "expected_text": "Unlock with PIN",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "52-nxp-pin-protection",
+      "title": "PIN 次数保护与恢复入口",
+      "section": "nxp",
+      "page": "UI_PAGE_NXP",
+      "expected_text": "PIN protection",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "53-nxp-erase",
+      "title": "清除钱包并重新初始化",
+      "section": "nxp",
+      "page": "UI_PAGE_NXP",
+      "expected_text": "Erase wallet?",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "54-wifi-connected",
+      "title": "Wi-Fi 连接与地址信息",
+      "section": "connectivity",
+      "page": "UI_PAGE_WIFI",
+      "expected_text": "192.168.1.42",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "55-wifi-networks",
+      "title": "附近网络与安全类型",
+      "section": "connectivity",
+      "page": "UI_PAGE_WIFI",
+      "expected_text": "Workshop",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "56-wifi-password",
+      "title": "Wi-Fi 密码配置",
+      "section": "connectivity",
+      "page": "UI_PAGE_WIFI_PASSWORD",
+      "expected_text": "OSKey-Studio",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "57-wifi-access-point",
+      "title": "接入热点与配网入口",
+      "section": "connectivity",
+      "page": "showcase",
+      "expected_text": "OSKey-AP",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "58-bluetooth-discovery",
+      "title": "蓝牙发现与地址隐私",
+      "section": "connectivity",
+      "page": "UI_PAGE_BLUETOOTH",
+      "expected_text": "Address privacy",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "59-bluetooth-connected",
+      "title": "加密蓝牙连接",
+      "section": "connectivity",
+      "page": "UI_PAGE_BLUETOOTH",
+      "expected_text": "Connected",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "60-usb-interfaces",
+      "title": "USB、WebUSB 与 FIDO2",
+      "section": "connectivity",
+      "page": "UI_PAGE_USB",
+      "expected_text": "WebUSB",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "61-fido-pin-protection",
+      "title": "FIDO PIN 次数保护",
+      "section": "fido",
+      "page": "UI_PAGE_USB",
+      "expected_text": "FIDO PIN",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "62-audio-volume",
+      "title": "扬声器与音量调节",
+      "section": "audio",
+      "page": "UI_PAGE_AUDIO",
+      "expected_text": "Volume 60%",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "63-audio-playback",
+      "title": "音频播放状态",
+      "section": "audio",
+      "page": "UI_PAGE_AUDIO",
+      "expected_text": "Volume 80%",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "64-microphone",
+      "title": "麦克风与输入电平",
+      "section": "audio",
+      "page": "showcase",
+      "expected_text": "Microphone",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "65-imu-orientation",
+      "title": "六轴姿态融合",
+      "section": "imu",
+      "page": "UI_PAGE_IMU",
+      "expected_text": "Ready",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "66-imu-tilt",
+      "title": "设备倾斜可视化",
+      "section": "imu",
+      "page": "UI_PAGE_IMU",
+      "expected_text": "Tilt",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "67-camera",
+      "title": "摄像头管理",
+      "section": "camera",
+      "page": "UI_PAGE_CAMERA",
+      "expected_text": "Camera is available",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "68-qr-scanner",
+      "title": "二维码实时预览",
+      "section": "camera",
+      "page": "UI_PAGE_QR_SCANNER",
+      "expected_text": "Scanning",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "69-qr-decoded",
+      "title": "二维码识别结果",
+      "section": "camera",
+      "page": "UI_PAGE_QR_SCANNER",
+      "expected_text": "Decoded in 28 ms",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "70-sd-files",
+      "title": "SD 卡根目录与文件大小",
+      "section": "storage",
+      "page": "UI_PAGE_FILES",
+      "expected_text": "firmware-update.bin",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "71-sd-directory",
+      "title": "文件夹浏览与返回",
+      "section": "storage",
+      "page": "UI_PAGE_FILES",
+      "expected_text": "eth-transfer.json",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "72-mqtt",
+      "title": "MQTT 消息通信",
+      "section": "connectivity",
+      "page": "showcase",
+      "expected_text": "MQTT",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "73-firmware-update",
+      "title": "签名固件与更新通道",
+      "section": "update",
+      "page": "showcase",
+      "expected_text": "EC P-256 / verified",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "74-update-progress",
+      "title": "固件传输进度",
+      "section": "update",
+      "page": "showcase",
+      "expected_text": "72%",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "75-update-ready",
+      "title": "固件校验与重启应用",
+      "section": "update",
+      "page": "showcase",
+      "expected_text": "MCUboot",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "76-device-maintenance",
+      "title": "设备维护入口",
+      "section": "maintenance",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "Device settings",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "77-restart",
+      "title": "重启确认",
+      "section": "maintenance",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "Restart OSKey?",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "78-reset",
+      "title": "设备数据清除确认",
+      "section": "maintenance",
+      "page": "UI_PAGE_HOME",
+      "expected_text": "Erase device data?",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "79-storage-recovery",
+      "title": "存储维护与恢复操作",
+      "section": "maintenance",
+      "page": "UI_PAGE_STORAGE_ERROR",
+      "expected_text": "Restart",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "80-module-composition",
+      "title": "自由选择与组合模块",
+      "section": "start",
+      "page": "showcase",
+      "expected_text": "Signed updates",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "81-software-wallet",
+      "title": "软件钱包存储配置",
+      "section": "wallet",
+      "page": "showcase",
+      "expected_text": "Software wallet",
+      "renderer": "showcase-page"
+    },
+    {
+      "id": "82-contract-call",
+      "title": "合约调用与输入数据确认",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Contract data",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "83-contract-call-details",
+      "title": "合约方法与输入哈希",
+      "section": "ethereum",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Method",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "84-custom-entropy-generate",
+      "title": "自定义熵与助记词生成入口",
+      "section": "entropy",
+      "page": "UI_PAGE_ENTROPY",
+      "expected_text": "Generate recovery phrase",
+      "renderer": "firmware-ui"
+    },
+    {
+      "id": "85-google-credential-details",
+      "title": "Google 通行密钥凭据详情",
+      "section": "fido",
+      "page": "UI_PAGE_CONFIRMATION",
+      "expected_text": "Credential ID",
+      "renderer": "firmware-ui"
+    }
+  ]
+}

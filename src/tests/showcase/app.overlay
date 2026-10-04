@@ -1,0 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+&sdl_dc {
+    width = <480>;
+    height = <800>;
+};

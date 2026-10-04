@@ -13,3 +13,4 @@ kconfig.json
 AGENTS.md
 /src/tests/*
 !/src/tests/nxp/
+!/src/tests/showcase/
