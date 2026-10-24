@@ -1,167 +1,88 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 
-| WeChat                          | Telegram                    |
-| ------------------------------- | --------------------------- |
-| <img src="../image/start/wechat.jpg" alt="wechat" width="150" style="max-width:100%; height:auto;"> | <img src="../image/start/tg.png" alt="wechat" width="200" style="max-width:100%; height:auto;">
+[English](README.md) · [编译指南](compile_zh.md) · [产品展示](../showcase/README.md)
 
-# 如何使用
+# 快速使用
 
-本文假设您已经完成[主页](https://github.com/butterfly-community/oskey-firmware)的开发教程或者按照[固件快速写入指南](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/board)已经把最新版本固件写入开发板。
+本指南对应当前触摸屏界面。实际页面、连接方式和外设取决于开发板与固件配置。截图使用演示数据，文档中展示的助记词不能用于真实钱包。
 
-首先点击打开 OSKey 官方网站[https://www.oskey.xyz/settings](https://www.oskey.xyz/settings) 。
+## 准备固件
 
-### 演示视频
+按照[编译指南](compile_zh.md)为开发板构建并烧录固件，或按 [Releases](https://github.com/butterfly-community/oskey-firmware/releases) 中对应预编译固件的说明操作。ESP32 开发板另见[固件快速写入指南](../board/README_zh.md)。使用 MCUboot 的设备请参考[签名固件更新](firmware-update.md)。
 
-这里有一个演示视频，是下方文字图片的视频版本。
+首次启动时查看 **OSKey capabilities**，选择 **Set up OSKey**。没有屏幕的开发板通过固件已启用的连接方式，由主机应用操作。
 
-[![OSKey - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "OSKey - Task 3")
+<img src="../showcase/images/02-capabilities.png" alt="设备能力与钱包初始化入口" width="240">
 
-## 检查版本
+## 创建或恢复钱包
 
-点击左上角 Connect 按钮应该从灰色的 Connect 变为绿色的 **Connected**，如果未变更则有其他标签页或者 App 打开了连接，请确认关闭。
+1. 设置并确认钱包 PIN。设备界面要求至少八个字符，包含大写字母、小写字母、数字和符号。
+2. 选择 **Generate recovery phrase** 生成助记词，或选择 **Import recovery phrase** 导入已有助记词。
+3. 创建新钱包时选择 **12 words**、**18 words** 或 **24 words**，再选择熵生成方式。相关模块可用时，硬件随机数可结合触摸、运动、摄像头和麦克风输入。详细机制见[助记词熵说明](../mnemonic-entropy.md)。
+4. 按顺序离线抄写助记词，选择 **I saved the recovery phrase**，再次输入助记词进行核对。恢复已有钱包时，在 **Import wallet** 中按顺序输入原有英语助记词。
+5. 按需填写 **Mnemonic passphrase**，也可留空；非空口令需要再次确认。恢复钱包时应使用原钱包的同一助记词口令。
 
-OSKey Status 栏应显示绿色的固件版本号，例为 **OK Version: 0.3.0**。如果显示 Not Found OSKey firmware， 请确认已经写入固件或者断开连接尝试选择其他接口。
+| 设置钱包 PIN | 选择助记词长度 | 恢复已有钱包 |
+| --- | --- | --- |
+| <img src="../showcase/images/03-create-pin.png" alt="设置钱包 PIN" width="200"> | <img src="../showcase/images/07-mnemonic-length.png" alt="选择 12、18 或 24 词" width="200"> | <img src="../showcase/images/20-import-wallet.png" alt="输入已有助记词" width="200"> |
 
-如果您已经完成[固件快速写入指南](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/board)，仍然出现该提示，🔴⚠️请按照指南描述**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
+请离线保存助记词及助记词口令。钱包 PIN 用于解锁这台设备；助记词口令决定从恢复短语派生出哪个钱包。
 
-<img src="../image/start/start-7.png" alt="wechat" width="400" style="max-width:100%; height:auto;"> 
+默认软件后端在设备中加密保存 seed。启用 NXP A5000 的固件使用安全芯片保存 seed 并验证 PIN。切换存储后端前请阅读 [NXP 说明](../security/nxp-a5000.md)。
 
-## 助记词
+## 解锁与连接
 
-OSKey 支持导入或者生成助记词。
+已保存钱包的设备重启后，在 **Unlock OSKey** 输入钱包 PIN。首页按启用模块提供 **Hardware wallet**、**Passkeys** 和 **Device settings** 入口。
 
-<img src="../image/start/start-8.png" alt="wechat" width="400" style="max-width:100%; height:auto;"> 
+| 解锁钱包 | 钱包首页 | 连接设置 |
+| --- | --- | --- |
+| <img src="../showcase/images/24-unlock-wallet.png" alt="通过 PIN 解锁已保存的钱包" width="200"> | <img src="../showcase/images/23-wallet-home.png" alt="钱包、通行密钥与设备设置" width="200"> | <img src="../showcase/images/48-device-settings.png" alt="设备连接与维护设置" width="200"> |
 
-### 生成助记词
+根据固件与主机应用支持的接口选择连接方式：
 
-点击 Generate 默认会生成 24 个单词的助记词，请抄写在纸上，请勿复制截图拍照等。
+- **UART：** 通过开发板配置的串口进行钱包通信。
+- **WebUSB：** 启用 USB 钱包接口后，通过浏览器或应用通信。
+- **蓝牙：** 发现 OSKey 并完成认证配对。保持发现过程持续运行，使用设备当前的可解析私有地址（RPA），不要复用缓存地址；保持 **Address privacy** 开启。
+- **USB FIDO2：** 启用 FIDO2 后提供通行密钥与安全密钥操作。FIDO PIN 与钱包 PIN 独立，由主机的认证器工具管理。
 
-<br/>
+## 审阅签名请求
 
-### 导入助记词
+连接的钱包应用可以请求 HD 地址派生、以太坊消息签名和交易签名。先在设备上核对私钥访问请求与签名详情，再确认操作。根据开发板配置，可使用触摸或指定的用户按键确认。
 
-如果您已经有助记词，可以选择导入功能，输入按空格分隔的助记词，点击导入，请注意当前版本只支持**英语**的助记词。
+| 派生地址 | 消息审阅 | 交易审阅 |
+| --- | --- | --- |
+| <img src="../showcase/images/26-hd-account.png" alt="HD 派生路径与地址二维码" width="200"> | <img src="../showcase/images/28-ethereum-message.png" alt="审阅以太坊消息" width="200"> | <img src="../showcase/images/32-ethereum-transaction.png" alt="审阅以太坊交易" width="200"> |
 
-<br/>
+[产品展示](../showcase/README.md)还展示了 FIDO2 注册与认证、二维码交互、音频、运动感知和 SD 卡浏览。
 
-### 注意
+## Wi-Fi 与浏览器管理
 
-生成助记词只会显示一次，请注意抄写。刷新页面会**永久**消失，无法恢复。
+启用 Wi-Fi 后，在 **Device settings → Wi-Fi** 扫描网络、保存密码并查看当前局域网 IP。也可以连接设备的配网热点，打开设备显示的管理地址。默认热点为 **OSKey-AP**，密码为 `12345678`，地址为 **http://192.168.4.1**，可由固件配置更改。
 
-<br/>
+设备的本地管理页面提供 Wi-Fi 配网、主机名设置和重启操作。启用 MCUboot 的固件还提供签名固件上传；镜像选择与安装步骤见[固件更新](firmware-update.md)。
 
-## 生成地址
+| 设备 Wi-Fi 状态 | 浏览器配网 | 浏览器设备管理 |
+| --- | --- | --- |
+| <img src="../showcase/images/54-wifi-connected.png" alt="Wi-Fi 连接与局域网地址" width="200"> | <img src="../showcase/images/86-browser-wifi.png" alt="通过本地浏览器页面配网" width="200"> | <img src="../showcase/images/87-browser-device.png" alt="设置主机名或重启设备" width="200"> |
 
-默认从以太坊路径的第一个地址生成，即 **m/44'/60'/0'/0/0**，您可以选择其他路径。点击 **Get Address** 获取地址。
+## 重启与清除
 
-<img src="../image/start/start-9.png" alt="wechat" width="400" style="max-width:100%; height:auto;"> 
+在 **Device settings** 中选择 **Restart**，保留已保存设置并重启。需要重新初始化钱包时，先备份助记词与助记词口令，再选择 **Erase wallet**，在设备上确认 **Erase data**。该操作清除钱包、通行密钥和网络设置，重启后重新进入初始化流程，无需重刷固件。
 
-## 签名
+<img src="../showcase/images/78-reset.png" alt="确认清除钱包、通行密钥与网络设置" width="240">
 
-此处可对输入的文本进行 EIP-191 签名，点击 **Sign Message**，显示对应地址的私钥进行的的签名结果。
+出现 **Storage unavailable** 时先选择 **Restart**。存储恢复页面也提供清除入口。NXP 钱包清除和 PIN 次数限制见 [NXP 说明](../security/nxp-a5000.md)。
 
-<img src="../image/start/start-10.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
+## 开发与资源
 
-## 直接连接
+- [Linux 本地模拟器](linux-development.md)
+- [签名固件更新](firmware-update.md)
+- [立创板音频与麦克风](../board/esp32s3-lichuang-audio.md)
+- [立创板 SD 卡支持](../board/esp32s3-lichuang-sd-card.md)
+- [IMU 坐标与姿态](../board/imu-coordinate-system.md)
+- [内部存储](../storage.md)
+- [截图资源清单](../showcase/manifest.json)与[截图工具](../../src/tests/showcase/README.md)
 
-以 OpenBuild 为例，讲解如何使用 Web3 登陆以及和 App 交互。[点击此处](https://openbuild.xyz/)打开 OpenBuild。
-
-### 建立连接
-
-点击 OpenBuild 网站右上角进入登陆页，点击 **Wallet** 登陆。在弹出的窗口中选择 **WalletConnect**。此时可以识别二维码内容复制或者点击下方 **OPEN** 按钮。点击下图**标记处**复制连接。
-
-<img src="../image/start/start-11.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
-
-<br/>
-
-接下来将获取到链接添加到 OSKey 测试页的 **WalletConnect** 栏，并点击 **Add。**
-
-<br/>
-
-<img src="../image/start/start-12.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-此时弹出连接确认提示，点击确认即可建立与 OpenBuild 网站的链接。
-
-<img src="../image/start/start-13.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-### 交互
-
-接下来 OpenBuild 请求对一个随机数**签名**，已验证对当前地址的所有权。
-
-<img src="../image/start/start-14.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-确认后等待 5-10 秒，即可登陆 OpenBuild。此时已连接 OpenBuild，您可以继续操作。
-
-<img src="../image/start/start-15.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-## 客户端连接
-
-OSKey 的客户端还在开发中，暂时可以选择使用 OneKey，OneKey 是一家知名的钱包厂商，OSKey 可以接入OneKey 提供完整体验。感谢 OneKey 的开放和提供了易用的钱包客户端 [点击打开 OneKey 官网](https://onekey.so)。
-
-您也可以选择使用 Trezor 的客户端，[点击打开 Trezor 官网](https://trezor.io/trezor-suite)。
-
-接下来的示例使用 OneKey 客户端。
-
-### 建立连接
-
-拥有全平台客户端，此处以浏览器插件钱包为例讲解如何接入以及进行交易。浏览器安装钱包插件后点击扩展，打开此页，选择**连接钱包**。
-
-<img src="../image/start/start-16.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
-
-<br/>
-
-依次点击 **EVM** -> **WalletConnect**，点击此处或者识别二维码获取链接。
-
-<img src="../image/start/start-17.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
-
-<br/>
-
-回到 OSKey 设置页**添加**链接，并**确认**连接。
-
-<img src="../image/start/start-12.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-<img src="../image/start/start-19.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-此时已经建立链接，浏览器插件应**显示持有的资产**列表。
-
-<img src="../image/start/start-20.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-### 发起交易
-
-以在 Ethereum Sepolia Testnet 转账为例，点击**确认**。
-
-<img src="../image/start/start-21.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-OSKey 设置页收到签名请求，**确认**。
-
-<img src="../image/start/start-22.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-回到插件钱包，交易成功。
-
-<img src="../image/start/start-23.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-您也可以选择通过 OneKey 使用各种 App，会比直连有更好的体验。
-
-## 特别提醒
-
-直接连接或者客户端连接使用的 WalletConnect 服务在中国境内连接不稳定，如果出现断联请重新连接。
-
-**OSKey 和 OneKey 没有合作关系**。
+| 微信 | Telegram |
+| --- | --- |
+| <img src="../image/start/wechat.jpg" alt="OSKey 微信社区二维码" width="150"> | <img src="../image/start/tg.png" alt="OSKey Telegram 社区二维码" width="200"> |

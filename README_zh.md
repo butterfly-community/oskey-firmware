@@ -23,7 +23,7 @@ OSKey 已经准备好一组可以自由组合的功能模块。它们像硬件�
 - **音频：** 扬声器输出与音量控制。
 - **运动感知：** 六轴加速度与陀螺仪数据采集、姿态融合。
 - **存储：** 设置持久化与 SD 卡文件浏览。
-- **固件更新：** 通过蓝牙或 UART 更新签名固件。
+- **固件更新：** 通过蓝牙、UART 或设备的浏览器管理页面更新签名固件。
 
 ### 硬件主权
 
@@ -39,7 +39,7 @@ OSKey 已经准备好一组可以自由组合的功能模块。它们像硬件�
 
 ### 快速指南
 
-**[快速使用指南](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/start)**
+**[快速使用指南](docs/start/README_zh.md)** · [产品展示](docs/showcase/README.md) · [编译指南](docs/start/compile_zh.md) · [固件更新](docs/start/firmware-update.md)
 
 ### 功能
 
@@ -77,7 +77,7 @@ OSKey 已经准备好一组可以自由组合的功能模块。它们像硬件�
 
 #### ✅ 签名固件更新
 
-通过蓝牙或 UART 更新固件，使用 MCUboot 验证固件签名并提供版本防回退保护。
+通过蓝牙、UART 或设备的浏览器管理页面更新固件，使用 MCUboot 验证固件签名并提供版本防回退保护。
 
 #### ✅ 模块化功能组合
 
@@ -85,21 +85,9 @@ OSKey 已经准备好一组可以自由组合的功能模块。它们像硬件�
 
 ### 功能展示
 
-#### 初始化选择
+[产品展示](docs/showcase/README.md)涵盖钱包初始化、签名、FIDO2、连接与外设。截图使用演示数据；实际可用功能取决于开发板和固件配置。
 
-<img src="docs/image/demo/demo-1a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-1b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
-
-#### 生成助记词
-
-<img src="docs/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-2b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-2c.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
-
-#### 自定义生成助记词
-
-<img src="docs/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-3a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-3b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
-
-#### 导入助记词
-
-<img src="docs/image/demo/demo-4a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+[![OSKey 钱包、签名、身份认证与外设总览](docs/showcase/images/overview.png)](docs/showcase/README.md)
 
 ## 如何使用固件
 

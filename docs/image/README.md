@@ -14,6 +14,13 @@ documentation and are covered by Apache-2.0:
 
 ## OSKey documentation media
 
+Current device UI and browser settings screenshots are maintained in
+[`docs/showcase/images/`](../showcase/images/), with a [gallery](../showcase/README.md)
+and [resource manifest](../showcase/manifest.json). See the
+[capture tool instructions](../../src/tests/showcase/README.md) to regenerate or
+verify them. Images in `demo/` and setup screenshots matching `start/start-*`
+record earlier interfaces and are retained as historical media.
+
 OSKey-created captures under `demo/`, setup screenshots matching
 `start/start-*`, and the OSKey community QR codes `start/tg.png` and
 `start/wechat.jpg` are covered by MPL-2.0. Third-party user interfaces and

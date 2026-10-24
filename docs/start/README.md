@@ -1,167 +1,88 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 
-| WeChat                          | Telegram                    |
-| ------------------------------- | --------------------------- |
-| <img src="../image/start/wechat.jpg" alt="wechat" width="150" style="max-width:100%; height:auto;"> | <img src="../image/start/tg.png" alt="wechat" width="200" style="max-width:100%; height:auto;">
+[中文](README_zh.md) · [Build Guide](compile.md) · [Product Gallery](../showcase/README.md)
 
-# How to Use
+# Quick Start
 
-This document assumes that you have completed the development tutorial on the [homepage](https://github.com/butterfly-community/oskey-firmware) or have already flashed the latest firmware to your development board according to the [Firmware Quick Flash Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/board).
+This guide follows the current touchscreen interface. Available pages, connections, and peripherals depend on your board and firmware configuration. The screenshots use demonstration data; never use a phrase shown in documentation for a real wallet.
 
-First, click to open the OSKey official website [https://www.oskey.xyz/settings](https://www.oskey.xyz/settings).
+## Prepare the Firmware
 
-### Demo Video
+Build and flash your board using the [build guide](compile.md), or follow the instructions for the matching precompiled firmware in [Releases](https://github.com/butterfly-community/oskey-firmware/releases). The [ESP32 flash guide](../board/README_zh.md) is available in Chinese. For a device using MCUboot, follow the [signed firmware update guide](firmware-update.md).
 
-Here is a demo video, which is the video version of the text and images below.
+On first boot, review **OSKey capabilities**, then select **Set up OSKey**. Boards without a display use a host application over the connections enabled in their firmware.
 
-[![OSKey - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "OSKey - Task 3")
+<img src="../showcase/images/02-capabilities.png" alt="Device capabilities and wallet setup entry" width="240">
 
-## Check Version
+## Create or Restore a Wallet
 
-Click the Connect button in the upper left corner, which should change from gray **Connect** to green **Connected**. If it doesn't change, there may be other tabs or apps that have opened the connection, please confirm and close them.
+1. Create and confirm a wallet PIN. The device interface requires at least eight characters containing uppercase and lowercase letters, a number, and a symbol.
+2. Choose **Generate recovery phrase** or **Import recovery phrase**.
+3. For a new wallet, select **12 words**, **18 words**, or **24 words**, then choose the entropy method. Hardware randomness can be combined with touch, motion, camera, and microphone input when those modules are available. See [mnemonic entropy](../mnemonic-entropy.md) for details.
+4. Write down the words offline and in order. Select **I saved the recovery phrase**, then enter the phrase again to verify it. To restore a wallet, enter your existing English recovery phrase in order on **Import wallet**.
+5. Set an optional **Mnemonic passphrase**, or leave it empty. Confirm a nonempty passphrase to finish creating the wallet. When restoring, use the same passphrase as the original wallet.
 
-The OSKey Status bar should display the firmware version number in green, for example **OK Version: 0.3.0**. If it shows "Not Found OSKey firmware", please confirm that the firmware has been flashed or disconnect and try selecting another interface.
+| Wallet PIN | Recovery length | Restore a wallet |
+| --- | --- | --- |
+| <img src="../showcase/images/03-create-pin.png" alt="Create the wallet PIN" width="200"> | <img src="../showcase/images/07-mnemonic-length.png" alt="Choose 12, 18, or 24 words" width="200"> | <img src="../showcase/images/20-import-wallet.png" alt="Enter an existing recovery phrase" width="200"> |
 
-If you have completed the [Firmware Quick Flash Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/board) and still see this prompt, 🔴⚠️ please **re-plug** the hardware wallet or press the **RST** button on the hardware wallet to restart the application wallet firmware as described in the guide ⚠️🔴.
+Keep the recovery phrase and any mnemonic passphrase backed up offline. The wallet PIN unlocks this device; the mnemonic passphrase determines which wallet is derived from the recovery phrase.
 
-<img src="../image/start/start-7.png" alt="wechat" width="400" style="max-width:100%; height:auto;"> 
+The default software backend stores the encrypted seed on the device. Firmware configured for an NXP A5000 uses the secure element for seed storage and PIN authentication. See the [NXP guide](../security/nxp-a5000.md) before changing storage backends.
 
-## Mnemonic Phrase
+## Unlock and Connect
 
-OSKey supports importing or generating mnemonic phrases.
+After restarting a device with a stored wallet, enter its PIN on **Unlock OSKey**. The home page provides **Hardware wallet**, **Passkeys**, and **Device settings**, according to the enabled modules.
 
-<img src="../image/start/start-8.png" alt="wechat" width="400" style="max-width:100%; height:auto;"> 
+| Unlock the wallet | Wallet home | Connection settings |
+| --- | --- | --- |
+| <img src="../showcase/images/24-unlock-wallet.png" alt="Unlock the stored wallet with its PIN" width="200"> | <img src="../showcase/images/23-wallet-home.png" alt="Wallet, passkeys, and device settings" width="200"> | <img src="../showcase/images/48-device-settings.png" alt="Device connection and maintenance settings" width="200"> |
 
-### Generate Mnemonic Phrase
+Use the connection supported by your firmware and host application:
 
-Click Generate to generate a 24-word mnemonic phrase by default. Please write it down on paper. Do not copy, screenshot, or take photos.
+- **UART:** wallet communication through the board's configured serial port.
+- **WebUSB:** browser or application communication when the USB wallet interface is enabled.
+- **Bluetooth:** discover OSKey and complete authenticated pairing. Keep discovery active and connect using its current resolvable private address (RPA); never reuse a cached address. Keep **Address privacy** enabled.
+- **USB FIDO2:** passkey and security-key operations when the FIDO2 module is enabled. The FIDO PIN is managed separately from the wallet PIN by the host's authenticator tools.
 
-<br/>
+## Review Signing Requests
 
-### Import Mnemonic Phrase
+A connected wallet application can request HD address derivation and Ethereum message or transaction signatures. Review the requested private-key access and signing details on the device before approving. Depending on the board, confirmation uses touch or the configured user button.
 
-If you already have a mnemonic phrase, you can choose the import function. Enter the mnemonic phrase separated by spaces and click import. Please note that the current version only supports **English** mnemonic phrases.
+| Derived address | Message review | Transaction review |
+| --- | --- | --- |
+| <img src="../showcase/images/26-hd-account.png" alt="HD derivation path and address QR code" width="200"> | <img src="../showcase/images/28-ethereum-message.png" alt="Review an Ethereum message" width="200"> | <img src="../showcase/images/32-ethereum-transaction.png" alt="Review an Ethereum transaction" width="200"> |
 
-<br/>
+The [product gallery](../showcase/README.md) also illustrates FIDO2 registration and authentication, QR interactions, audio, motion sensing, and SD card browsing.
 
-### Note
+## Wi-Fi and Browser Settings
 
-The generated mnemonic phrase will only be displayed once, please write it down carefully. Refreshing the page will make it disappear **permanently** and cannot be recovered.
+With Wi-Fi enabled, open **Device settings → Wi-Fi** to scan networks, save credentials, and view the current local IP address. You can also join the device's provisioning access point and open its displayed address. The defaults are **OSKey-AP**, password `12345678`, and **http://192.168.4.1**; firmware configuration can change them.
 
-<br/>
+The device's local settings page provides Wi-Fi credentials, hostname, and restart controls. Firmware built with MCUboot also provides signed firmware upload. See [firmware updates](firmware-update.md) for image selection and installation.
 
-## Generate Address
+| Device Wi-Fi status | Browser Wi-Fi setup | Browser device settings |
+| --- | --- | --- |
+| <img src="../showcase/images/54-wifi-connected.png" alt="Wi-Fi connection and local IP address" width="200"> | <img src="../showcase/images/86-browser-wifi.png" alt="Configure Wi-Fi in the local browser page" width="200"> | <img src="../showcase/images/87-browser-device.png" alt="Configure the hostname or restart the device" width="200"> |
 
-By default, it generates from the first address of the Ethereum path, i.e., **m/44'/60'/0'/0/0**. You can choose other paths. Click **Get Address** to get the address.
+## Restart or Erase
 
-<img src="../image/start/start-9.png" alt="wechat" width="400" style="max-width:100%; height:auto;"> 
+Open **Device settings** and select **Restart** to reboot with saved settings. To initialize a different wallet, back up the recovery phrase and mnemonic passphrase, select **Erase wallet**, and confirm **Erase data** on the device. This removes wallet data, passkeys, and network settings, then restarts setup without requiring a firmware reflash.
 
-## Signature
+<img src="../showcase/images/78-reset.png" alt="Confirm erasing wallet, passkeys, and network settings" width="240">
 
-Here you can perform EIP-191 signature on the input text. Click **Sign Message** to display the signature result from the private key of the corresponding address.
+If **Storage unavailable** appears, use **Restart** first. The storage recovery page also offers an erase action. NXP wallet erasure and PIN attempt limits are described in the [NXP guide](../security/nxp-a5000.md).
 
-<img src="../image/start/start-10.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
+## Development and Resources
 
-## Direct Connection
+- [Linux native simulator](linux-development.md)
+- [Signed firmware updates](firmware-update.md)
+- [Lichuang audio and microphone](../board/esp32s3-lichuang-audio.md)
+- [Lichuang SD card support](../board/esp32s3-lichuang-sd-card.md)
+- [IMU coordinates and orientation](../board/imu-coordinate-system.md)
+- [Internal storage](../storage.md)
+- [Screenshot manifest](../showcase/manifest.json) and [capture tool](../../src/tests/showcase/README.md)
 
-Using OpenBuild as an example, this explains how to use Web3 login and interact with Apps. [Click here](https://openbuild.xyz/) to open OpenBuild.
-
-### Establish Connection
-
-Click the upper right corner of the OpenBuild website to enter the login page, then click **Wallet** to log in. In the popup window, select **WalletConnect**. At this time, you can scan the QR code content to copy it or click the **OPEN** button below. Click the **marked area** in the image below to copy the connection.
-
-<img src="../image/start/start-11.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
-
-<br/>
-
-Next, add the obtained link to the **WalletConnect** section of the OSKey test page and click **Add**.
-
-<br/>
-
-<img src="../image/start/start-12.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-At this time, a connection confirmation prompt will appear. Click confirm to establish a connection with the OpenBuild website.
-
-<img src="../image/start/start-13.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-### Interaction
-
-Next, OpenBuild requests to **sign** a random number to verify ownership of the current address.
-
-<img src="../image/start/start-14.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-After confirmation, wait 5-10 seconds to log into OpenBuild. At this point, you are connected to OpenBuild and can continue operating.
-
-<img src="../image/start/start-15.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-## Client Connection
-
-OSKey's client is still under development. For now, you can choose to use OneKey. OneKey is a well-known wallet manufacturer, and OSKey can integrate with OneKey to provide a complete experience. Thanks to OneKey's openness and provision of an easy-to-use wallet client. [Click to open OneKey official website](https://onekey.so).
-
-Alternatively, you can choose a Trezor client and select to connect using walletconnect.  [Click to open Trezor official website](https://trezor.io/trezor-suite)
-
-The following example shows a client using OneKey.
-
-### Establish Connection
-
-It has clients for all platforms. Here we use the browser extension wallet as an example to explain how to integrate and conduct transactions. After installing the wallet extension in your browser, click the extension, open this page, and select **Connect Wallet**.
-
-<img src="../image/start/start-16.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
-
-<br/>
-
-Click **EVM** -> **WalletConnect** in sequence, then click here or scan the QR code to get the link.
-
-<img src="../image/start/start-17.png" alt="wechat" width="400" style="max-width:100%; height:auto;">
-
-<br/>
-
-Return to the OSKey settings page to **add** the link and **confirm** the connection.
-
-<img src="../image/start/start-12.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-<img src="../image/start/start-19.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-At this point, the connection has been established, and the browser extension should **display the list of held assets**.
-
-<img src="../image/start/start-20.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-### Initiate Transaction
-
-Taking a transfer on Ethereum Sepolia Testnet as an example, click **Confirm**.
-
-<img src="../image/start/start-21.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-The OSKey settings page receives a signature request, **confirm** it.
-
-<img src="../image/start/start-22.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-Return to the extension wallet, the transaction is successful.
-
-<img src="../image/start/start-23.png" alt="wechat" width="600" style="max-width:100%; height:auto;">
-
-<br/>
-
-You can also choose to use various Apps through OneKey, which will provide a better experience than direct connection.
-
-## Special Notice
-
-The WalletConnect service used for direct connection or client connection is unstable within mainland China. If disconnection occurs, please reconnect.
-
-**OSKey and OneKey have no partnership relationship**.
+| WeChat | Telegram |
+| --- | --- |
+| <img src="../image/start/wechat.jpg" alt="OSKey WeChat community QR code" width="150"> | <img src="../image/start/tg.png" alt="OSKey Telegram community QR code" width="200"> |

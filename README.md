@@ -25,7 +25,7 @@ OSKey provides a collection of modules ready to combine. Like building blocks fo
 - **Audio:** speaker output and volume control.
 - **Motion sensing:** six-axis accelerometer and gyroscope data, and orientation fusion.
 - **Storage:** persistent settings and SD card file browsing.
-- **Firmware updates:** signed firmware updates through Bluetooth or UART.
+- **Firmware updates:** signed firmware updates through Bluetooth, UART, or the device's browser settings page.
 
 ### Hardware Sovereignty
 
@@ -41,7 +41,7 @@ We are building core infrastructure connecting the digital world with the real w
 
 ### Guide
 
-**[Quick Start Guide](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/start)**
+**[Quick Start Guide](docs/start/README.md)** · [Product Gallery](docs/showcase/README.md) · [Build Guide](docs/start/compile.md) · [Firmware Updates](docs/start/firmware-update.md)
 
 ### Features
 
@@ -79,7 +79,7 @@ Connect through Bluetooth, provision Wi-Fi from the device, and interact through
 
 #### ✅ Signed Firmware Updates
 
-Update firmware through Bluetooth or UART with MCUboot signature verification and version rollback protection.
+Update firmware through Bluetooth, UART, or the device's browser settings page with MCUboot signature verification and version rollback protection.
 
 #### ✅ Modular Feature Selection
 
@@ -87,25 +87,9 @@ Choose wallet, secure-element, display, connectivity, and peripheral modules at 
 
 ### Feature Demo
 
-#### Initialization
+The [product gallery](docs/showcase/README.md) covers wallet setup, signing, FIDO2, connectivity, and peripherals. Screenshots use demonstration data; the available features depend on your board and firmware configuration.
 
-<img src="docs/image/demo/demo-1a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-1b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
-
-#### Generate Mnemonic
-
-<img src="docs/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-2b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-2c.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
-
-#### Custom Mnemonic Generation
-
-<img src="docs/image/demo/demo-2a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-3a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;"> <img src="docs/image/demo/demo-3b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
-
-#### Import Mnemonic
-
-<img src="docs/image/demo/demo-4a.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
-
-#### Index
-
-<img src="docs/image/demo/demo-4b.jpg" alt="demo" width="150" style="max-width:100%; height:auto;">
+[![OSKey wallet, signing, authentication, and peripheral overview](docs/showcase/images/overview.png)](docs/showcase/README.md)
 
 ## How to Use the Firmware
 

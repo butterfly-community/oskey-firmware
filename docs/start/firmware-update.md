@@ -8,6 +8,26 @@ supports either the Zephyr or Espressif MCUboot port.
 
 The application uses the board's default A/B flash layout. MCUboot itself has no secondary slot.
 
+## Environment and Update Images
+
+Before running any build, flash, or `west` command below, load and verify all three environments in the same shell:
+
+```sh
+source ~/Develop/platform/zephyr-project/.venv/bin/activate
+source ~/Develop/platform/zephyr-project/zephyr/zephyr-env.sh
+source ~/.esp.sh
+
+command -v west
+test -n "$ZEPHYR_BASE"
+rustc +esp --version
+```
+
+Run from the OSKey source directory using the existing Zephyr workspace. See the [build guide](compile.md) for workspace setup and the [quick start](README.md) for device operation.
+
+The update channels below require firmware built with MCUboot. Upload `zephyr.signed.bin` signed with the key trusted by the installed bootloader. Initial installation uses the bootloader and application layout for the selected port; a signed application is not a complete image to flash at `0x0`.
+
+<img src="../showcase/images/88-browser-firmware.png" alt="Upload a signed firmware image from the device settings page" width="240">
+
 ## Zephyr port
 
 Build the bootloader and application together with sysbuild:

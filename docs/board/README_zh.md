@@ -1,100 +1,54 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 
-## 固件快速写入指南
+# 固件快速写入指南
 
-如果您已经购买或者申请到了我们的官方开发板，正在思考如何使用和体验，不用担心，我们已经为您准备了完整的使用说明。
+本指南适用于 ESP32 系列开发板。首次写入、普通固件重刷与 MCUboot 签名更新需要使用各自对应的镜像和地址。已启用 Secure Boot 或 Flash 加密的设备，请按[签名固件更新说明](../start/firmware-update.md)操作。
 
-## 开发板
+[快速使用](../start/README_zh.md) · [编译指南](../start/compile_zh.md) · [产品展示](../showcase/README.md)
 
-如果您的开发板属于 ESP32 系列芯片，则适用这个使用指南。开发板适用于多种用途，适合 [butterfly-community](https://github.com/butterfly-community) 开源的绝大多数项目。开发板写入对应固件就可以执行对应的功能，比如写入 [OSKey](https://github.com/butterfly-community/oskey-firmware) 就可以变为数字货币硬件钱包，写入 [water-heater](https://github.com/butterfly-community/water-heater) 就可以变为一个热水器控制器。
+## 选择开发板与固件
 
-默认情况下除非特殊说明，自带的固件为测试固件，非硬件钱包 [OSKey](https://github.com/butterfly-community/oskey-firmware) 固件。
+从 [Releases](https://github.com/butterfly-community/oskey-firmware/releases) 选择与开发板匹配的固件，并阅读该版本的烧录说明。文件名和配置对应仓库中的 [`build.ts`](../../build.ts)，例如：
 
-## 硬件钱包
+| 配置名 | 硬件与主要接口 |
+| --- | --- |
+| `esp32s3_devkitc` | ESP32-S3 DevKitC，持久存储与 UART 钱包通信 |
+| `esp32s3_devkitc_fido2` | ESP32-S3 DevKitC，USB FIDO2 |
+| `lichuang_szpi_s3` | 立创 ESP32-S3，屏幕、摄像头、音频、IMU 与 SD 卡 |
+| `lichuang_szpi_s3_webusb` | 立创 ESP32-S3 外设配置，增加 USB 钱包通信 |
 
-[OSKey](https://github.com/butterfly-community/oskey-firmware) 是一个完全开源的非商业化的硬件钱包项目。
+发布构建将 Zephyr 产物按配置名保存到 `boards/build/`。文件扩展名为 `.bin` 不代表它可以通用于所有开发板、Flash 布局或更新通道。
 
-我们鼓励您按照 [主页](https://github.com/butterfly-community/oskey-firmware) 说明搭建本地开发环境并写入固件。请您首先尝试主页说明，这可以让您更快的参与到实际开发建设中。
+## 首次写入或普通固件重刷
 
-如果您是非开发者或者搭建开发环境中出现问题，我们也有快速写入方式供您体验。请注意仔细阅读，尤其是加粗部分提示。
+本地构建时，按[编译指南](../start/compile_zh.md)在同一个 shell 中加载 Python 虚拟环境、Zephyr 环境和 ESP Rust 工具链。使用与构建对应的目录烧录，例如：
 
-### 演示视频
+```sh
+west flash -d build/esp32s3
+```
 
-这里有一个演示视频，是下方文字图片的视频版本。
+立创屏幕与外设示例对应 `west flash -d build/lichuang`。这些命令适用于编译指南中的普通开发配置；MCUboot 安装请使用其专门步骤。
 
-[![OSKey - Task 3](https://res.cloudinary.com/marcomontalbano/image/upload/v1736601213/video_to_markdown/images/youtube--Tk8S3mavd5I-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Tk8S3mavd5I "OSKey - Task 3")
+使用预编译固件或浏览器烧录工具时，按该版本说明选择镜像及 Flash Address。只有发布说明明确该文件是从 `0x0` 写入的完整镜像时，才使用 `0x0`。缺少地址或布局说明时，先按编译指南自行构建并用 `west flash` 烧录。
 
-### 下载固件
+写入后退出烧录工具并重启设备，进入 **OSKey capabilities** 或已有钱包的解锁页。继续按[快速使用指南](../start/README_zh.md)完成 PIN 设置、钱包创建或恢复。
 
----
+<img src="../showcase/images/02-capabilities.png" alt="首次启动后的设备能力与初始化入口" width="240">
 
-1. 点击 [此处](https://github.com/butterfly-community/oskey-firmware/releases) 或者首页右侧 [Release](https://github.com/butterfly-community/oskey-firmware/releases)，下载我们编译好的固件。
+## MCUboot 签名更新
 
-<br />
+已安装 MCUboot 的设备使用与现有引导程序密钥匹配的 `zephyr.signed.bin`。支持的更新通道包括认证蓝牙、UART 和设备本地浏览器管理页面；具体通道取决于固件配置。
 
-<img src="../image/start/start-1.png" alt="wechat" width="500" style="max-width:100%; height:auto;">
+启用 Wi-Fi 和 MCUboot 后，在设备管理页面的 **Firmware update** 中上传签名镜像，再重启安装。签名验证、版本保护、首次安装布局，以及 Zephyr 和 Espressif 两种 MCUboot 端口的完整步骤见[固件更新说明](../start/firmware-update.md)。
 
----
+<img src="../showcase/images/88-browser-firmware.png" alt="通过浏览器上传 MCUboot 签名固件" width="240">
 
-2. 打开 [OSKey](https://github.com/butterfly-community/oskey-firmware) 的设置页  [https://www.oskey.xyz/settings](https://www.oskey.xyz/settings)，点击 [Flash Firmware](https://espressif.github.io/esptool-js) 进入固件写入页面。按住硬件钱包的 **Boot** 按钮连接电脑，点击 **Connect**。
+签名应用镜像只包含应用，不能作为完整镜像直接写入 `0x0`。已完成生产安全配置的设备应使用 MCUboot 更新应用，避免清空 Flash 或重新写入明文镜像。
 
-<br />
+## 重置钱包
 
-<img src="../image/start/start-2.png" alt="wechat" width="500" style="max-width:100%; height:auto;">
+在 **Device settings** 选择 **Erase wallet**，再确认 **Erase data**。这会清除钱包、通行密钥和网络设置并重启，无需通过擦除整片 Flash 来重置，也无需重新烧录固件。操作前请备份助记词与助记词口令。
 
----
+<img src="../showcase/images/78-reset.png" alt="设备端确认清除钱包与设置" width="240">
 
-3. 选择开发板连接，注意不同的操作系统这里有不同的名字。如果不确定哪个是 OSKey，可以重新插拔看一下哪个发生了变化。
-
-<br />
-
-<img src="../image/start/start-3.png" alt="wechat" width="500" style="max-width:100%; height:auto;">
----
-
-4. 选择开发板连接后，首先更改 Flash Address 为 **0x0**，选择文件为刚才下载的文件。然后点击 **Program** 写入固件。如果是首次写入 OSKey，建议首先点击 **Erase Flash** 清空存储。
-
-<br />
-
-<img src="../image/start/start-4.png" alt="wechat" width="500" style="max-width:100%; height:auto;">
-
----
-
-5. 等待写入完成，写入完成后点击 **Disconnect** 并关闭这个标签页，回到 [硬件钱包测试页](https://www.oskey.xyz)。🔴⚠️另外需要您**重新插拔**硬件钱包或者按压硬件钱包上的 **RST** 按钮以重启应用钱包固件⚠️🔴。
-
-<br />
-
-### 重置硬件钱包
-
-我们推荐的开发板具有数据存储功能，初始化后不可以再更改助记词，如果初始化后需要重置硬件钱包，请按照以下步骤操作，请注意重置后需要写入新的固件。
-
----
-
-1. 打开 [OSKey](https://github.com/butterfly-community/oskey-firmware) 的设置页  [https://www.oskey.xyz/settings](https://www.oskey.xyz/settings)，点击 [Flash Firmware](https://espressif.github.io/esptool-js) 进入固件写入页面。点击 **Connect**。连接成功后点击 **Erase Flash**。
-
-<br />
-
-<img src="../image/start/start-6.png" alt="wechat" width="500" style="max-width:100%; height:auto;">
-
-2. 清除固件后请按照上文**下载固件**步骤写入新的固件。
-
-<br />
-
-### 使用硬件钱包
-
----
-
-1. 点击页面上的 Connect 按钮，并选择硬件钱包连接。**[点击此处查看快速使用文档](https://github.com/butterfly-community/oskey-firmware/tree/master/docs/start)**
-
-<br />
-
-<img src="../image/start/start-7.png" alt="wechat" width="500" style="max-width:100%; height:auto;">
-
-连接后即可开始使用 OSKey。
-
-### 注意
-
-  您的数据使用高安全性加密算法加密存储，为了保证丢失后的安全性，请您务必设置足够强度的密码，建议最低大小写字母混合 9 位以上。
-
-### 升级
-
-  如果发布了新的版本，只需要按照下载固件步骤下载新版的固件刷入即可升级。
+使用 NXP A5000 时，清除还涉及芯片内的钱包对象和独立擦除凭据，详见 [NXP 安全芯片说明](../security/nxp-a5000.md)。
