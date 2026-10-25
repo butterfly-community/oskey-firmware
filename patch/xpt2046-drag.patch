@@ -1,0 +1,25 @@
+diff --git a/drivers/input/input_xpt2046.c b/drivers/input/input_xpt2046.c
+--- a/drivers/input/input_xpt2046.c
++++ b/drivers/input/input_xpt2046.c
+@@ -120,7 +120,9 @@
+ 		data->pressed = false;
+ 		input_report_key(data->dev, INPUT_BTN_TOUCH, 0, true, K_FOREVER);
+ 	} else {
+-		/* Re-check later */
++		/* Read movement while PENIRQ remains active. */
++		gpio_remove_callback(config->int_gpio.port, &data->int_gpio_cb);
++		k_work_submit(&data->work);
+ 		k_work_reschedule(&data->dwork, K_MSEC(10));
+ 	}
+ }
+@@ -181,8 +183,8 @@
+ 		data->last_y = y;
+ 		data->pressed = pressed;
+ 
+-		/* Ensure that we send released event */
+-		k_work_reschedule(&data->dwork, K_MSEC(100));
++		/* Sample held contacts and check for release. */
++		k_work_reschedule(&data->dwork, K_MSEC(10));
+ 	}
+ 
+ reenable_cb:

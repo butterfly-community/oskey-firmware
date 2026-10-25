@@ -4,34 +4,153 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "*"
+    paths:
+      - .github/scripts/**
+      - .github/workflows/build.yml
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing firmware tag to build and publish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
 
 jobs:
-  build:
-    runs-on: self-hosted
+  release_checks:
+    if: github.event_name == 'push' && github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out workflow tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          submodules: "recursive"
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Test release protocol
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
+  build:
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    runs-on: self-hosted
+    timeout-minutes: 60
+    outputs:
+      commit: ${{ steps.source.outputs.commit }}
+      artifact_id: ${{ steps.artifacts.outputs.artifact-id }}
+    steps:
+      - name: Prepare cached workspace
+        run: |
+          if docker image inspect oskey-builder >/dev/null 2>&1; then
+            docker run --rm --entrypoint /bin/chown \
+              -v "$GITHUB_WORKSPACE:/workdir/oskey" oskey-builder \
+              -R "$(id -u):$(id -g)" /workdir/oskey
+          fi
+          git config --global http.version HTTP/1.1
+          git config --global fetch.unpackLimit 1
+
+      - name: Clear cached submodules
+        run: |
+          if git rev-parse --git-dir >/dev/null 2>&1; then
+            git submodule deinit --force --all
+            rm -rf .git/modules
+          fi
+
+      - name: Check out firmware tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+          submodules: recursive
           fetch-depth: 0
 
-      - name: Verify tag commit is on master
-        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/master
+      - name: Verify release source
+        id: source
+        run: |
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "$RELEASE_TAG^{commit}")"
+          git merge-base --is-ancestor HEAD origin/master
+          printf 'commit=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Check out workflow tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: build/ci
+          sparse-checkout: .github
+          persist-credentials: false
 
       - name: Build using Dockerfile
         run: docker build -t oskey-builder .
 
+      - name: Test release protocol
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/workdir/oskey" oskey-builder \
+            /bin/bash -c 'PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s build/ci/.github/scripts -p "test_*.py"'
+
+      - name: Test touchscreen and keyboard input
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/workdir/oskey" oskey-builder \
+            /bin/bash -c 'west twister -T src/tests/input -p native_sim/native/64 --outdir build/test-input --inline-logs'
+
       - name: Build all boards
         run: |
-          docker run --rm -v ${{ github.workspace }}:/workdir/oskey oskey-builder /bin/bash -c './build.ts'
+          docker run --rm -v "$GITHUB_WORKSPACE:/workdir/oskey" oskey-builder \
+            /bin/bash -c './build.ts'
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Prepare verified firmware bundle
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.commit }}
+        run: |
+          docker run --rm -e RELEASE_TAG -e RELEASE_SHA \
+            -v "$GITHUB_WORKSPACE:/workdir/oskey" oskey-builder \
+            /bin/bash -c 'python3 build/ci/.github/scripts/release.py prepare --artifacts boards/build --tag "$RELEASE_TAG" --commit "$RELEASE_SHA"'
+
+      - name: Store firmware for publication and retries
+        id: artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          files: boards/build/*
-          tag_name: ${{ github.ref_name }}
-          name: OSKey ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+          name: firmware-${{ env.RELEASE_TAG }}-${{ github.run_attempt }}
+          path: boards/build/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Check out workflow tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Download verified firmware bundle
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact_id }}
+          path: build/release
+          digest-mismatch: error
+
+      - name: Publish and verify release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.build.outputs.commit }}
+        run: |
+          python3 .github/scripts/release.py publish \
+            --repo "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG" \
+            --commit "$RELEASE_SHA" --artifacts build/release

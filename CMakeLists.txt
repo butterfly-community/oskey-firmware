@@ -104,6 +104,7 @@ endif()
 
 target_sources_ifdef(CONFIG_OSKEY_DISPLAY app PRIVATE
   src/display/ui.c
+  src/display/ui_keyboard.c
   src/display/ui_controller.c
   src/display/ui_status.c
   src/display/ui_dialog.c

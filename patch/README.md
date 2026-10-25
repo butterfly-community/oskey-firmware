@@ -21,6 +21,7 @@ build configuration.
 | `fido/usb-busy.patch` | Keeps a CBOR channel active until core processing completes, rejects concurrent channels, and scopes CANCEL to the active channel. Upstream only tracks packet reassembly and cancels an in-flight request when another request arrives. |
 | `fido/keepalive.patch` | Runs native_sim USB/IP keepalive work on the HID receive queue so simulated USB access stays on its required execution context. |
 | `usb-dwc2-zlp-cache.patch` | Avoids forwarding a zero-length IN transfer to the cache-maintenance backend. The ESP cache driver still lacks a zero-length guard. |
+| `xpt2046-drag.patch` | Samples held contacts every 10 ms and masks conversion interrupts during SPI reads, providing continuous drag coordinates and release events. |
 | `rust.patch` | Adds esp-rs Xtensa targets and `build-std`, makes generated configuration usable on 32-bit targets, and routes large Rust allocations to ESP PSRAM. Guards generated GPIO key accessors with `CONFIG_GPIO` so GPIO-disabled builds remain valid. Upstream's Rust module does not yet provide these fixes. |
 
 Removed patches:
@@ -89,5 +90,15 @@ application now explicitly links upstream's separate `zephyr-panic` crate.
   configurations build successfully.
 - NXP: 5 C suites pass normally and with ASan/UBSan; Rust adapter: 1 test passes.
 - PSA action tests: 46 pass with `--test-threads=1`; integration runner: 2 tests pass.
+- Input regressions cover XPT2046 movement, release, repeated contacts, SPI recovery, and
+  conversion interrupt edges. Product keyboard tests verify held input, layout switches,
+  separate taps, and single-action backspace through LVGL pointer events.
 - native_sim UART: 20 wallet/protocol tests pass with NXP disabled; 7 protocol tests pass
   with NXP enabled and another 7 pass with the FIDO/USB/display configuration.
+
+Run the driver regressions after loading the development environment:
+
+```sh
+west twister -T src/tests/input -p native_sim/native/64 \
+  --outdir build/test-input --inline-logs
+```

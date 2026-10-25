@@ -77,7 +77,7 @@
     compatible = "xptek,xpt2046";
     spi-max-frequency = <DT_FREQ_M(2)>;
     reg = <0x0>;
-    int-gpios = <&gpio1 36 GPIO_ACTIVE_LOW>;
+    int-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
     touchscreen-size-x = <240>;
     touchscreen-size-y = <320>;
     min-x = <400>;

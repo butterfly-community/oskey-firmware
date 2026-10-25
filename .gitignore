@@ -14,3 +14,4 @@ AGENTS.md
 /src/tests/*
 !/src/tests/nxp/
 !/src/tests/showcase/
+!/src/tests/input/

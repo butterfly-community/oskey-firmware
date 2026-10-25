@@ -1,0 +1,53 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	chosen {
+		zephyr,display = &test_display;
+		/delete-property/ zephyr,touch;
+	};
+
+	test_display: display {
+		compatible = "zephyr,dummy-dc";
+		width = <320>;
+		height = <240>;
+	};
+
+	touch_irq: touch-irq {
+		compatible = "zephyr,gpio-emul";
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <8>;
+		rising-edge;
+		falling-edge;
+	};
+
+	touch_spi: spi@1000 {
+		compatible = "zephyr,spi-emul-controller";
+		reg = <0x1000 0x100>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		touch: touchscreen@0 {
+			compatible = "xptek,xpt2046";
+			reg = <0>;
+			spi-max-frequency = <2000000>;
+			int-gpios = <&touch_irq 4 GPIO_ACTIVE_LOW>;
+			touchscreen-size-x = <240>;
+			touchscreen-size-y = <320>;
+			min-x = <400>;
+			max-x = <3800>;
+			min-y = <300>;
+			max-y = <3600>;
+			swapped-x-y;
+		};
+	};
+};
+
+&sdl_dc {
+	status = "disabled";
+};
+
+&input_sdl_touch {
+	status = "disabled";
+};

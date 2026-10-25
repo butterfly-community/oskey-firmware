@@ -3,6 +3,7 @@
 #define _DEFAULT_SOURCE
 
 #include "ui.h"
+#include "ui_keyboard.h"
 
 #include <errno.h>
 #include <string.h>
@@ -603,7 +604,7 @@ void ui_input_page(const struct ui_input_config *config, ui_input_submit_t submi
 	}
 #endif
 
-	ui.keyboard = lv_keyboard_create(ui.screen);
+	ui.keyboard = ui_keyboard_create(ui.screen);
 	lv_obj_set_size(ui.keyboard, LV_PCT(100), LV_MIN(ui.height * 55 / 100, 200));
 	lv_obj_align(ui.keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
 	lv_obj_set_style_bg_opa(ui.keyboard, LV_OPA_TRANSP, LV_PART_MAIN);

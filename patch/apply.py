@@ -17,6 +17,7 @@ PATCHES = {
         "fido/usb-busy.patch",
         "fido/keepalive.patch",
         "usb-dwc2-zlp-cache.patch",
+        "xpt2046-drag.patch",
     ),
     "zephyr-lang-rust": ("rust.patch",),
 }

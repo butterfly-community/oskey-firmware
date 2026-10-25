@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MPL-2.0
+tests:
+  oskey.input:
+    platform_allow:
+      - native_sim/native/64
+    integration_platforms:
+      - native_sim/native/64
+    tags:
+      - input
+      - gui
+    timeout: 10

@@ -10,6 +10,7 @@ target_include_directories(app PRIVATE ${OSKEY_SOURCE} ${OSKEY_SOURCE}/display)
 target_sources(app PRIVATE
   main.c fixtures.c
   ${OSKEY_SOURCE}/display/ui.c
+  ${OSKEY_SOURCE}/display/ui_keyboard.c
   ${OSKEY_SOURCE}/display/ui_status.c
   ${OSKEY_SOURCE}/display/ui_dialog.c
   ${OSKEY_SOURCE}/display/ui_pages.c

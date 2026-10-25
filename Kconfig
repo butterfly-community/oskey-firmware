@@ -22,7 +22,7 @@ config OSKEY_NXP_CREDENTIALS_HEADER
 	  An empty path leaves the secure backend unconfigured and unable to store seed.
 
 config MAIN_STACK_SIZE
-	default 8192 if OSKEY_NXP_SE
+	default 20480
 
 config OSKEY_MESSAGE_BUS
 	bool
@@ -263,9 +263,6 @@ menuconfig OSKEY_DISPLAY
 	select LV_FONT_MONTSERRAT_12
 
 if OSKEY_DISPLAY
-
-config MAIN_STACK_SIZE
-	default 16384 if OSKEY_LVGL_BENCHMARK
 
 config LV_Z_LVGL_WORKQUEUE_STACK_SIZE
 	default 32768 if OSKEY_LVGL_BENCHMARK
